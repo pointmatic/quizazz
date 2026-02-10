@@ -420,6 +420,70 @@ describe('mid-quiz navigation', () => {
 	});
 });
 
+describe('full navigation flow: mid-quiz review and continue', () => {
+	it('answer → go back → review answered → return → continue → summary', async () => {
+		questions = makeQuestions(4);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		expect(get(viewMode)).toBe('quiz');
+		expect(get(quizSession)!.currentIndex).toBe(0);
+
+		// Answer first 2 questions
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
+		expect(get(quizSession)!.currentIndex).toBe(2);
+
+		// Go to answered questions list
+		showAnsweredQuestions();
+		expect(get(viewMode)).toBe('quiz-answered');
+
+		// Review first answered question
+		reviewAnsweredQuestion(0);
+		expect(get(viewMode)).toBe('quiz-review');
+		expect(get(reviewIndex)).toBe(0);
+
+		// Navigate to second answered question via carousel
+		reviewNext();
+		expect(get(reviewIndex)).toBe(1);
+
+		// Can't go further (only 2 answered)
+		reviewNext();
+		expect(get(reviewIndex)).toBe(1);
+
+		// Go back to answered list
+		showAnsweredQuestions();
+		expect(get(viewMode)).toBe('quiz-answered');
+
+		// Return to quiz
+		backToQuiz();
+		expect(get(viewMode)).toBe('quiz');
+		expect(get(quizSession)!.currentIndex).toBe(2);
+
+		// Continue answering remaining questions
+		await submitAnswer(get(quizSession)!.questions[2].presentedAnswers[0].label, db);
+		await submitAnswer(get(quizSession)!.questions[3].presentedAnswers[0].label, db);
+
+		// Quiz completes → summary
+		expect(get(viewMode)).toBe('summary');
+		expect(get(quizSession)!.completed).toBe(true);
+
+		// Post-quiz review with full carousel
+		reviewQuestion(0);
+		expect(get(viewMode)).toBe('review');
+		reviewNext();
+		expect(get(reviewIndex)).toBe(1);
+		reviewNext();
+		expect(get(reviewIndex)).toBe(2);
+		reviewNext();
+		expect(get(reviewIndex)).toBe(3);
+
+		// Back to summary
+		backToSummary();
+		expect(get(viewMode)).toBe('summary');
+	});
+});
+
 describe('database integration', () => {
 	it('scores are updated in DB after answering', async () => {
 		questions = makeQuestions(2);

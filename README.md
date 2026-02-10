@@ -11,7 +11,8 @@ A browser-based study tool that quizzes you on your understanding of a topic. Qu
 - **Weighted selection** — questions you get wrong appear more frequently
 - **Keyboard-first** — navigate the entire quiz with keyboard shortcuts
 - **Persistent scores** — client-side SQLite (sql.js/WASM) persisted to IndexedDB
-- **Review mode** — after each quiz, review every answer with explanations
+- **Review mode** — after each quiz, review every answer with explanations; navigate between questions with carousel
+- **Mid-quiz review** — go back to review previously answered questions without losing progress
 - **Tag filtering** — optionally filter questions by topic tags before starting
 - **Configurable** — choose question count (1–N) and answer choices (3, 4, or 5)
 
@@ -95,11 +96,21 @@ python -m quizazz_builder --input data/questions/ --output app/src/lib/data/ques
 
 1. **Filter** (optional) — select one or more tags to narrow the question pool
 2. **Configure** — choose how many questions and answer choices
-3. **Answer** — select an answer and submit (keyboard: `a`–`e` to select, `Enter` to submit)
-4. **Review** — see your score, then click any question to review all answers with explanations
-5. **Retake** or **Start New** — retake the same questions or start fresh
+3. **Answer** — select an answer and submit
+4. **Review answered** (optional) — go back mid-quiz to review previously answered questions
+5. **Review** — after the quiz, see your score and review every answer with explanations
+6. **Retake** or **Start New** — retake the same questions or start fresh
 
 When tags are selected, only questions matching **any** selected tag are included (OR logic). The question count slider adjusts automatically to the filtered pool size.
+
+### Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `a`–`e` | Select an answer |
+| `Enter` | Submit selected answer |
+| `Escape` | Go back (to answered questions, summary, or quiz) |
+| `←` / `→` | Navigate between questions in review mode |
 
 ## Scoring
 
@@ -115,7 +126,7 @@ Scores accumulate per question across sessions. The selection algorithm uses the
 ## Testing
 
 ```bash
-# App tests (65+ tests)
+# App tests (82+ tests)
 cd app && pnpm vitest run
 
 # Builder tests (50 tests)

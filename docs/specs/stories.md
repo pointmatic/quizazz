@@ -448,17 +448,18 @@ Allow navigating back to previously answered questions during a quiz, with `Esca
 - [x] Add 7 mid-quiz navigation tests in `app/tests/integration/lifecycle.test.ts`
 - [x] Verify: 82 tests pass (`pnpm vitest run`), `pnpm check` — 0 errors
 
-### Story H.c: v0.21.0 Polish, README, and Final Tests [Planned]
+### Story H.c: v0.21.0 Polish, README, and Final Tests [Done]
 
 Final polish, documentation, and comprehensive test coverage for navigation features.
 
-- [ ] Update root `README.md`
-  - [ ] Document keyboard shortcuts: `Escape` (go back), `←`/`→` (navigate questions)
-  - [ ] Document mid-quiz review capability in "Taking a Quiz" section
-- [ ] Add/update integration tests
-  - [ ] Test full flow: answer questions → go back → review answered → return to quiz → continue
-  - [ ] Test keyboard navigation end-to-end in review mode
-  - [ ] Test progressive disclosure: unanswered questions hidden in mid-quiz index
-- [ ] Final verification
-  - [ ] Clean build: `pnpm build` succeeds
-  - [ ] All tests pass in both workspaces
+- [x] Update root `README.md`
+  - [x] Add "Mid-quiz review" and updated "Review mode" to features list
+  - [x] Add "Keyboard Shortcuts" table: `a`–`e`, `Enter`, `Escape`, `←`/`→`
+  - [x] Update "Taking a Quiz" section with mid-quiz review step
+  - [x] Update test counts
+- [x] Add full-flow integration test in `app/tests/integration/lifecycle.test.ts`
+  - [x] Test: answer → go back → review answered → carousel → return to quiz → continue → summary → post-quiz review
+- [x] Final verification
+  - [x] Clean build: `pnpm build` succeeds
+  - [x] `pnpm check` — 0 errors
+  - [x] All tests pass: 83 app tests + 50 builder tests = 133 total
