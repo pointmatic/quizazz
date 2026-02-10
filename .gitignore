@@ -1,0 +1,22 @@
+# Python
+.venv
+__pycache__
+*.egg-info
+dist/
+
+# Pyve
+.pyve/testenv
+
+# Environment
+.env
+.envrc
+
+# Node
+node_modules/
+
+# SvelteKit
+app/.svelte-kit/
+app/build/
+
+# OS
+.DS_Store
