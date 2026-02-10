@@ -1,4 +1,5 @@
 - question: "What is the capital of France?"
+  tags: ["geography"]
   answers:
     correct:
       - text: "Paris"
@@ -16,6 +17,7 @@
         explanation: "Atlantis is a mythical island from Plato's dialogues and does not exist."
 
 - question: "Which planet is closest to the Sun?"
+  tags: ["science"]
   answers:
     correct:
       - text: "Mercury"
@@ -33,6 +35,7 @@
         explanation: "The Sun is a star, not a planet, and cannot be closest to itself."
 
 - question: "What does HTTP stand for?"
+  tags: ["technology"]
   answers:
     correct:
       - text: "HyperText Transfer Protocol"
@@ -50,6 +53,7 @@
         explanation: "This is a humorous but entirely fictional expansion of the acronym."
 
 - question: "What is the time complexity of binary search?"
+  tags: ["technology", "math"]
   answers:
     correct:
       - text: "O(log n)"
@@ -67,6 +71,7 @@
         explanation: "Factorial time complexity would make binary search slower than almost any known algorithm."
 
 - question: "Which element has the chemical symbol 'O'?"
+  tags: ["science"]
   answers:
     correct:
       - text: "Oxygen"
@@ -84,6 +89,7 @@
         explanation: "Unobtanium is a fictional material from the movie Avatar."
 
 - question: "In which year did the World Wide Web become publicly available?"
+  tags: ["technology", "history"]
   answers:
     correct:
       - text: "1991"
@@ -101,6 +107,7 @@
         explanation: "1776 is the year of the American Declaration of Independence, centuries before computers existed."
 
 - question: "What is the largest organ in the human body?"
+  tags: ["science"]
   answers:
     correct:
       - text: "Skin"
@@ -118,6 +125,7 @@
         explanation: "The funny bone is not an organ — it is the ulnar nerve at the elbow."
 
 - question: "What does the acronym SQL stand for?"
+  tags: ["technology"]
   answers:
     correct:
       - text: "Structured Query Language"
@@ -135,6 +143,7 @@
         explanation: "This is a humorous but entirely fictional expansion of the acronym."
 
 - question: "Which data structure uses FIFO (First In, First Out) ordering?"
+  tags: ["technology"]
   answers:
     correct:
       - text: "Queue"
@@ -152,6 +161,7 @@
         explanation: "While penguins do queue up in nature, this is not a data structure."
 
 - question: "What is the speed of light in a vacuum, approximately?"
+  tags: ["science", "math"]
   answers:
     correct:
       - text: "300,000 km/s"
@@ -169,6 +179,7 @@
         explanation: "Even the fastest WiFi is billions of times slower than the speed of light."
 
 - question: "Who wrote the novel '1984'?"
+  tags: ["literature", "history"]
   answers:
     correct:
       - text: "George Orwell"
@@ -186,6 +197,7 @@
         explanation: "The novel is fiction, not a memoir from the future."
 
 - question: "What is the value of pi (π) to two decimal places?"
+  tags: ["math"]
   answers:
     correct:
       - text: "3.14"

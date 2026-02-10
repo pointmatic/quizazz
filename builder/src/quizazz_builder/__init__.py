@@ -14,4 +14,4 @@
 
 """Quizazz Builder — YAML question bank validator and compiler."""
 
-__version__ = "0.17.0"
+__version__ = "0.18.0"

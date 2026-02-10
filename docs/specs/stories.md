@@ -372,24 +372,26 @@ Add tag filter controls to the configuration screen.
   - [x] `handleStart` forwards `selectedTags`
 - [x] Verify: 65 tests pass, `pnpm check` — 0 errors
 
-### Story G.d: v0.18.0 Sample Data, README, and Tests [Planned]
+### Story G.d: v0.18.0 Sample Data, README, and Tests [Done]
 
 Add tags to sample questions, update documentation, and add integration tests.
 
-- [ ] Update `data/questions/sample.yaml`
-  - [ ] Add `tags` to all 12 questions with diverse, meaningful tags
-  - [ ] Use at least 4–5 distinct tags (e.g., `geography`, `science`, `technology`, `literature`, `math`)
-  - [ ] Some questions should share tags; some should have multiple tags
-- [ ] Recompile `app/src/lib/data/questions.json`
-- [ ] Update root `README.md`
-  - [ ] Add `tags` to the YAML format example
-  - [ ] Document tag filtering behavior in the "Taking a Quiz" section
-- [ ] Add integration tests (`app/tests/integration/`)
-  - [ ] Test quiz with tag filter selects only matching questions
-  - [ ] Test quiz with no tag filter selects from all questions
-  - [ ] Test tag filter with no matching questions disables start
-  - [ ] Test `allTags` is correctly derived from question data
-- [ ] Final verification
-  - [ ] Clean compile with tagged questions
-  - [ ] Clean build: `pnpm build` succeeds
-  - [ ] All tests pass in both workspaces
+- [x] Update `data/questions/sample.yaml`
+  - [x] Add `tags` to all 12 questions with 5 distinct tags: `geography`, `science`, `technology`, `history`, `literature`, `math`
+  - [x] Questions share tags where topically appropriate; some have multiple tags
+- [x] Recompile `app/src/lib/data/questions.json` — 12 questions with tags
+- [x] Update root `README.md`
+  - [x] Add `tags` to YAML format example and requirements
+  - [x] Add "Tag filtering" to features list
+  - [x] Document tag filtering in "Taking a Quiz" section with OR-logic explanation
+  - [x] Update test counts
+- [x] Add integration tests (`app/tests/integration/tags.test.ts`)
+  - [x] Test quiz with tag filter selects only matching questions
+  - [x] Test OR logic: questions matching any selected tag are included
+  - [x] Test quiz with no tag filter selects from all questions
+  - [x] Test tag filter with no matching questions results in 0 questions
+  - [x] Test `allTags` derivation: sorted, deduplicated, no empty strings
+- [x] Final verification
+  - [x] Clean compile: 12 tagged questions
+  - [x] Clean build: `pnpm build` succeeds
+  - [x] All tests pass: 71 app tests + 50 builder tests = 121 total

@@ -2,6 +2,9 @@
   {
     "id": "115049a298532be2f181edb03f766770c0db84c22aff39003fec340deaec7545",
     "question": "What is the capital of France?",
+    "tags": [
+      "geography"
+    ],
     "answers": [
       {
         "text": "Paris",
@@ -33,6 +36,9 @@
   {
     "id": "1d8f9d4c176552e6ba08506efe5d9b00d4bdc2631fe69419b7e5b3b156fae484",
     "question": "Which planet is closest to the Sun?",
+    "tags": [
+      "science"
+    ],
     "answers": [
       {
         "text": "Mercury",
@@ -64,6 +70,9 @@
   {
     "id": "8a6d0e35154544734bcce4ea39d959b2b94fadb4c53d059923fa92f8d42e1e22",
     "question": "What does HTTP stand for?",
+    "tags": [
+      "technology"
+    ],
     "answers": [
       {
         "text": "HyperText Transfer Protocol",
@@ -95,6 +104,10 @@
   {
     "id": "eda75f91a234995e35d44fa9a1d676d885f99338c3b8c52bc5566f6cde7154a1",
     "question": "What is the time complexity of binary search?",
+    "tags": [
+      "technology",
+      "math"
+    ],
     "answers": [
       {
         "text": "O(log n)",
@@ -126,6 +139,9 @@
   {
     "id": "0690301b84122589ff51a2d536310dc7a68dc381db052b0ab2f9d6fa0a4576b5",
     "question": "Which element has the chemical symbol 'O'?",
+    "tags": [
+      "science"
+    ],
     "answers": [
       {
         "text": "Oxygen",
@@ -157,6 +173,10 @@
   {
     "id": "8ed8910cac1fa7a9ee9e419e0786ef5b49da3c49feb8d480b63ba1874758d3ba",
     "question": "In which year did the World Wide Web become publicly available?",
+    "tags": [
+      "technology",
+      "history"
+    ],
     "answers": [
       {
         "text": "1991",
@@ -188,6 +208,9 @@
   {
     "id": "077bfbbf620b6602d45df143b0d8f2701b17996460a23794aea37a3c58ae6310",
     "question": "What is the largest organ in the human body?",
+    "tags": [
+      "science"
+    ],
     "answers": [
       {
         "text": "Skin",
@@ -219,6 +242,9 @@
   {
     "id": "36f17a39cc63fb55dfb36287db2adc855c830b2febf6a1855e2c4dab469f7273",
     "question": "What does the acronym SQL stand for?",
+    "tags": [
+      "technology"
+    ],
     "answers": [
       {
         "text": "Structured Query Language",
@@ -250,6 +276,9 @@
   {
     "id": "7d6ab70dfe285d8c22bfeee3a8f02bb5c22c7c94737502f65b0d2b6d82a2d98f",
     "question": "Which data structure uses FIFO (First In, First Out) ordering?",
+    "tags": [
+      "technology"
+    ],
     "answers": [
       {
         "text": "Queue",
@@ -281,6 +310,10 @@
   {
     "id": "32f69ee35af7af73cdc413cd75dbab075b71bd49348a98095d9c0f618b29e9b8",
     "question": "What is the speed of light in a vacuum, approximately?",
+    "tags": [
+      "science",
+      "math"
+    ],
     "answers": [
       {
         "text": "300,000 km/s",
@@ -312,6 +345,10 @@
   {
     "id": "2c17e01bfcdd75b859ae5009cbfb672839a49ab1563e9547c37bd0f8949af37c",
     "question": "Who wrote the novel '1984'?",
+    "tags": [
+      "literature",
+      "history"
+    ],
     "answers": [
       {
         "text": "George Orwell",
@@ -343,6 +380,9 @@
   {
     "id": "31342ebdc617534d8c491fcd75b0cf59dacf75ea555d62cd0dcaaf1295430e62",
     "question": "What is the value of pi (π) to two decimal places?",
+    "tags": [
+      "math"
+    ],
     "answers": [
       {
         "text": "3.14",
