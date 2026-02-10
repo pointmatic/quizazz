@@ -14,9 +14,12 @@
 
 import initSqlJs, { type Database } from 'sql.js';
 
-const DB_NAME = 'quizazz';
 const DB_STORE = 'database';
 const DB_KEY = 'db';
+
+export function getDbName(quizName: string): string {
+	return `quizazz-${quizName}`;
+}
 
 export function createSchema(db: Database): void {
 	db.run(`
@@ -37,9 +40,9 @@ export function createSchema(db: Database): void {
 	`);
 }
 
-function openIndexedDB(): Promise<IDBDatabase> {
+function openIndexedDB(dbName: string): Promise<IDBDatabase> {
 	return new Promise((resolve, reject) => {
-		const request = indexedDB.open(DB_NAME, 1);
+		const request = indexedDB.open(dbName, 1);
 		request.onupgradeneeded = () => {
 			const idb = request.result;
 			if (!idb.objectStoreNames.contains(DB_STORE)) {
@@ -71,12 +74,12 @@ function saveToIndexedDB(idb: IDBDatabase, data: Uint8Array): Promise<void> {
 	});
 }
 
-export async function initDatabase(): Promise<Database> {
+export async function initDatabase(quizName: string): Promise<Database> {
 	const SQL = await initSqlJs({
 		locateFile: (file: string) => `/${file}`
 	});
 
-	const idb = await openIndexedDB();
+	const idb = await openIndexedDB(getDbName(quizName));
 
 	try {
 		const saved = await loadFromIndexedDB(idb);
@@ -94,8 +97,8 @@ export async function initDatabase(): Promise<Database> {
 	return db;
 }
 
-export async function persistDatabase(db: Database): Promise<void> {
+export async function persistDatabase(db: Database, quizName: string): Promise<void> {
 	const data = db.export();
-	const idb = await openIndexedDB();
+	const idb = await openIndexedDB(getDbName(quizName));
 	await saveToIndexedDB(idb, data);
 }

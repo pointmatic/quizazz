@@ -14,7 +14,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import initSqlJs, { type Database } from 'sql.js';
-import { createSchema } from '$lib/db/database';
+import { createSchema, getDbName } from '$lib/db/database';
 import { getScores, updateScore, seedScores, recordAnswer } from '$lib/db/scores';
 
 let db: Database;
@@ -84,6 +84,22 @@ describe('updateScore', () => {
 		updateScore(db, 'q1', 1);
 		const scores = getScores(db);
 		expect(scores[0].cumulativeScore).toBe(-8);
+	});
+});
+
+describe('getDbName', () => {
+	it('returns quiz-specific database name', () => {
+		expect(getDbName('my-quiz')).toBe('quizazz-my-quiz');
+	});
+
+	it('produces different names for different quizzes', () => {
+		const name1 = getDbName('quiz-a');
+		const name2 = getDbName('quiz-b');
+		expect(name1).not.toBe(name2);
+	});
+
+	it('produces consistent name for same quiz', () => {
+		expect(getDbName('quiz-a')).toBe(getDbName('quiz-a'));
 	});
 });
 

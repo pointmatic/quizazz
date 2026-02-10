@@ -624,21 +624,23 @@ Add runtime mastery score aggregation for navigation tree display.
   - [x] Test rounding (1/3 → 33%)
 - [x] Verify: `pnpm vitest run` — 90 passed (9 test files)
 
-### Story J.c: v0.30.0 Database Isolation Per Quiz [Planned]
+### Story J.c: v0.30.0 Database Isolation Per Quiz [Done]
 
 Make the IndexedDB database name dynamic, keyed by quiz name.
 
-- [ ] Update `app/src/lib/db/database.ts`
-  - [ ] `getDbName(quizName: string): string` — returns `"quizazz-{quizName}"`
-  - [ ] `initDatabase(quizName: string)` — use `getDbName` for IndexedDB name
-  - [ ] `persistDatabase(db, quizName)` — use `getDbName` for IndexedDB name
-  - [ ] Schema unchanged (`question_scores`, `session_answers`)
-- [ ] Update all callers of `initDatabase` and `persistDatabase` to pass `quizName`
-  - [ ] `app/src/routes/+page.svelte` — get `quizName` from manifest
-  - [ ] `app/src/lib/engine/lifecycle.ts` — pass `quizName` through where needed
-- [ ] Update `app/tests/db/scores.test.ts`
-  - [ ] Test database initialization with different quiz names produces isolated databases
-- [ ] Verify: `pnpm vitest run` passes, `pnpm check` — 0 errors
+- [x] Update `app/src/lib/db/database.ts`
+  - [x] `getDbName(quizName: string): string` — returns `"quizazz-{quizName}"`
+  - [x] `initDatabase(quizName: string)` — use `getDbName` for IndexedDB name
+  - [x] `persistDatabase(db, quizName)` — use `getDbName` for IndexedDB name
+  - [x] Schema unchanged (`question_scores`, `session_answers`)
+- [x] Update all callers of `initDatabase` and `persistDatabase` to pass `quizName`
+  - [x] `app/src/routes/+page.svelte` — get `quizName` from `manifest`
+  - [x] `app/src/lib/engine/lifecycle.ts` — `startQuiz` accepts `quizName`, stores in `activeQuizName`, passes to `persistDatabase`
+- [x] Update `app/tests/db/scores.test.ts`
+  - [x] Test `getDbName` returns quiz-specific name
+  - [x] Test different quizzes produce different DB names
+  - [x] Test same quiz produces consistent DB name
+- [x] Verify: `pnpm vitest run` — 93 passed, `pnpm check` — 0 errors
 
 ### Story J.d: v0.31.0 Navigation Tree Component [Planned]
 

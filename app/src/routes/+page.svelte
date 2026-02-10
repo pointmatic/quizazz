@@ -17,7 +17,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Database } from 'sql.js';
-	import { questions, allTags } from '$lib/data';
+	import { manifest, questions, allTags } from '$lib/data';
 	import { initDatabase, getScores, seedScores } from '$lib/db';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
 	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, reviewAnsweredQuestion, backToQuiz } from '$lib/engine/lifecycle';
@@ -35,7 +35,7 @@
 
 	onMount(async () => {
 		try {
-			db = await initDatabase();
+			db = await initDatabase(manifest.quizName);
 			seedScores(db, questions.map((q) => q.id));
 			scores = getScores(db);
 			loading = false;
@@ -48,7 +48,7 @@
 	function handleStart(questionCount: number, answerCount: 3 | 4 | 5, selectedTags: string[] = []) {
 		if (!db) return;
 		scores = getScores(db);
-		startQuiz({ questionCount, answerCount, selectedTags, selectedNodeIds: [] }, questions, scores, db);
+		startQuiz({ questionCount, answerCount, selectedTags, selectedNodeIds: [] }, questions, scores, db, manifest.quizName);
 	}
 
 	async function handleSubmit(label: string) {

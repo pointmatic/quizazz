@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-export { initDatabase, persistDatabase, createSchema } from './database';
+export { getDbName, initDatabase, persistDatabase, createSchema } from './database';
 export { getScores, updateScore, seedScores, recordAnswer } from './scores';

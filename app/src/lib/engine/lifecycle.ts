@@ -22,14 +22,17 @@ import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
 import { get } from 'svelte/store';
 
 let sessionId = crypto.randomUUID();
+let activeQuizName = '';
 
 export function startQuiz(
 	config: QuizConfig,
 	allQuestions: Question[],
 	scores: QuestionScore[],
-	db: Database
+	db: Database,
+	quizName: string = ''
 ): void {
 	sessionId = crypto.randomUUID();
+	activeQuizName = quizName;
 
 	const selected = selectQuestions(allQuestions, scores, config.questionCount, config.selectedTags);
 
@@ -85,7 +88,7 @@ export async function submitAnswer(label: string, db: Database): Promise<void> {
 		viewMode.set('summary');
 	}
 
-	await persistDatabase(db);
+	await persistDatabase(db, activeQuizName);
 }
 
 export function retakeQuiz(db: Database, allQuestions: Question[], scores: QuestionScore[]): void {
