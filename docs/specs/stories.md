@@ -95,28 +95,28 @@ Define TypeScript types and wire up the compiled JSON for the app.
 
 ## Phase B: Core Engine
 
-### Story B.a: v0.5.0 Client-Side SQLite Database [Planned]
+### Story B.a: v0.5.0 Client-Side SQLite Database [Done]
 
 Set up sql.js with IndexedDB persistence and the score schema.
 
-- [ ] Install `sql.js` in `app/`
-- [ ] Copy `sql-wasm.wasm` to `app/static/` (add a postinstall script or document manual step)
-- [ ] Create `app/src/lib/db/database.ts`
-  - [ ] `initDatabase()` — load WASM, restore from IndexedDB or create fresh
-  - [ ] `persistDatabase(db)` — export to Uint8Array, save to IndexedDB
-  - [ ] `createSchema(db)` — create `question_scores` and `session_answers` tables
-- [ ] Create `app/src/lib/db/scores.ts`
-  - [ ] `getScores(db)` — return all question scores
-  - [ ] `updateScore(db, questionId, points)` — increment cumulative score
-  - [ ] `seedScores(db, questionIds)` — INSERT OR IGNORE with score 0
-  - [ ] `recordAnswer(db, sessionId, questionId, category, points)` — insert session answer
-- [ ] Create `app/tests/db/scores.test.ts`
-  - [ ] Test seed scores initializes all questions to 0
-  - [ ] Test updateScore increments correctly (positive and negative)
-  - [ ] Test getScores returns all seeded questions
-  - [ ] Test recordAnswer inserts correctly
-  - [ ] Test seedScores is idempotent (INSERT OR IGNORE)
-- [ ] Verify: `pnpm test` passes in `app/`
+- [x] Install `sql.js` in `app/`
+- [x] Copy `sql-wasm.wasm` to `app/static/`
+- [x] Create `app/src/lib/db/database.ts`
+  - [x] `initDatabase()` — load WASM, restore from IndexedDB or create fresh
+  - [x] `persistDatabase(db)` — export to Uint8Array, save to IndexedDB
+  - [x] `createSchema(db)` — create `question_scores` and `session_answers` tables
+- [x] Create `app/src/lib/db/scores.ts`
+  - [x] `getScores(db)` — return all question scores
+  - [x] `updateScore(db, questionId, points)` — increment cumulative score
+  - [x] `seedScores(db, questionIds)` — INSERT OR IGNORE with score 0
+  - [x] `recordAnswer(db, sessionId, questionId, category, points)` — insert session answer
+- [x] Create `app/tests/db/scores.test.ts`
+  - [x] Test seed scores initializes all questions to 0
+  - [x] Test updateScore increments correctly (positive and negative)
+  - [x] Test getScores returns all seeded questions
+  - [x] Test recordAnswer inserts correctly
+  - [x] Test seedScores is idempotent (INSERT OR IGNORE)
+- [x] Verify: `pnpm vitest run` passes in `app/`
 
 ### Story B.b: v0.6.0 Weighted Random Selection [Planned]
 
