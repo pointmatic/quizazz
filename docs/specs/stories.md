@@ -80,16 +80,16 @@ Read YAML files, validate with Pydantic models, and compile to JSON.
 - [x] Verify: `python -m quizazz_builder --input data/questions/ --output app/src/lib/data/questions.json` produces valid JSON
 - [x] Verify: validation errors report file path and question index (covered in test suite)
 
-### Story A.d: v0.4.0 TypeScript Types and Compiled Data Import [Planned]
+### Story A.d: v0.4.0 TypeScript Types and Compiled Data Import [Done]
 
 Define TypeScript types and wire up the compiled JSON for the app.
 
-- [ ] Create `app/src/lib/types/index.ts`
-  - [ ] `AnswerCategory`, `Answer`, `Question`, `QuizConfig`
-  - [ ] `PresentedAnswer`, `QuizQuestion`, `QuizSession`, `QuestionScore`
-- [ ] Create `app/src/lib/data/questions.json` by running the builder against `data/questions/sample.yaml`
-- [ ] Create a simple import test: `app/src/lib/data/` exports typed question data
-- [ ] Verify: `pnpm build` in `app/` succeeds with the compiled JSON present
+- [x] Create `app/src/lib/types/index.ts`
+  - [x] `AnswerCategory`, `Answer`, `Question`, `QuizConfig`
+  - [x] `PresentedAnswer`, `QuizQuestion`, `QuizSession`, `QuestionScore`
+- [x] Create `app/src/lib/data/questions.json` by running the builder against `data/questions/sample.yaml`
+- [x] Create `app/src/lib/data/index.ts` — typed export of compiled question data
+- [x] Verify: `pnpm build` in `app/` succeeds with the compiled JSON present
 
 ---
 
