@@ -28,6 +28,7 @@ This separation keeps the runtime app independent from the authoring/generation 
 4. **Weighted question selection** — Questions are drawn from the pool using weighted random selection, where lower scores (including negative) are more likely to be drawn.
 5. **Scoring and persistence** — Each answer is scored and recorded in a client-side SQLite database that persists across sessions via IndexedDB.
 6. **Results summary** — After completing a quiz, the user sees a summary with score percentage, per-question results, and the ability to review each question with explanations.
+7. **Tags and filtering** — Questions may optionally include tags. The configuration screen lets users filter the question pool by tag before starting a quiz.
 
 ### Operational Requirements
 
@@ -59,7 +60,6 @@ This separation keeps the runtime app independent from the authoring/generation 
 - **Question editing in the UI** — Questions are authored in YAML files and compiled at build time.
 - **Mobile native app** — Browser-only; responsive design is acceptable but native wrappers are out of scope.
 - **Score decay / spaced repetition** — Deferred to a future version.
-- **Tags / category filtering** — Deferred to a future version.
 - **Session history / stats over time** — Deferred to a future version.
 - **LLM-powered quiz generation** — The `builder/` directory will eventually use LLM APIs to generate questions from source material. Out of scope for v1.
 - **FastAPI backend** — A future `api/` directory could provide server-side auth, results aggregation, quiz generation triggers, and automated deployment of updated static apps. Out of scope for v1.
@@ -77,6 +77,7 @@ One or more `.yaml` files in the shared data directory (`data/questions/`). Each
 
 ```yaml
 - question: "What is the capital of France?"
+  tags: ["geography", "europe"]
   answers:
     correct:
       - text: "Paris"
@@ -104,13 +105,15 @@ One or more `.yaml` files in the shared data directory (`data/questions/`). Each
 | Exactly 1 correct in any presented set | When the app presents a question, exactly one of the shown answers will be `correct`. The remaining shown answers are drawn from the other categories. |
 | Non-empty text and explanation | Every answer must have a non-empty `text` and `explanation` field. |
 | Non-empty question | The `question` field must be a non-empty string. |
+| Optional tags | The `tags` field is optional. If present, it must be a list of non-empty strings. Tags are case-insensitive and normalized to lowercase. |
 
 ### Quiz Configuration (Runtime)
 
 | Parameter | Type | Constraints |
 |-----------|------|-------------|
-| Number of questions | Integer | 1 to total number of questions in the bank |
+| Number of questions | Integer | 1 to total number of questions in the (filtered) pool |
 | Number of answer choices | Integer | 3, 4, or 5 |
+| Tag filter | String list (optional) | Zero or more tags; when set, only questions matching **any** selected tag are included in the pool |
 
 ---
 
@@ -147,16 +150,17 @@ The build script reads all `.yaml` files from the question directory, validates 
 ### FR-2: Quiz Configuration Screen
 
 On launch, the app presents a configuration screen where the user selects:
-- Number of questions (slider or number input, range 1 to max).
-- Number of answer choices (radio buttons: 3, 4, or 5).
+- **Tag filter** (optional) — A list of all available tags is displayed. The user can select zero or more tags to filter the question pool. When no tags are selected, all questions are eligible. When one or more tags are selected, only questions matching **any** selected tag are included (OR logic). The available question count updates dynamically as tags are toggled.
+- **Number of questions** (slider or number input, range 1 to filtered pool size).
+- **Number of answer choices** (radio buttons: 3, 4, or 5).
 
-A "Start Quiz" button begins the quiz. The button is disabled if the configuration is invalid.
+A "Start Quiz" button begins the quiz. The button is disabled if the configuration is invalid (e.g., filtered pool is empty).
 
 ### FR-3: Weighted Random Question Selection
 
-When a quiz starts, the app loads all question scores from the database. Questions are selected using weighted random sampling without replacement:
+When a quiz starts, the app loads all question scores from the database. If tag filters are active, only questions matching at least one selected tag are included in the pool. Questions are then selected using weighted random sampling without replacement:
 - Weight is derived from the score such that lower scores yield higher weights.
-- All questions must have a nonzero probability of selection.
+- All questions in the filtered pool must have a nonzero probability of selection.
 - Selection continues until the requested number of questions is reached (or the pool is exhausted).
 
 ### FR-4: Answer Selection and Presentation
@@ -282,6 +286,7 @@ The project is complete when:
 7. The results summary shows score percentage, per-question results, and drill-down with explanations.
 8. Retake and Start actions work as specified.
 9. The UI is minimalistic, modern, and responsive.
+10. Tag filtering on the config screen correctly restricts the question pool, and the question count slider adjusts to the filtered pool size.
 
 ---
 
@@ -292,5 +297,4 @@ This section captures directional thinking for future versions. Nothing here is 
 - **`builder/` — LLM-powered quiz generation (Python)**: A Python toolchain that takes source material (documents, notes, textbooks) and uses LLM APIs to generate well-structured YAML question files. This is why `builder/` exists as a separate workspace and why YAML validation lives in Python.
 - **`api/` — FastAPI backend**: A server component that could provide user authentication, centralized score/results storage, LLM quiz generation triggers, and automated redeployment of the static app with updated question banks.
 - **Score decay / spaced repetition**: Scores drift toward 0 over time so mastered questions periodically resurface.
-- **Tags and category filtering**: YAML questions gain optional `tags` fields; the config screen lets users filter by topic.
 - **Session history and analytics**: Track quiz sessions over time with trend charts and improvement metrics.

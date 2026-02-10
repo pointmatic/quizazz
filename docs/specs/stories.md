@@ -307,3 +307,86 @@ Documentation, sample content, and UI polish.
   - [x] Clean compile: 12 questions compiled to `questions.json`
   - [x] Clean build: `pnpm build` succeeds
   - [x] All tests pass: 61 app tests + 42 builder tests = 103 total
+
+---
+
+## Phase G: Tags and Category Filtering
+
+### Story G.a: v0.15.0 Builder — Optional Tags in YAML Schema [Planned]
+
+Add optional `tags` field to the YAML question format. Existing tagless questions remain valid.
+
+- [ ] Update `builder/src/quizazz_builder/models.py`
+  - [ ] Add `tags: list[str] | None = None` to `Question` model
+  - [ ] Add `@field_validator("tags", mode="before")` to normalize tags to lowercase
+  - [ ] Reject empty strings in tags list
+- [ ] Update `builder/src/quizazz_builder/compiler.py`
+  - [ ] Include `tags` in compiled JSON output (as `[]` when absent)
+- [ ] Update `builder/tests/test_models.py`
+  - [ ] Test question with tags is valid
+  - [ ] Test question without tags is valid (backward compatible)
+  - [ ] Test tags are normalized to lowercase
+  - [ ] Test empty string in tags is rejected
+  - [ ] Test empty tags list is valid
+- [ ] Update `builder/tests/test_compiler.py`
+  - [ ] Test compiled JSON includes `tags` array
+  - [ ] Test compiled JSON has empty `tags` array when no tags provided
+- [ ] Verify: `pytest` passes in `builder/`
+
+### Story G.b: v0.16.0 App — Types, Engine, and Data for Tags [Planned]
+
+Update TypeScript types, selection engine, and lifecycle to support tag filtering.
+
+- [ ] Update `app/src/lib/types/index.ts`
+  - [ ] Add `tags: string[]` to `Question` interface
+  - [ ] Add `selectedTags: string[]` to `QuizConfig` interface
+- [ ] Update `app/src/lib/data/index.ts`
+  - [ ] Export `allTags` — a sorted, deduplicated list of all tags across all questions
+- [ ] Update `app/src/lib/engine/selection.ts`
+  - [ ] Accept optional tag filter; when non-empty, pre-filter question pool to those matching any selected tag (OR logic)
+- [ ] Update `app/src/lib/engine/lifecycle.ts`
+  - [ ] Pass `selectedTags` from config through to selection
+- [ ] Update `app/tests/engine/selection.test.ts`
+  - [ ] Test tag filtering returns only matching questions
+  - [ ] Test empty tag filter returns all questions
+  - [ ] Test OR logic: question matching any selected tag is included
+  - [ ] Test question with no tags is excluded when tags are active
+- [ ] Verify: `pnpm vitest run` and `pnpm check` pass
+
+### Story G.c: v0.17.0 App — ConfigView Tag Filter UI [Planned]
+
+Add tag filter controls to the configuration screen.
+
+- [ ] Update `app/src/lib/components/ConfigView.svelte`
+  - [ ] Display all available tags as toggleable chips/buttons
+  - [ ] Selected tags are visually highlighted (indigo, matching existing style)
+  - [ ] "All" state when no tags selected (show total question count)
+  - [ ] Filtered question count updates dynamically as tags are toggled
+  - [ ] Question count slider max adjusts to filtered pool size
+  - [ ] "Start Quiz" button disabled if filtered pool is empty
+  - [ ] Clear all tags button/link
+- [ ] Update `app/src/routes/+page.svelte`
+  - [ ] Pass `allTags` and handle `selectedTags` in `handleStart`
+- [ ] Verify: app loads, tag filter works, slider adjusts, quiz starts with filtered pool
+
+### Story G.d: v0.18.0 Sample Data, README, and Tests [Planned]
+
+Add tags to sample questions, update documentation, and add integration tests.
+
+- [ ] Update `data/questions/sample.yaml`
+  - [ ] Add `tags` to all 12 questions with diverse, meaningful tags
+  - [ ] Use at least 4–5 distinct tags (e.g., `geography`, `science`, `technology`, `literature`, `math`)
+  - [ ] Some questions should share tags; some should have multiple tags
+- [ ] Recompile `app/src/lib/data/questions.json`
+- [ ] Update root `README.md`
+  - [ ] Add `tags` to the YAML format example
+  - [ ] Document tag filtering behavior in the "Taking a Quiz" section
+- [ ] Add integration tests (`app/tests/integration/`)
+  - [ ] Test quiz with tag filter selects only matching questions
+  - [ ] Test quiz with no tag filter selects from all questions
+  - [ ] Test tag filter with no matching questions disables start
+  - [ ] Test `allTags` is correctly derived from question data
+- [ ] Final verification
+  - [ ] Clean compile with tagged questions
+  - [ ] Clean build: `pnpm build` succeeds
+  - [ ] All tests pass in both workspaces
