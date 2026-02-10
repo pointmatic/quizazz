@@ -470,25 +470,25 @@ Final polish, documentation, and comprehensive test coverage for navigation feat
 
 Migrate the builder to support the new `QuizFile` YAML format (with metadata and subtopics), generate a navigation manifest per quiz, and enhance the CLI for single-quiz and batch compilation. See [`multi_quiz_features.md`](multi_quiz_features.md) for design rationale.
 
-### Story I.a: v0.22.0 QuizFile and SubtopicGroup Pydantic Models [Planned]
+### Story I.a: v0.22.0 QuizFile and SubtopicGroup Pydantic Models [Done]
 
 Replace `QuestionBank` with `QuizFile` and add `SubtopicGroup` to support the new YAML format.
 
-- [ ] Update `builder/src/quizazz_builder/models.py`
-  - [ ] Add `SubtopicGroup` model: `subtopic: str` (non-empty), `questions: list[Question]` (>= 1)
-  - [ ] Add `QuizFile` model: `menu_name: str` (non-empty), `menu_description: str = ""`, `quiz_description: str = ""`, `questions: list[Question | SubtopicGroup]`
-  - [ ] Add `QuizFile` model validator: file must contain at least one question (directly or via subtopics)
-  - [ ] Remove `QuestionBank` (or deprecate with alias)
-- [ ] Update `builder/tests/test_models.py`
-  - [ ] Test valid `QuizFile` with bare questions only
-  - [ ] Test valid `QuizFile` with subtopic groups only
-  - [ ] Test valid `QuizFile` with mixed bare questions and subtopic groups
-  - [ ] Test `QuizFile` with empty `menu_name` raises error
-  - [ ] Test `QuizFile` with no questions raises error
-  - [ ] Test `SubtopicGroup` with empty `subtopic` raises error
-  - [ ] Test `SubtopicGroup` with empty questions list raises error
-  - [ ] Test `menu_description` and `quiz_description` default to empty string
-- [ ] Verify: `pytest` passes in `builder/`
+- [x] Update `builder/src/quizazz_builder/models.py`
+  - [x] Add `SubtopicGroup` model: `subtopic: str` (non-empty), `questions: list[Question]` (>= 1)
+  - [x] Add `QuizFile` model: `menu_name: str` (non-empty), `menu_description: str = ""`, `quiz_description: str = ""`, `questions: list[Question | SubtopicGroup]`
+  - [x] Add `QuizFile` model validator: file must contain at least one question (directly or via subtopics)
+  - [x] Remove `QuestionBank` (or deprecate with alias)
+- [x] Update `builder/tests/test_models.py`
+  - [x] Test valid `QuizFile` with bare questions only
+  - [x] Test valid `QuizFile` with subtopic groups only
+  - [x] Test valid `QuizFile` with mixed bare questions and subtopic groups
+  - [x] Test `QuizFile` with empty `menu_name` raises error
+  - [x] Test `QuizFile` with no questions raises error
+  - [x] Test `SubtopicGroup` with empty `subtopic` raises error
+  - [x] Test `SubtopicGroup` with empty questions list raises error
+  - [x] Test `menu_description` and `quiz_description` default to empty string
+- [x] Verify: `pytest` passes in `builder/` — 64 passed (40 model + 24 others)
 
 ### Story I.b: v0.23.0 Validator — QuizFile Format and Recursive Directory [Planned]
 

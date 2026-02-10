@@ -17,7 +17,14 @@
 import pytest
 from pydantic import ValidationError
 
-from quizazz_builder.models import Answer, AnswerSet, Question, QuestionBank
+from quizazz_builder.models import (
+    Answer,
+    AnswerSet,
+    Question,
+    QuestionBank,
+    QuizFile,
+    SubtopicGroup,
+)
 
 
 def _make_answer(text: str = "Some answer", explanation: str = "Some explanation") -> dict:
@@ -197,3 +204,117 @@ class TestQuestionBank:
     def test_empty_bank(self):
         bank = QuestionBank.model_validate([])
         assert len(bank.root) == 0
+
+
+class TestSubtopicGroup:
+    def test_valid_subtopic_group(self):
+        sg = SubtopicGroup(
+            subtopic="MapReduce",
+            questions=[Question(**_make_question())],
+        )
+        assert sg.subtopic == "MapReduce"
+        assert len(sg.questions) == 1
+
+    def test_empty_subtopic_raises(self):
+        with pytest.raises(ValidationError, match="subtopic must not be empty"):
+            SubtopicGroup(
+                subtopic="",
+                questions=[Question(**_make_question())],
+            )
+
+    def test_blank_subtopic_raises(self):
+        with pytest.raises(ValidationError, match="subtopic must not be empty"):
+            SubtopicGroup(
+                subtopic="   ",
+                questions=[Question(**_make_question())],
+            )
+
+    def test_empty_questions_list_raises(self):
+        with pytest.raises(ValidationError, match="at least 1 question"):
+            SubtopicGroup(
+                subtopic="MapReduce",
+                questions=[],
+            )
+
+    def test_multiple_questions(self):
+        sg = SubtopicGroup(
+            subtopic="Spark",
+            questions=[
+                Question(**_make_question(question="Q1?")),
+                Question(**_make_question(question="Q2?")),
+            ],
+        )
+        assert len(sg.questions) == 2
+
+
+def _make_subtopic_group(**overrides) -> dict:
+    defaults = {
+        "subtopic": "Test Subtopic",
+        "questions": [_make_question()],
+    }
+    defaults.update(overrides)
+    return defaults
+
+
+def _make_quiz_file(**overrides) -> dict:
+    defaults = {
+        "menu_name": "Test Topic",
+        "questions": [_make_question()],
+    }
+    defaults.update(overrides)
+    return defaults
+
+
+class TestQuizFile:
+    def test_valid_with_bare_questions(self):
+        qf = QuizFile(**_make_quiz_file())
+        assert qf.menu_name == "Test Topic"
+        assert qf.menu_description == ""
+        assert qf.quiz_description == ""
+        assert len(qf.questions) == 1
+
+    def test_valid_with_subtopic_groups(self):
+        qf = QuizFile(**_make_quiz_file(
+            questions=[_make_subtopic_group()],
+        ))
+        assert len(qf.questions) == 1
+        assert isinstance(qf.questions[0], SubtopicGroup)
+
+    def test_valid_with_mixed_questions_and_subtopics(self):
+        qf = QuizFile(**_make_quiz_file(
+            questions=[
+                _make_question(question="Bare Q?"),
+                _make_subtopic_group(subtopic="Group A"),
+            ],
+        ))
+        assert len(qf.questions) == 2
+        assert isinstance(qf.questions[0], Question)
+        assert isinstance(qf.questions[1], SubtopicGroup)
+
+    def test_empty_menu_name_raises(self):
+        with pytest.raises(ValidationError, match="menu_name must not be empty"):
+            QuizFile(**_make_quiz_file(menu_name=""))
+
+    def test_blank_menu_name_raises(self):
+        with pytest.raises(ValidationError, match="menu_name must not be empty"):
+            QuizFile(**_make_quiz_file(menu_name="   "))
+
+    def test_no_questions_raises(self):
+        with pytest.raises(ValidationError, match="at least 1 question"):
+            QuizFile(**_make_quiz_file(questions=[]))
+
+    def test_menu_description_defaults_to_empty(self):
+        qf = QuizFile(**_make_quiz_file())
+        assert qf.menu_description == ""
+
+    def test_quiz_description_defaults_to_empty(self):
+        qf = QuizFile(**_make_quiz_file())
+        assert qf.quiz_description == ""
+
+    def test_optional_metadata_fields(self):
+        qf = QuizFile(**_make_quiz_file(
+            menu_description="Short blurb",
+            quiz_description="Longer description",
+        ))
+        assert qf.menu_description == "Short blurb"
+        assert qf.quiz_description == "Longer description"

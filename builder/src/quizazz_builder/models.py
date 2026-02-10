@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pydantic models for the Quizazz YAML question bank schema."""
+"""Pydantic models for the Quizazz YAML question bank schema.
+
+Defines the data models that enforce the YAML question file format:
+- Answer / AnswerSet / Question — individual question structure
+- SubtopicGroup — optional grouping of questions within a topic
+- QuizFile — top-level file model with metadata and questions
+- QuestionBank — deprecated, kept for backward compatibility
+"""
 
 from __future__ import annotations
 
@@ -91,7 +98,52 @@ class Question(BaseModel):
         return normalized
 
 
+class SubtopicGroup(BaseModel):
+    """A named group of questions within a topic file."""
+
+    subtopic: str
+    questions: list[Question]
+
+    @field_validator("subtopic")
+    @classmethod
+    def subtopic_must_not_be_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("subtopic must not be empty or blank")
+        return v
+
+    @model_validator(mode="after")
+    def check_has_questions(self) -> SubtopicGroup:
+        if len(self.questions) == 0:
+            raise ValueError("subtopic must contain at least 1 question")
+        return self
+
+
+class QuizFile(BaseModel):
+    """Top-level model for a quiz YAML file with metadata and questions."""
+
+    menu_name: str
+    menu_description: str = ""
+    quiz_description: str = ""
+    questions: list[Question | SubtopicGroup]
+
+    @field_validator("menu_name")
+    @classmethod
+    def menu_name_must_not_be_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("menu_name must not be empty or blank")
+        return v
+
+    @model_validator(mode="after")
+    def check_has_questions(self) -> QuizFile:
+        if len(self.questions) == 0:
+            raise ValueError("quiz file must contain at least 1 question or subtopic group")
+        return self
+
+
 class QuestionBank(RootModel[list[Question]]):
-    """Top-level model representing a list of questions (one YAML file)."""
+    """Deprecated: top-level model representing a bare list of questions.
+
+    Kept for backward compatibility. New code should use QuizFile.
+    """
 
     pass
