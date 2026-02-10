@@ -6,6 +6,8 @@ dist/
 
 # Project
 data/
+docs/specs/llm*
+docs/specs/multi*
 
 # Pyve
 .pyve/testenv

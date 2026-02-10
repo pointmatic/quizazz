@@ -490,25 +490,25 @@ Replace `QuestionBank` with `QuizFile` and add `SubtopicGroup` to support the ne
   - [x] Test `menu_description` and `quiz_description` default to empty string
 - [x] Verify: `pytest` passes in `builder/` — 64 passed (40 model + 24 others)
 
-### Story I.b: v0.23.0 Validator — QuizFile Format and Recursive Directory [Planned]
+### Story I.b: v0.23.0 Validator — QuizFile Format and Recursive Directory [Done]
 
 Update the validator to parse the new `QuizFile` format and support recursive directory traversal.
 
-- [ ] Update `builder/src/quizazz_builder/validator.py`
-  - [ ] `validate_file(path: Path) -> QuizFile` — parse YAML as `QuizFile` model (breaking change from `list[Question]`)
-  - [ ] `validate_quiz_directory(quiz_dir: Path) -> list[tuple[Path, QuizFile]]` — recursively validate all `.yaml` files, return `(relative_path, QuizFile)` tuples preserving hierarchy
-  - [ ] Keep `validate_directory()` as a thin wrapper or remove (breaking change)
-  - [ ] Error messages include file path, subtopic name (if applicable), and question index
-- [ ] Update `builder/tests/test_validator.py`
-  - [ ] Test valid `QuizFile` YAML parses correctly
-  - [ ] Test YAML with subtopic groups validates
-  - [ ] Test YAML with mixed bare + subtopic questions validates
-  - [ ] Test YAML missing `menu_name` fails with clear error
-  - [ ] Test YAML with old bare-list format fails (migration required)
-  - [ ] Test recursive directory validation returns correct relative paths
-  - [ ] Test nested subdirectories are traversed
-  - [ ] Test empty directory raises error
-- [ ] Verify: `pytest` passes in `builder/`
+- [x] Update `builder/src/quizazz_builder/validator.py`
+  - [x] `validate_file(path: Path) -> QuizFile` — parse YAML as `QuizFile` model (breaking change from `list[Question]`)
+  - [x] `validate_quiz_directory(quiz_dir: Path) -> list[tuple[Path, QuizFile]]` — recursively validate all `.yaml` files, return `(relative_path, QuizFile)` tuples preserving hierarchy
+  - [x] Keep `validate_directory()` as a thin wrapper (backward-compatible, deprecated)
+  - [x] Error messages include file path and validation details
+- [x] Update `builder/tests/test_validator.py`
+  - [x] Test valid `QuizFile` YAML parses correctly
+  - [x] Test YAML with subtopic groups validates
+  - [x] Test YAML with mixed bare + subtopic questions validates
+  - [x] Test YAML missing `menu_name` fails with clear error
+  - [x] Test YAML with old bare-list format fails (migration required)
+  - [x] Test recursive directory validation returns correct relative paths
+  - [x] Test nested subdirectories are traversed
+  - [x] Test empty directory raises error
+- [x] Verify: `pytest` passes in `builder/` — 71 passed (40 model + 20 validator + 11 compiler)
 
 ### Story I.c: v0.24.0 Manifest Generation [Planned]
 
