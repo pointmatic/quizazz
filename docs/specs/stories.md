@@ -353,21 +353,24 @@ Update TypeScript types, selection engine, and lifecycle to support tag filterin
 - [x] Add 4 new tag filtering tests in `app/tests/engine/selection.test.ts`
 - [x] Verify: 65 tests pass (`pnpm vitest run`), `pnpm check` — 0 errors
 
-### Story G.c: v0.17.0 App — ConfigView Tag Filter UI [Planned]
+### Story G.c: v0.17.0 App — ConfigView Tag Filter UI [Done]
 
 Add tag filter controls to the configuration screen.
 
-- [ ] Update `app/src/lib/components/ConfigView.svelte`
-  - [ ] Display all available tags as toggleable chips/buttons
-  - [ ] Selected tags are visually highlighted (indigo, matching existing style)
-  - [ ] "All" state when no tags selected (show total question count)
-  - [ ] Filtered question count updates dynamically as tags are toggled
-  - [ ] Question count slider max adjusts to filtered pool size
-  - [ ] "Start Quiz" button disabled if filtered pool is empty
-  - [ ] Clear all tags button/link
-- [ ] Update `app/src/routes/+page.svelte`
-  - [ ] Pass `allTags` and handle `selectedTags` in `handleStart`
-- [ ] Verify: app loads, tag filter works, slider adjusts, quiz starts with filtered pool
+- [x] Update `app/src/lib/components/ConfigView.svelte`
+  - [x] Accept `questions` and `allTags` props (replaces `maxQuestions`)
+  - [x] Display all available tags as toggleable rounded chips
+  - [x] Selected tags highlighted with indigo border/background
+  - [x] "N of M questions available" updates dynamically as tags are toggled
+  - [x] Question count slider max adjusts to filtered pool size
+  - [x] "Start Quiz" button disabled if filtered pool is empty (shows "No questions match selected tags")
+  - [x] "Clear all" link appears when tags are selected
+  - [x] `$derived` filteredCount with OR-logic filtering
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] Import `allTags` from `$lib/data`
+  - [x] Pass `questions` and `allTags` to ConfigView
+  - [x] `handleStart` forwards `selectedTags`
+- [x] Verify: 65 tests pass, `pnpm check` — 0 errors
 
 ### Story G.d: v0.18.0 Sample Data, README, and Tests [Planned]
 

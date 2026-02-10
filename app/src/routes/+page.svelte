@@ -17,7 +17,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Database } from 'sql.js';
-	import { questions } from '$lib/data';
+	import { questions, allTags } from '$lib/data';
 	import { initDatabase, getScores, seedScores } from '$lib/db';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
 	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary } from '$lib/engine/lifecycle';
@@ -100,7 +100,7 @@
 		</div>
 	</div>
 {:else if $viewMode === 'config'}
-	<ConfigView maxQuestions={questions.length} onStart={handleStart} />
+	<ConfigView {questions} {allTags} onStart={handleStart} />
 {:else if $viewMode === 'quiz' && $quizSession}
 	{@const current = $quizSession.questions[$quizSession.currentIndex]}
 	{@const answered = $quizSession.questions.filter((q) => q.submittedLabel !== null).length}
