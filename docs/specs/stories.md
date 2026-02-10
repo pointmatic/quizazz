@@ -395,3 +395,70 @@ Add tags to sample questions, update documentation, and add integration tests.
   - [x] Clean compile: 12 tagged questions
   - [x] Clean build: `pnpm build` succeeds
   - [x] All tests pass: 71 app tests + 50 builder tests = 121 total
+
+---
+
+## Phase H: Question Navigation and UI Improvements
+
+### Story H.a: v0.19.0 ReviewView — Escape Hotkey and Carousel Navigation [Done]
+
+Improve post-quiz review navigation: change "Back to Summary" hotkey from `←`/`Backspace` to `Escape`, and add carousel buttons to navigate between reviewed questions.
+
+- [x] Update `app/src/lib/components/ReviewView.svelte`
+  - [x] Change hotkey from `ArrowLeft`/`Backspace` to `Escape` for "Back to Summary"
+  - [x] Add `←` / `→` carousel buttons below the question card (ChevronLeft/ChevronRight icons)
+  - [x] `←` disabled on first question, `→` disabled on last question (opacity-30)
+  - [x] Show "N of M" position indicator between carousel buttons
+  - [x] `ArrowLeft` / `ArrowRight` keyboard shortcuts for prev/next question
+- [x] Update `app/src/lib/components/ReviewView.svelte` props
+  - [x] Accept `currentIndex`, `totalQuestions`, `onPrev`, `onNext` props
+- [x] Update `app/src/lib/engine/lifecycle.ts`
+  - [x] Add `reviewPrev()` — decrements `reviewIndex` (clamped to 0)
+  - [x] Add `reviewNext()` — increments `reviewIndex` (clamped to last index)
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] Wire `onPrev` / `onNext` to `reviewPrev` / `reviewNext`
+  - [x] Pass `currentIndex` and `totalQuestions` to ReviewView
+- [x] Add 4 lifecycle tests for `reviewPrev` / `reviewNext` with boundary clamping
+- [x] Verify: 75 tests pass (`pnpm vitest run`), `pnpm check` — 0 errors
+
+### Story H.b: v0.20.0 QuizView — Mid-Quiz Navigation to Answered Questions [Done]
+
+Allow navigating back to previously answered questions during a quiz, with `Escape` to return to the current unanswered question.
+
+- [x] Add `quiz-answered` and `quiz-review` to `ViewMode` type in `app/src/lib/stores/quiz.ts`
+- [x] Update `app/src/lib/engine/lifecycle.ts`
+  - [x] Add `showAnsweredQuestions()` — sets `viewMode` to `quiz-answered`
+  - [x] Add `reviewAnsweredQuestion(index)` — sets `viewMode` to `quiz-review` with guard (index < currentIndex)
+  - [x] Add `backToQuiz()` — restores `quiz` view mode, clears `reviewIndex`
+  - [x] `reviewNext()` scoped to answered questions in `quiz-review` mode
+- [x] Update `app/src/lib/components/QuizView.svelte`
+  - [x] Add "← Back to Answered Questions" link (visible when `hasAnswered`)
+  - [x] `Escape` key triggers `onShowAnswered` when questions have been answered
+- [x] Create `app/src/lib/components/AnsweredQuestionsView.svelte`
+  - [x] Show list of answered questions with correct/incorrect indicators
+  - [x] "N of M answered — currently on question N" status text
+  - [x] Click a question to review it (enters `quiz-review` mode)
+  - [x] `Escape` key and "Return to Quiz" button return to current unanswered question
+- [x] Reuse `ReviewView` for `quiz-review` mode
+  - [x] `Escape` returns to answered questions index (not summary)
+  - [x] Carousel scoped to answered questions only (`reviewNext` clamps at `currentIndex - 1`)
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] Handle `quiz-answered` and `quiz-review` view modes
+  - [x] Wire all new lifecycle functions
+- [x] Add 7 mid-quiz navigation tests in `app/tests/integration/lifecycle.test.ts`
+- [x] Verify: 82 tests pass (`pnpm vitest run`), `pnpm check` — 0 errors
+
+### Story H.c: v0.21.0 Polish, README, and Final Tests [Planned]
+
+Final polish, documentation, and comprehensive test coverage for navigation features.
+
+- [ ] Update root `README.md`
+  - [ ] Document keyboard shortcuts: `Escape` (go back), `←`/`→` (navigate questions)
+  - [ ] Document mid-quiz review capability in "Taking a Quiz" section
+- [ ] Add/update integration tests
+  - [ ] Test full flow: answer questions → go back → review answered → return to quiz → continue
+  - [ ] Test keyboard navigation end-to-end in review mode
+  - [ ] Test progressive disclosure: unanswered questions hidden in mid-quiz index
+- [ ] Final verification
+  - [ ] Clean build: `pnpm build` succeeds
+  - [ ] All tests pass in both workspaces

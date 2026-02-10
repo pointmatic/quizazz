@@ -130,3 +130,43 @@ export function backToSummary(): void {
 	reviewIndex.set(null);
 	viewMode.set('summary');
 }
+
+export function showAnsweredQuestions(): void {
+	const session = get(quizSession);
+	if (!session || session.currentIndex === 0) return;
+	reviewIndex.set(null);
+	viewMode.set('quiz-answered');
+}
+
+export function reviewAnsweredQuestion(index: number): void {
+	const session = get(quizSession);
+	if (!session || index >= session.currentIndex) return;
+	reviewIndex.set(index);
+	viewMode.set('quiz-review');
+}
+
+export function backToQuiz(): void {
+	reviewIndex.set(null);
+	viewMode.set('quiz');
+}
+
+export function reviewPrev(): void {
+	const idx = get(reviewIndex);
+	if (idx !== null && idx > 0) {
+		reviewIndex.set(idx - 1);
+	}
+}
+
+export function reviewNext(): void {
+	const session = get(quizSession);
+	const idx = get(reviewIndex);
+	if (!session || idx === null) return;
+
+	const mode = get(viewMode);
+	const maxIndex =
+		mode === 'quiz-review' ? session.currentIndex - 1 : session.questions.length - 1;
+
+	if (idx < maxIndex) {
+		reviewIndex.set(idx + 1);
+	}
+}

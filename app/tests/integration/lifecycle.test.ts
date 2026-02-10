@@ -25,7 +25,12 @@ import {
 	newQuiz,
 	quitQuiz,
 	reviewQuestion,
-	backToSummary
+	backToSummary,
+	reviewPrev,
+	reviewNext,
+	showAnsweredQuestions,
+	reviewAnsweredQuestion,
+	backToQuiz
 } from '$lib/engine/lifecycle';
 import type { Question, QuestionScore } from '$lib/types';
 
@@ -255,6 +260,163 @@ describe('submitAnswer edge cases', () => {
 		await submitAnswer('z', db);
 		expect(get(quizSession)!.currentIndex).toBe(0);
 		expect(get(quizSession)!.questions[0].submittedLabel).toBeNull();
+	});
+});
+
+describe('review carousel navigation', () => {
+	it('reviewNext increments reviewIndex', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await answerAllQuestions();
+
+		reviewQuestion(0);
+		expect(get(reviewIndex)).toBe(0);
+
+		reviewNext();
+		expect(get(reviewIndex)).toBe(1);
+
+		reviewNext();
+		expect(get(reviewIndex)).toBe(2);
+	});
+
+	it('reviewNext clamps at last question', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await answerAllQuestions();
+
+		reviewQuestion(2);
+		reviewNext();
+		expect(get(reviewIndex)).toBe(2);
+	});
+
+	it('reviewPrev decrements reviewIndex', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await answerAllQuestions();
+
+		reviewQuestion(2);
+		reviewPrev();
+		expect(get(reviewIndex)).toBe(1);
+
+		reviewPrev();
+		expect(get(reviewIndex)).toBe(0);
+	});
+
+	it('reviewPrev clamps at first question', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await answerAllQuestions();
+
+		reviewQuestion(0);
+		reviewPrev();
+		expect(get(reviewIndex)).toBe(0);
+	});
+});
+
+describe('mid-quiz navigation', () => {
+	it('showAnsweredQuestions sets view mode to quiz-answered', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+
+		showAnsweredQuestions();
+		expect(get(viewMode)).toBe('quiz-answered');
+	});
+
+	it('showAnsweredQuestions does nothing on first question', () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		showAnsweredQuestions();
+		expect(get(viewMode)).toBe('quiz');
+	});
+
+	it('reviewAnsweredQuestion sets quiz-review mode and reviewIndex', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
+
+		reviewAnsweredQuestion(0);
+		expect(get(viewMode)).toBe('quiz-review');
+		expect(get(reviewIndex)).toBe(0);
+	});
+
+	it('reviewAnsweredQuestion guards against unanswered questions', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+
+		// currentIndex is 1, so index 1 (current unanswered) should be blocked
+		reviewAnsweredQuestion(1);
+		expect(get(viewMode)).toBe('quiz');
+		expect(get(reviewIndex)).toBeNull();
+	});
+
+	it('backToQuiz restores quiz view mode', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+
+		showAnsweredQuestions();
+		expect(get(viewMode)).toBe('quiz-answered');
+
+		backToQuiz();
+		expect(get(viewMode)).toBe('quiz');
+		expect(get(reviewIndex)).toBeNull();
+	});
+
+	it('Escape from quiz-review returns to quiz-answered via showAnsweredQuestions', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
+
+		reviewAnsweredQuestion(0);
+		expect(get(viewMode)).toBe('quiz-review');
+
+		// Simulate what Escape does in quiz-review: calls showAnsweredQuestions
+		showAnsweredQuestions();
+		expect(get(viewMode)).toBe('quiz-answered');
+	});
+
+	it('reviewNext in quiz-review clamps to answered questions only', async () => {
+		questions = makeQuestions(4);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		// Answer 2 questions, so currentIndex = 2
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
+
+		reviewAnsweredQuestion(0);
+		expect(get(viewMode)).toBe('quiz-review');
+
+		reviewNext();
+		expect(get(reviewIndex)).toBe(1);
+
+		// Should clamp — can't go to index 2 (unanswered)
+		reviewNext();
+		expect(get(reviewIndex)).toBe(1);
 	});
 });
 

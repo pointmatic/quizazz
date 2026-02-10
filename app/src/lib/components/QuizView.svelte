@@ -15,6 +15,7 @@
 -->
 
 <script lang="ts">
+	import { ArrowLeft } from 'lucide-svelte';
 	import type { QuizQuestion } from '$lib/types';
 	import ProgressBar from './ProgressBar.svelte';
 
@@ -23,10 +24,12 @@
 		progressCurrent: number;
 		progressTotal: number;
 		progressPercent: number;
+		hasAnswered: boolean;
 		onSubmit: (label: string) => void;
+		onShowAnswered: () => void;
 	}
 
-	let { question, progressCurrent, progressTotal, progressPercent, onSubmit }: Props = $props();
+	let { question, progressCurrent, progressTotal, progressPercent, hasAnswered, onSubmit, onShowAnswered }: Props = $props();
 
 	let selectedLabel = $state<string | null>(null);
 
@@ -43,6 +46,11 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' && hasAnswered) {
+			onShowAnswered();
+			return;
+		}
+
 		const key = e.key.toLowerCase();
 		const validLabels = question.presentedAnswers.map((a) => a.label);
 
@@ -58,6 +66,17 @@
 
 <div class="flex min-h-screen items-center justify-center bg-gray-950 px-4">
 	<div class="w-full max-w-2xl">
+		{#if hasAnswered}
+			<button
+				type="button"
+				class="mb-4 flex items-center gap-2 text-sm text-gray-400 transition-colors hover:text-white"
+				onclick={onShowAnswered}
+			>
+				<ArrowLeft class="h-4 w-4" />
+				Back to Answered Questions
+			</button>
+		{/if}
+
 		<div class="mb-8">
 			<ProgressBar current={progressCurrent} total={progressTotal} percent={progressPercent} />
 		</div>

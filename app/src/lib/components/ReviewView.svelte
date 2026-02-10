@@ -15,15 +15,22 @@
 -->
 
 <script lang="ts">
-	import { ArrowLeft } from 'lucide-svelte';
+	import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-svelte';
 	import type { QuizQuestion } from '$lib/types';
 
 	interface Props {
 		question: QuizQuestion;
+		currentIndex: number;
+		totalQuestions: number;
 		onBack: () => void;
+		onPrev: () => void;
+		onNext: () => void;
 	}
 
-	let { question, onBack }: Props = $props();
+	let { question, currentIndex, totalQuestions, onBack, onPrev, onNext }: Props = $props();
+
+	let isFirst = $derived(currentIndex === 0);
+	let isLast = $derived(currentIndex === totalQuestions - 1);
 
 	const categoryLabels: Record<string, string> = {
 		correct: 'Correct',
@@ -40,8 +47,12 @@
 	};
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'ArrowLeft' || e.key === 'Backspace') {
+		if (e.key === 'Escape') {
 			onBack();
+		} else if (e.key === 'ArrowLeft' && !isFirst) {
+			onPrev();
+		} else if (e.key === 'ArrowRight' && !isLast) {
+			onNext();
 		}
 	}
 </script>
@@ -99,6 +110,29 @@
 					</div>
 				{/each}
 			</div>
+		</div>
+
+		<!-- Carousel navigation -->
+		<div class="mt-6 flex items-center justify-center gap-4">
+			<button
+				type="button"
+				class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-gray-300 transition-colors hover:border-gray-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+				disabled={isFirst}
+				onclick={onPrev}
+			>
+				<ChevronLeft class="h-5 w-5" />
+			</button>
+			<span class="text-sm tabular-nums text-gray-400">
+				{currentIndex + 1} of {totalQuestions}
+			</span>
+			<button
+				type="button"
+				class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-700 bg-gray-800 text-gray-300 transition-colors hover:border-gray-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+				disabled={isLast}
+				onclick={onNext}
+			>
+				<ChevronRight class="h-5 w-5" />
+			</button>
 		</div>
 	</div>
 </div>
