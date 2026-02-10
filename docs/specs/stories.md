@@ -569,18 +569,20 @@ Enhance the CLI to support building a single quiz or all quizzes in batch.
 - [x] Verify: batch mode compiles all quiz directories
 - [x] Verify: `pytest` passes in `builder/` — 88 passed (unchanged)
 
-### Story I.f: v0.27.0 Migrate Sample Data and Builder Tests [Planned]
+### Story I.f: v0.27.0 Migrate Sample Data and Builder Tests [Done]
 
-Migrate existing sample data to the new `QuizFile` format and update all builder tests.
+Migrate existing sample data to the new `QuizFile` format and create multi-quiz sample structure.
 
-- [ ] Migrate `data/questions/sample.yaml` → `data/quiz/sample.yaml`
-  - [ ] Wrap existing questions in `QuizFile` format with `menu_name`, `menu_description`, `quiz_description`
-  - [ ] Optionally group some questions under subtopics to demonstrate the feature
-- [ ] Rename `data/questions/` → `data/quiz/` (or create `data/quiz/` and move files)
-- [ ] Update `.gitkeep` / `.gitignore` as needed
-- [ ] Run full builder test suite — all tests pass with new format
-- [ ] Compile `data/quiz/` → `app/src/lib/data/manifest.json` (temporary location until app is updated)
-- [ ] Verify: `pytest` passes in `builder/`, all new and existing tests green
+- [x] Create `data/quiz/sample.yaml` — migrated from old bare-list format
+  - [x] Wrapped in `QuizFile` format with `menu_name`, `menu_description`, `quiz_description`
+  - [x] Grouped questions into subtopics: Science (4), Technology (5), plus 3 bare questions
+- [x] Create `data/quiz/advanced/advanced_sample.yaml` — new harder questions
+  - [x] 7 questions across 3 subtopics: Algorithms & Complexity, Physics, History of Computing
+  - [x] Demonstrates nested directory structure within a quiz
+- [x] Multi-quiz data layout: `data/quiz/` (default) + `data/aws-ml-specialty-exam/` (user-managed)
+- [x] Compile `data/quiz/` → `app/src/lib/data/manifest.json` — 19 questions, 2 topics
+- [x] Navigation tree verified: directory node (advanced/) + topic nodes + subtopic nodes
+- [x] Verify: `pytest` passes in `builder/` — 88 passed, all green
 
 ---
 

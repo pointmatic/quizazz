@@ -1,0 +1,145 @@
+menu_name: "Advanced Concepts"
+menu_description: "Challenging questions on algorithms, physics, and history"
+quiz_description: "A harder set of questions for experienced quiz-takers."
+questions:
+- subtopic: Algorithms & Complexity
+  questions:
+  - question: "What is the worst-case time complexity of quicksort?"
+    tags: ["algorithms", "complexity"]
+    answers:
+      correct:
+        - text: "O(n²)"
+          explanation: "Quicksort degrades to O(n²) when the pivot selection consistently results in the most unbalanced partitions, such as when the array is already sorted and the first element is chosen as pivot."
+      partially_correct:
+        - text: "O(n log n)"
+          explanation: "O(n log n) is the average-case and best-case complexity of quicksort, but the question asks about worst-case."
+      incorrect:
+        - text: "O(n)"
+          explanation: "No comparison-based sorting algorithm can achieve O(n) worst-case for arbitrary input."
+        - text: "O(log n)"
+          explanation: "O(log n) is the complexity of binary search, not any sorting algorithm."
+      ridiculous:
+        - text: "O(1) — it just guesses the right order"
+          explanation: "Sorting requires examining elements; it cannot be done in constant time."
+        - text: "O(∞) — it never finishes"
+          explanation: "Quicksort always terminates for finite input."
+  - question: "Which problem is known to be NP-complete?"
+    tags: ["algorithms", "complexity"]
+    answers:
+      correct:
+        - text: "The Travelling Salesman Problem (decision version)"
+          explanation: "TSP's decision version ('is there a tour shorter than k?') was one of Karp's 21 NP-complete problems."
+        - text: "Boolean satisfiability (SAT)"
+          explanation: "SAT was the first problem proven NP-complete by the Cook-Levin theorem in 1971."
+      partially_correct:
+        - text: "Finding the shortest path in a weighted graph"
+          explanation: "Shortest path (e.g., Dijkstra's) is solvable in polynomial time. You may be confusing it with the longest path problem, which is NP-hard."
+      incorrect:
+        - text: "Sorting an array of integers"
+          explanation: "Sorting is O(n log n) and firmly in P."
+        - text: "Binary search"
+          explanation: "Binary search runs in O(log n) and is not a decision problem in the NP-completeness sense."
+      ridiculous:
+        - text: "Deciding what to have for lunch"
+          explanation: "While subjectively hard, lunch decisions are not in the computational complexity hierarchy."
+        - text: "Counting to 10"
+          explanation: "This is O(1) — trivially solvable."
+  - question: "What is the space complexity of merge sort?"
+    tags: ["algorithms", "complexity"]
+    answers:
+      correct:
+        - text: "O(n)"
+          explanation: "Standard merge sort requires O(n) auxiliary space for the temporary arrays used during merging."
+      partially_correct:
+        - text: "O(n log n)"
+          explanation: "O(n log n) is the time complexity, not the space complexity. The space overhead is O(n) for the merge buffer."
+      incorrect:
+        - text: "O(1)"
+          explanation: "Standard merge sort is not in-place; it requires additional memory proportional to the input size."
+        - text: "O(n²)"
+          explanation: "No standard implementation of merge sort uses quadratic space."
+      ridiculous:
+        - text: "It depends on how much RAM you bought"
+          explanation: "Space complexity is a theoretical measure independent of physical hardware."
+        - text: "O(n!) — one copy per permutation"
+          explanation: "Merge sort does not enumerate permutations."
+- subtopic: Physics
+  questions:
+  - question: "What is the Heisenberg Uncertainty Principle?"
+    tags: ["physics", "quantum"]
+    answers:
+      correct:
+        - text: "It is impossible to simultaneously know both the exact position and exact momentum of a particle"
+          explanation: "Formulated by Werner Heisenberg in 1927, the principle states that Δx·Δp ≥ ℏ/2, setting a fundamental limit on measurement precision."
+      partially_correct:
+        - text: "Observing a particle changes its behavior"
+          explanation: "This is the observer effect, which is related but distinct. The uncertainty principle is a fundamental property of quantum systems, not merely a measurement disturbance."
+      incorrect:
+        - text: "Electrons orbit the nucleus in fixed paths like planets"
+          explanation: "This describes the outdated Bohr model. Quantum mechanics describes electron probability clouds, not fixed orbits."
+        - text: "Energy is always conserved in quantum systems"
+          explanation: "While energy conservation holds, it is not what the uncertainty principle describes."
+      ridiculous:
+        - text: "You can never be certain about anything, including this answer"
+          explanation: "The principle is a precise mathematical statement about conjugate variables, not philosophical doubt."
+        - text: "Heisenberg was uncertain about his own principle"
+          explanation: "A common joke, but Heisenberg was quite certain about the mathematics."
+  - question: "What is the equivalence stated by Einstein's equation E=mc²?"
+    tags: ["physics", "relativity"]
+    answers:
+      correct:
+        - text: "Mass and energy are interchangeable; a small amount of mass corresponds to a large amount of energy"
+          explanation: "Because c² ≈ 9×10¹⁶ m²/s², even a tiny mass converts to enormous energy, as demonstrated in nuclear reactions."
+      partially_correct:
+        - text: "Energy equals mass times the speed of light"
+          explanation: "Close, but the speed of light is squared (c²), not just c. This distinction is critical to the magnitude of the relationship."
+      incorrect:
+        - text: "Energy can be created from nothing"
+          explanation: "E=mc² describes conversion between mass and energy, not creation from nothing. Total mass-energy is conserved."
+        - text: "Nothing can travel faster than light"
+          explanation: "While true in special relativity, this is a separate consequence, not what E=mc² states."
+      ridiculous:
+        - text: "E equals MC Hammer"
+          explanation: "MC Hammer is a musician, not a physics constant."
+        - text: "Einstein was calculating his electricity bill"
+          explanation: "The equation describes fundamental physics, not utility costs."
+- subtopic: History of Computing
+  questions:
+  - question: "Who is credited with writing the first computer program?"
+    tags: ["history", "computing"]
+    answers:
+      correct:
+        - text: "Ada Lovelace"
+          explanation: "Ada Lovelace wrote an algorithm for Charles Babbage's Analytical Engine in 1843, widely regarded as the first computer program."
+      partially_correct:
+        - text: "Charles Babbage"
+          explanation: "Babbage designed the Analytical Engine but did not write the algorithm that Lovelace described in her notes."
+      incorrect:
+        - text: "Alan Turing"
+          explanation: "Turing made foundational contributions to computer science in the 1930s–40s, but Lovelace's work predates his by nearly a century."
+        - text: "Grace Hopper"
+          explanation: "Hopper pioneered compilers and COBOL in the 1950s, well after Lovelace's 1843 work."
+      ridiculous:
+        - text: "A medieval monk who accidentally wrote Python"
+          explanation: "Python was created by Guido van Rossum in 1991, and medieval monks did not have computers."
+        - text: "Nobody — computers program themselves"
+          explanation: "While machine learning exists today, the first programs were definitely written by humans."
+  - question: "What was the significance of the ENIAC computer?"
+    tags: ["history", "computing"]
+    answers:
+      correct:
+        - text: "It was one of the first general-purpose electronic digital computers"
+          explanation: "ENIAC (1945) could be reprogrammed to solve a range of computing problems, a breakthrough over single-purpose machines."
+      partially_correct:
+        - text: "It was the first computer ever built"
+          explanation: "Earlier computing devices existed (Colossus, Z3, ABC), but ENIAC was among the first general-purpose, fully electronic ones."
+      incorrect:
+        - text: "It was the first personal computer"
+          explanation: "ENIAC weighed 30 tons and filled a room. Personal computers did not appear until the 1970s."
+        - text: "It was the first computer to connect to the internet"
+          explanation: "ARPANET, the internet's precursor, was not created until 1969, decades after ENIAC."
+      ridiculous:
+        - text: "It was used to play the first video game tournament"
+          explanation: "ENIAC was used for military calculations, not gaming."
+        - text: "It ran on steam power"
+          explanation: "ENIAC was electronic, using approximately 18,000 vacuum tubes."

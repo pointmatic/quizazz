@@ -5,7 +5,8 @@ __pycache__
 dist/
 
 # Project
-data/
+data/*
+!data/quiz/
 docs/specs/llm*
 docs/specs/multi*
 
