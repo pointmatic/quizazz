@@ -463,3 +463,232 @@ Final polish, documentation, and comprehensive test coverage for navigation feat
   - [x] Clean build: `pnpm build` succeeds
   - [x] `pnpm check` — 0 errors
   - [x] All tests pass: 83 app tests + 50 builder tests = 133 total
+
+---
+
+## Phase I: Multi-Quiz Builder
+
+Migrate the builder to support the new `QuizFile` YAML format (with metadata and subtopics), generate a navigation manifest per quiz, and enhance the CLI for single-quiz and batch compilation. See [`multi_quiz_features.md`](multi_quiz_features.md) for design rationale.
+
+### Story I.a: v0.22.0 QuizFile and SubtopicGroup Pydantic Models [Planned]
+
+Replace `QuestionBank` with `QuizFile` and add `SubtopicGroup` to support the new YAML format.
+
+- [ ] Update `builder/src/quizazz_builder/models.py`
+  - [ ] Add `SubtopicGroup` model: `subtopic: str` (non-empty), `questions: list[Question]` (>= 1)
+  - [ ] Add `QuizFile` model: `menu_name: str` (non-empty), `menu_description: str = ""`, `quiz_description: str = ""`, `questions: list[Question | SubtopicGroup]`
+  - [ ] Add `QuizFile` model validator: file must contain at least one question (directly or via subtopics)
+  - [ ] Remove `QuestionBank` (or deprecate with alias)
+- [ ] Update `builder/tests/test_models.py`
+  - [ ] Test valid `QuizFile` with bare questions only
+  - [ ] Test valid `QuizFile` with subtopic groups only
+  - [ ] Test valid `QuizFile` with mixed bare questions and subtopic groups
+  - [ ] Test `QuizFile` with empty `menu_name` raises error
+  - [ ] Test `QuizFile` with no questions raises error
+  - [ ] Test `SubtopicGroup` with empty `subtopic` raises error
+  - [ ] Test `SubtopicGroup` with empty questions list raises error
+  - [ ] Test `menu_description` and `quiz_description` default to empty string
+- [ ] Verify: `pytest` passes in `builder/`
+
+### Story I.b: v0.23.0 Validator — QuizFile Format and Recursive Directory [Planned]
+
+Update the validator to parse the new `QuizFile` format and support recursive directory traversal.
+
+- [ ] Update `builder/src/quizazz_builder/validator.py`
+  - [ ] `validate_file(path: Path) -> QuizFile` — parse YAML as `QuizFile` model (breaking change from `list[Question]`)
+  - [ ] `validate_quiz_directory(quiz_dir: Path) -> list[tuple[Path, QuizFile]]` — recursively validate all `.yaml` files, return `(relative_path, QuizFile)` tuples preserving hierarchy
+  - [ ] Keep `validate_directory()` as a thin wrapper or remove (breaking change)
+  - [ ] Error messages include file path, subtopic name (if applicable), and question index
+- [ ] Update `builder/tests/test_validator.py`
+  - [ ] Test valid `QuizFile` YAML parses correctly
+  - [ ] Test YAML with subtopic groups validates
+  - [ ] Test YAML with mixed bare + subtopic questions validates
+  - [ ] Test YAML missing `menu_name` fails with clear error
+  - [ ] Test YAML with old bare-list format fails (migration required)
+  - [ ] Test recursive directory validation returns correct relative paths
+  - [ ] Test nested subdirectories are traversed
+  - [ ] Test empty directory raises error
+- [ ] Verify: `pytest` passes in `builder/`
+
+### Story I.c: v0.24.0 Manifest Generation [Planned]
+
+Build the navigation tree structure from validated quiz files and directory hierarchy.
+
+- [ ] Create `builder/src/quizazz_builder/manifest.py`
+  - [ ] `build_navigation_tree(validated_files: list[tuple[Path, QuizFile]]) -> list[dict]` — build nested tree from directory structure, file metadata, and subtopics
+  - [ ] Directory nodes: `type: "directory"`, `id` from relative path, `label` from directory name, `questionIds` aggregated from children
+  - [ ] Topic nodes: `type: "topic"`, `id` from relative file path (without extension), `label` from `menu_name`, `description` from `menu_description`, `questionIds` from all questions in the file
+  - [ ] Subtopic nodes: `type: "subtopic"`, `id` from `{topic_id}/{subtopic_slug}`, `label` from `subtopic` field, `questionIds` from subtopic's questions
+  - [ ] Question IDs use the existing SHA-256 hash of question text
+- [ ] Create `builder/tests/test_manifest.py`
+  - [ ] Test single file at root → single topic node, no directory nodes
+  - [ ] Test file with subtopics → topic node with subtopic children
+  - [ ] Test files in subdirectory → directory node wrapping topic nodes
+  - [ ] Test nested subdirectories → nested directory nodes
+  - [ ] Test `questionIds` at each node are correct and aggregated upward
+  - [ ] Test mixed bare + subtopic questions in same file
+- [ ] Verify: `pytest` passes in `builder/`
+
+### Story I.d: v0.25.0 Compiler — Manifest JSON Output [Planned]
+
+Update the compiler to produce a `manifest.json` per quiz containing the navigation tree and all compiled questions.
+
+- [ ] Update `builder/src/quizazz_builder/compiler.py`
+  - [ ] `compile_quiz(validated_files: list[tuple[Path, QuizFile]], quiz_name: str, output_dir: Path) -> None`
+  - [ ] Generate `manifest.json` with `quizName`, `tree` (from `build_navigation_tree`), and `questions` (flat list with `topicId` and `subtopic` fields)
+  - [ ] Each question includes `topicId` (relative file path without extension) and `subtopic` (name or `null`)
+  - [ ] Stable question IDs (SHA-256 of question text, unchanged)
+  - [ ] Flatten categorized answers with `category` field (unchanged)
+  - [ ] Remove or deprecate `compile_questions()` (old single-file output)
+- [ ] Update `builder/tests/test_compiler.py`
+  - [ ] Test manifest JSON structure: `quizName`, `tree`, `questions` keys present
+  - [ ] Test questions include `topicId` and `subtopic` fields
+  - [ ] Test stable IDs unchanged from previous behavior
+  - [ ] Test category flattening unchanged
+  - [ ] Test manifest `tree` matches expected navigation structure
+  - [ ] Test output written to correct directory
+- [ ] Verify: `pytest` passes in `builder/`
+
+### Story I.e: v0.26.0 CLI — Single Quiz and Batch Modes [Planned]
+
+Enhance the CLI to support building a single quiz or all quizzes in batch.
+
+- [ ] Update `builder/src/quizazz_builder/__main__.py`
+  - [ ] Single quiz mode: `python -m quizazz_builder --input data/quiz/ --output app/build/quiz/`
+    - [ ] `--input` is a quiz directory (contains `.yaml` files)
+    - [ ] `--output` is the target directory for `manifest.json`
+  - [ ] Batch mode: `python -m quizazz_builder --all --input data/ --output app/build/`
+    - [ ] Each immediate subdirectory of `--input` is treated as a separate quiz
+    - [ ] Each quiz compiled to `--output/{quiz_name}/manifest.json`
+  - [ ] `--all` flag is mutually exclusive with single-quiz mode (error if `--input` points to a file)
+  - [ ] Print summary: "Compiled N questions in M topics for quiz '{name}' to {output_dir}"
+  - [ ] Exit 0 on success, exit 1 with descriptive error on validation failure
+- [ ] Verify: `python -m quizazz_builder --input data/quiz/ --output app/build/quiz/` produces valid `manifest.json`
+- [ ] Verify: `python -m quizazz_builder --all --input data/ --output app/build/` compiles all quiz directories
+
+### Story I.f: v0.27.0 Migrate Sample Data and Builder Tests [Planned]
+
+Migrate existing sample data to the new `QuizFile` format and update all builder tests.
+
+- [ ] Migrate `data/questions/sample.yaml` → `data/quiz/sample.yaml`
+  - [ ] Wrap existing questions in `QuizFile` format with `menu_name`, `menu_description`, `quiz_description`
+  - [ ] Optionally group some questions under subtopics to demonstrate the feature
+- [ ] Rename `data/questions/` → `data/quiz/` (or create `data/quiz/` and move files)
+- [ ] Update `.gitkeep` / `.gitignore` as needed
+- [ ] Run full builder test suite — all tests pass with new format
+- [ ] Compile `data/quiz/` → `app/src/lib/data/manifest.json` (temporary location until app is updated)
+- [ ] Verify: `pytest` passes in `builder/`, all new and existing tests green
+
+---
+
+## Phase J: Multi-Quiz App
+
+Update the SvelteKit app to load quiz data from the manifest, display a navigation tree with mastery scores, scope question selection to selected topics/subtopics, and isolate databases per quiz.
+
+### Story J.a: v0.28.0 TypeScript Types and Manifest Import [Planned]
+
+Define new types and wire up the manifest JSON for the app.
+
+- [ ] Update `app/src/lib/types/index.ts`
+  - [ ] Add `topicId: string` and `subtopic: string | null` to `Question`
+  - [ ] Add `NavNode` interface: `id`, `label`, `description`, `type`, `questionIds`, `children`
+  - [ ] Add `QuizManifest` interface: `quizName`, `tree`, `questions`
+  - [ ] Add `selectedNodeIds: string[]` to `QuizConfig`
+- [ ] Update `app/src/lib/data/index.ts`
+  - [ ] Import `manifest.json` instead of `questions.json`
+  - [ ] Export typed `manifest: QuizManifest`, `questions: Question[]`, `allTags: string[]`, `navTree: NavNode[]`
+- [ ] Verify: `pnpm check` — 0 errors
+
+### Story J.b: v0.29.0 Mastery Score Computation [Planned]
+
+Add runtime mastery score aggregation for navigation tree display.
+
+- [ ] Create `app/src/lib/engine/mastery.ts`
+  - [ ] `MasteryScore` interface: `total`, `positive`, `percent`
+  - [ ] `computeMastery(questionIds: string[], scores: QuestionScore[]) -> MasteryScore`
+  - [ ] Mastery = percentage of questions with `cumulative_score > 0`
+- [ ] Create `app/tests/engine/mastery.test.ts`
+  - [ ] Test all scores zero → 0% mastery
+  - [ ] Test all scores positive → 100% mastery
+  - [ ] Test mixed scores → correct percentage
+  - [ ] Test empty questionIds → 0 total, 0%
+  - [ ] Test negative scores count as not mastered
+- [ ] Verify: `pnpm vitest run` passes
+
+### Story J.c: v0.30.0 Database Isolation Per Quiz [Planned]
+
+Make the IndexedDB database name dynamic, keyed by quiz name.
+
+- [ ] Update `app/src/lib/db/database.ts`
+  - [ ] `getDbName(quizName: string): string` — returns `"quizazz-{quizName}"`
+  - [ ] `initDatabase(quizName: string)` — use `getDbName` for IndexedDB name
+  - [ ] `persistDatabase(db, quizName)` — use `getDbName` for IndexedDB name
+  - [ ] Schema unchanged (`question_scores`, `session_answers`)
+- [ ] Update all callers of `initDatabase` and `persistDatabase` to pass `quizName`
+  - [ ] `app/src/routes/+page.svelte` — get `quizName` from manifest
+  - [ ] `app/src/lib/engine/lifecycle.ts` — pass `quizName` through where needed
+- [ ] Update `app/tests/db/scores.test.ts`
+  - [ ] Test database initialization with different quiz names produces isolated databases
+- [ ] Verify: `pnpm vitest run` passes, `pnpm check` — 0 errors
+
+### Story J.d: v0.31.0 Navigation Tree Component [Planned]
+
+Build the navigation tree UI with topic/subtopic selection and mastery scores.
+
+- [ ] Create `app/src/lib/components/NavigationTree.svelte`
+  - [ ] Render tree from `NavNode[]` recursively
+  - [ ] Directory nodes: expandable/collapsible groups
+  - [ ] Topic nodes: show `label`, `description`, mastery percentage
+  - [ ] Subtopic nodes: show `label`, mastery percentage
+  - [ ] Checkbox selection: select/deselect nodes (selecting a parent selects all children)
+  - [ ] "Select All" / "Clear" controls
+  - [ ] "Continue" button (disabled if no nodes selected) → proceeds to ConfigView
+  - [ ] Clean, minimal styling consistent with existing UI
+- [ ] Update `app/src/lib/stores/quiz.ts`
+  - [ ] Add `"nav"` to `ViewMode` type (already added in tech_spec)
+  - [ ] Default `viewMode` to `"nav"`
+- [ ] Verify: `pnpm check` — 0 errors
+
+### Story J.e: v0.32.0 Wire Navigation Tree into Quiz Flow [Planned]
+
+Integrate the navigation tree into the quiz lifecycle and page routing.
+
+- [ ] Update `app/src/routes/+page.svelte`
+  - [ ] Show `NavigationTree` when `viewMode === "nav"`
+  - [ ] Pass `navTree`, `scores` to NavigationTree
+  - [ ] On "Continue": transition to `"config"` view with selected node IDs
+  - [ ] Pass selected question pool (filtered by node IDs) to ConfigView
+- [ ] Update `app/src/lib/engine/lifecycle.ts`
+  - [ ] `startQuiz` receives `selectedNodeIds` in config; filters questions by selected nodes before weighted selection
+  - [ ] `newQuiz()` and `quitQuiz()` return to `"nav"` view (not `"config"`)
+- [ ] Update `app/src/lib/engine/selection.ts`
+  - [ ] Accept question pool already scoped by navigation selection (no change needed if caller pre-filters)
+- [ ] Update `app/src/lib/components/ConfigView.svelte`
+  - [ ] Accept pre-filtered question pool from navigation selection
+  - [ ] "← Back" button returns to navigation tree
+- [ ] Create `app/tests/integration/navigation.test.ts`
+  - [ ] Test selecting a topic scopes questions to that topic
+  - [ ] Test selecting a subtopic scopes questions to that subtopic
+  - [ ] Test selecting a directory selects all children
+  - [ ] Test selecting all nodes includes all questions
+  - [ ] Test nav → config → quiz → summary → nav flow
+- [ ] Verify: `pnpm vitest run` passes, `pnpm check` — 0 errors
+
+### Story J.f: v0.33.0 Sample Data Migration, README, and Final Tests [Planned]
+
+Complete the migration, update documentation, and ensure full test coverage.
+
+- [ ] Compile `data/quiz/` → `app/src/lib/data/manifest.json` (final location)
+- [ ] Remove old `app/src/lib/data/questions.json` if still present
+- [ ] Update root `README.md`
+  - [ ] Update project description to mention multi-quiz support
+  - [ ] Update YAML format documentation with `menu_name`, `menu_description`, `quiz_description`, and subtopic examples
+  - [ ] Update setup instructions: builder commands for single quiz and batch mode
+  - [ ] Update "Taking a Quiz" section: navigation tree → config → quiz flow
+  - [ ] Add "Creating a New Quiz" section
+  - [ ] Update test counts
+- [ ] Final verification
+  - [ ] Clean compile: `python -m quizazz_builder --input data/quiz/ --output app/build/quiz/`
+  - [ ] Clean build: `pnpm build` succeeds
+  - [ ] `pnpm check` — 0 errors
+  - [ ] All tests pass (app + builder)
