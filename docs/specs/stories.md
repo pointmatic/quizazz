@@ -163,25 +163,26 @@ Answer selection, shuffling, and point calculation.
 
 ## Phase C: Quiz State Management
 
-### Story C.a: v0.8.0 Svelte Stores and Quiz Lifecycle [Planned]
+### Story C.a: v0.8.0 Svelte Stores and Quiz Lifecycle [Done]
 
 Reactive state management for the entire quiz flow.
 
-- [ ] Create `app/src/lib/stores/quiz.ts`
-  - [ ] `quizSession` writable store
-  - [ ] `viewMode` writable store (`"config" | "quiz" | "summary" | "review"`)
-  - [ ] `reviewIndex` writable store
-  - [ ] `currentQuestion` derived store
-  - [ ] `progress` derived store (current, total, percent)
-- [ ] Create quiz lifecycle functions (in stores or a separate `lib/engine/lifecycle.ts`)
-  - [ ] `startQuiz(config, questions, scores, db)` — select questions, present answers, init session
-  - [ ] `submitAnswer(label, db)` — score, record, advance or complete
-  - [ ] `retakeQuiz(db)` — reshuffle same questions/answers, reset session state
-  - [ ] `newQuiz()` — return to config view
-  - [ ] `quitQuiz()` — return to config view
-  - [ ] `reviewQuestion(index)` — set review mode
-  - [ ] `backToSummary()` — return to summary view
-- [ ] Verify: stores and lifecycle functions are importable and type-correct (`pnpm check`)
+- [x] Create `app/src/lib/stores/quiz.ts`
+  - [x] `quizSession` writable store
+  - [x] `viewMode` writable store (`"config" | "quiz" | "summary" | "review"`)
+  - [x] `reviewIndex` writable store
+  - [x] `currentQuestion` derived store
+  - [x] `progress` derived store (current, total, percent)
+- [x] Create `app/src/lib/engine/lifecycle.ts`
+  - [x] `startQuiz(config, questions, scores, db)` — select questions, present answers, init session
+  - [x] `submitAnswer(label, db)` — score, record, advance or complete
+  - [x] `retakeQuiz(db)` — reshuffle same questions/answers, reset session state
+  - [x] `newQuiz()` — return to config view
+  - [x] `quitQuiz()` — return to config view
+  - [x] `reviewQuestion(index)` — set review mode
+  - [x] `backToSummary()` — return to summary view
+- [x] Create `app/src/lib/db/index.ts` — barrel export for db module
+- [x] Verify: `pnpm check` — 0 errors, 0 warnings
 
 ---
 
