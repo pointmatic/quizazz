@@ -312,26 +312,27 @@ Documentation, sample content, and UI polish.
 
 ## Phase G: Tags and Category Filtering
 
-### Story G.a: v0.15.0 Builder — Optional Tags in YAML Schema [Planned]
+### Story G.a: v0.15.0 Builder — Optional Tags in YAML Schema [Done]
 
 Add optional `tags` field to the YAML question format. Existing tagless questions remain valid.
 
-- [ ] Update `builder/src/quizazz_builder/models.py`
-  - [ ] Add `tags: list[str] | None = None` to `Question` model
-  - [ ] Add `@field_validator("tags", mode="before")` to normalize tags to lowercase
-  - [ ] Reject empty strings in tags list
-- [ ] Update `builder/src/quizazz_builder/compiler.py`
-  - [ ] Include `tags` in compiled JSON output (as `[]` when absent)
-- [ ] Update `builder/tests/test_models.py`
-  - [ ] Test question with tags is valid
-  - [ ] Test question without tags is valid (backward compatible)
-  - [ ] Test tags are normalized to lowercase
-  - [ ] Test empty string in tags is rejected
-  - [ ] Test empty tags list is valid
-- [ ] Update `builder/tests/test_compiler.py`
-  - [ ] Test compiled JSON includes `tags` array
-  - [ ] Test compiled JSON has empty `tags` array when no tags provided
-- [ ] Verify: `pytest` passes in `builder/`
+- [x] Update `builder/src/quizazz_builder/models.py`
+  - [x] Add `tags: list[str] | None = None` to `Question` model
+  - [x] Add `@field_validator("tags", mode="before")` to normalize tags to lowercase
+  - [x] Reject empty strings in tags list
+- [x] Update `builder/src/quizazz_builder/compiler.py`
+  - [x] Include `tags` in compiled JSON output (as `[]` when absent)
+- [x] Update `builder/tests/test_models.py`
+  - [x] Test question with tags is valid
+  - [x] Test question without tags is valid (backward compatible)
+  - [x] Test tags are normalized to lowercase
+  - [x] Test empty string in tags is rejected
+  - [x] Test blank string in tags is rejected
+  - [x] Test empty tags list is valid
+- [x] Update `builder/tests/test_compiler.py`
+  - [x] Test compiled JSON includes `tags` array
+  - [x] Test compiled JSON has empty `tags` array when no tags provided
+- [x] Verify: 50 builder tests pass (`pytest`)
 
 ### Story G.b: v0.16.0 App — Types, Engine, and Data for Tags [Planned]
 

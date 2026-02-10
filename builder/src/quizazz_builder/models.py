@@ -68,6 +68,7 @@ class Question(BaseModel):
     """A single quiz question with categorized answers."""
 
     question: str
+    tags: list[str] | None = None
     answers: AnswerSet
 
     @field_validator("question")
@@ -76,6 +77,18 @@ class Question(BaseModel):
         if not v.strip():
             raise ValueError("question must not be empty or blank")
         return v
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def normalize_tags(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        normalized = []
+        for tag in v:
+            if not isinstance(tag, str) or not tag.strip():
+                raise ValueError("tags must be non-empty strings")
+            normalized.append(tag.strip().lower())
+        return normalized
 
 
 class QuestionBank(RootModel[list[Question]]):

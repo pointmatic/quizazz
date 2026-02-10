@@ -110,3 +110,19 @@ class TestCompileQuestions:
 
         data = json.loads(output.read_text())
         assert data[0]["id"] == _question_id("What is 2+2?")
+
+    def test_tags_included_in_output(self, tmp_path):
+        output = tmp_path / "out.json"
+        q = _make_question()
+        q.tags = ["math", "arithmetic"]
+        compile_questions([q], output)
+
+        data = json.loads(output.read_text())
+        assert data[0]["tags"] == ["math", "arithmetic"]
+
+    def test_no_tags_outputs_empty_list(self, tmp_path):
+        output = tmp_path / "out.json"
+        compile_questions([_make_question()], output)
+
+        data = json.loads(output.read_text())
+        assert data[0]["tags"] == []

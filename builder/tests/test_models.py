@@ -156,6 +156,32 @@ class TestQuestion:
             )
 
 
+class TestQuestionTags:
+    def test_question_with_tags(self):
+        q = Question(**_make_question(tags=["geography", "europe"]))
+        assert q.tags == ["geography", "europe"]
+
+    def test_question_without_tags(self):
+        q = Question(**_make_question())
+        assert q.tags is None
+
+    def test_tags_normalized_to_lowercase(self):
+        q = Question(**_make_question(tags=["Geography", "EUROPE", "Science"]))
+        assert q.tags == ["geography", "europe", "science"]
+
+    def test_empty_string_tag_raises(self):
+        with pytest.raises(ValidationError, match="tags must be non-empty strings"):
+            Question(**_make_question(tags=["valid", ""]))
+
+    def test_blank_string_tag_raises(self):
+        with pytest.raises(ValidationError, match="tags must be non-empty strings"):
+            Question(**_make_question(tags=["valid", "   "]))
+
+    def test_empty_tags_list_is_valid(self):
+        q = Question(**_make_question(tags=[]))
+        assert q.tags == []
+
+
 class TestQuestionBank:
     def test_valid_bank(self):
         bank = QuestionBank.model_validate([_make_question()])

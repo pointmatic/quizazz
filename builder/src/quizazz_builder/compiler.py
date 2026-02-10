@@ -49,6 +49,7 @@ def _flatten_question(question: Question) -> dict:
     return {
         "id": _question_id(question.question),
         "question": question.question,
+        "tags": question.tags or [],
         "answers": answers,
     }
 
