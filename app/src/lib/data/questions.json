@@ -184,5 +184,191 @@
         "category": "ridiculous"
       }
     ]
+  },
+  {
+    "id": "077bfbbf620b6602d45df143b0d8f2701b17996460a23794aea37a3c58ae6310",
+    "question": "What is the largest organ in the human body?",
+    "answers": [
+      {
+        "text": "Skin",
+        "explanation": "The skin is the largest organ, covering approximately 1.5–2 square meters in adults.",
+        "category": "correct"
+      },
+      {
+        "text": "Liver",
+        "explanation": "The liver is the largest internal organ, but the skin (an external organ) is larger overall.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "Heart",
+        "explanation": "The heart is a vital organ but is relatively small compared to the skin or liver.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Brain",
+        "explanation": "The brain weighs about 1.4 kg and is not the largest organ by any measure.",
+        "category": "incorrect"
+      },
+      {
+        "text": "The funny bone",
+        "explanation": "The funny bone is not an organ — it is the ulnar nerve at the elbow.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "36f17a39cc63fb55dfb36287db2adc855c830b2febf6a1855e2c4dab469f7273",
+    "question": "What does the acronym SQL stand for?",
+    "answers": [
+      {
+        "text": "Structured Query Language",
+        "explanation": "SQL was developed in the 1970s at IBM for managing relational databases.",
+        "category": "correct"
+      },
+      {
+        "text": "Standard Query Language",
+        "explanation": "While SQL is a standard, the 'S' officially stands for 'Structured', not 'Standard'.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "Simple Question Language",
+        "explanation": "This is not a real acronym expansion for SQL.",
+        "category": "incorrect"
+      },
+      {
+        "text": "System Query Logic",
+        "explanation": "This is a fabricated expansion of the SQL acronym.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Squirrels Questioning Life",
+        "explanation": "This is a humorous but entirely fictional expansion of the acronym.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "7d6ab70dfe285d8c22bfeee3a8f02bb5c22c7c94737502f65b0d2b6d82a2d98f",
+    "question": "Which data structure uses FIFO (First In, First Out) ordering?",
+    "answers": [
+      {
+        "text": "Queue",
+        "explanation": "A queue processes elements in FIFO order — the first element added is the first removed.",
+        "category": "correct"
+      },
+      {
+        "text": "Deque",
+        "explanation": "A deque (double-ended queue) supports FIFO but also allows insertion and removal at both ends.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "Stack",
+        "explanation": "A stack uses LIFO (Last In, First Out) ordering, the opposite of FIFO.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Binary tree",
+        "explanation": "A binary tree is a hierarchical structure and does not inherently follow FIFO ordering.",
+        "category": "incorrect"
+      },
+      {
+        "text": "A conga line of angry penguins",
+        "explanation": "While penguins do queue up in nature, this is not a data structure.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "32f69ee35af7af73cdc413cd75dbab075b71bd49348a98095d9c0f618b29e9b8",
+    "question": "What is the speed of light in a vacuum, approximately?",
+    "answers": [
+      {
+        "text": "300,000 km/s",
+        "explanation": "The speed of light in a vacuum is approximately 299,792 km/s, commonly rounded to 300,000 km/s.",
+        "category": "correct"
+      },
+      {
+        "text": "186,000 miles/s",
+        "explanation": "This is correct in miles per second but the question typically expects the metric answer.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "300,000 m/s",
+        "explanation": "300,000 m/s is 300 km/s — about 1,000 times too slow.",
+        "category": "incorrect"
+      },
+      {
+        "text": "1,000 km/s",
+        "explanation": "1,000 km/s is far too slow; light travels 300 times faster than this.",
+        "category": "incorrect"
+      },
+      {
+        "text": "About as fast as my WiFi on a good day",
+        "explanation": "Even the fastest WiFi is billions of times slower than the speed of light.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "2c17e01bfcdd75b859ae5009cbfb672839a49ab1563e9547c37bd0f8949af37c",
+    "question": "Who wrote the novel '1984'?",
+    "answers": [
+      {
+        "text": "George Orwell",
+        "explanation": "George Orwell (pen name of Eric Arthur Blair) published '1984' in 1949.",
+        "category": "correct"
+      },
+      {
+        "text": "Aldous Huxley",
+        "explanation": "Huxley wrote 'Brave New World', another famous dystopian novel, but not '1984'.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "Charles Dickens",
+        "explanation": "Dickens was a Victorian-era novelist who died in 1870, long before '1984' was written.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Mark Twain",
+        "explanation": "Mark Twain was an American author known for 'Tom Sawyer', not dystopian fiction.",
+        "category": "incorrect"
+      },
+      {
+        "text": "A time traveler from 1984",
+        "explanation": "The novel is fiction, not a memoir from the future.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "31342ebdc617534d8c491fcd75b0cf59dacf75ea555d62cd0dcaaf1295430e62",
+    "question": "What is the value of pi (π) to two decimal places?",
+    "answers": [
+      {
+        "text": "3.14",
+        "explanation": "Pi rounded to two decimal places is 3.14. The full value is irrational and non-repeating.",
+        "category": "correct"
+      },
+      {
+        "text": "3.1",
+        "explanation": "3.1 is a rough approximation but only accurate to one decimal place, not two.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "3.41",
+        "explanation": "The digits after the decimal point are 14, not 41.",
+        "category": "incorrect"
+      },
+      {
+        "text": "2.72",
+        "explanation": "2.72 is approximately Euler's number (e), not pi.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Exactly 3, as decreed by law",
+        "explanation": "While the Indiana Pi Bill of 1897 infamously attempted this, pi is not exactly 3.",
+        "category": "ridiculous"
+      }
+    ]
   }
 ]

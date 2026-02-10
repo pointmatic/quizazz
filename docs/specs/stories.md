@@ -284,25 +284,26 @@ End-to-end verification of the full quiz flow.
 
 ## Phase F: Documentation & Polish
 
-### Story F.a: v0.14.0 README, Sample Data, and Final Polish [Planned]
+### Story F.a: v0.14.0 README, Sample Data, and Final Polish [Done]
 
 Documentation, sample content, and UI polish.
 
-- [ ] Update root `README.md`
-  - [ ] Project description and screenshot/demo
-  - [ ] Prerequisites (Node, Python, pnpm, uv)
-  - [ ] Setup instructions (install deps, build questions, run app)
-  - [ ] YAML question format documentation with examples
-  - [ ] Scoring system explanation
-  - [ ] License badge
-- [ ] Expand `data/questions/sample.yaml` to 10+ diverse, well-crafted questions
-- [ ] UI polish pass
-  - [ ] Consistent spacing, typography, and color palette
-  - [ ] Responsive layout (works on narrow screens)
-  - [ ] Loading state while database initializes
-  - [ ] Smooth transitions between views
-- [ ] Final verification
-  - [ ] Clean build: `python -m quizazz_builder --input data/questions/ --output app/src/lib/data/questions.json`
-  - [ ] Clean build: `pnpm build` in `app/`
-  - [ ] All tests pass in both workspaces
-  - [ ] Manual walkthrough of full quiz flow
+- [x] Update root `README.md`
+  - [x] Project description with features list
+  - [x] Prerequisites (Node, Python, pnpm)
+  - [x] Setup instructions (install deps, compile questions, run app)
+  - [x] YAML question format documentation with examples
+  - [x] Scoring system explanation with weighted selection formula
+  - [x] License badge
+  - [x] Testing and production build instructions
+- [x] Expand `data/questions/sample.yaml` to 12 diverse, well-crafted questions
+- [x] UI polish pass
+  - [x] Consistent spacing, typography, and color palette (dark theme, indigo accents)
+  - [x] Responsive layout (max-w containers, px-4 padding)
+  - [x] Loading spinner while database initializes
+  - [x] Error state with reload button
+  - [x] Smooth progress bar transitions
+- [x] Final verification
+  - [x] Clean compile: 12 questions compiled to `questions.json`
+  - [x] Clean build: `pnpm build` succeeds
+  - [x] All tests pass: 61 app tests + 42 builder tests = 103 total

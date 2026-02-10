@@ -2,44 +2,40 @@
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A browser-based study tool that quizzes you on your understanding of a topic. Questions are authored in YAML, validated and compiled at build time, and presented as an interactive multiple-choice quiz with weighted question selection that prioritizes the material you struggle with most.
+A browser-based study tool that quizzes you on your understanding of a topic. Questions are authored in YAML, validated and compiled at build time, and presented as an interactive multiple-choice quiz. A weighted-random algorithm tracks your performance and prioritizes the material you struggle with most.
+
+## Features
+
+- **YAML question authoring** — write questions with categorized answers and explanations
+- **Python builder** — validates YAML schema and compiles to optimized JSON
+- **Weighted selection** — questions you get wrong appear more frequently
+- **Keyboard-first** — navigate the entire quiz with keyboard shortcuts
+- **Persistent scores** — client-side SQLite (sql.js/WASM) persisted to IndexedDB
+- **Review mode** — after each quiz, review every answer with explanations
+- **Configurable** — choose question count (1–N) and answer choices (3, 4, or 5)
 
 ## Repository Structure
 
 | Directory | Purpose |
 |-----------|---------|
-| `app/` | SvelteKit quiz UI and runtime |
-| `builder/` | Python-based YAML validation and compilation |
+| `app/` | SvelteKit quiz UI and runtime (TypeScript, Tailwind CSS) |
+| `builder/` | Python YAML validation and JSON compilation |
 | `data/` | Shared YAML question bank |
-| `docs/` | Specifications and guides |
+| `docs/` | Specifications, tech spec, and stories |
 
 ## Prerequisites
 
 - **Node.js** 22+ and **pnpm** 10+
-- **Python** 3.12+
+- **Python** 3.12+ with a virtual environment
 
 ## Setup
 
-### Python Builder
+### 1. Python Builder
 
 ```bash
 # From the repository root (with venv activated)
 pip install -e builder[dev]
 ```
-
-### SvelteKit App
-
-```bash
-# Install Node dependencies
-cd app
-pnpm install
-```
-
-## Usage
-
-### 1. Author Questions
-
-Create YAML files in `data/questions/`. See `data/questions/sample.yaml` for the format.
 
 ### 2. Compile Questions
 
@@ -47,14 +43,21 @@ Create YAML files in `data/questions/`. See `data/questions/sample.yaml` for the
 python -m quizazz_builder --input data/questions/ --output app/src/lib/data/questions.json
 ```
 
-### 3. Run the App
+### 3. SvelteKit App
 
 ```bash
 cd app
+pnpm install
 pnpm dev
 ```
 
-## Question Format
+The app will be available at `http://localhost:5173`.
+
+## Usage
+
+### Authoring Questions
+
+Create YAML files in `data/questions/`. Each file contains a list of questions:
 
 ```yaml
 - question: "What is the capital of France?"
@@ -75,20 +78,52 @@ pnpm dev
         explanation: "The Moon is not a city."
 ```
 
-Each question must have:
+**Requirements per question:**
 - At least **5 answers** total
-- At least **1** answer in each category (`correct`, `partially_correct`, `incorrect`, `ridiculous`)
+- At least **1** answer in each category: `correct`, `partially_correct`, `incorrect`, `ridiculous`
+
+After editing YAML files, recompile:
+
+```bash
+python -m quizazz_builder --input data/questions/ --output app/src/lib/data/questions.json
+```
+
+### Taking a Quiz
+
+1. **Configure** — choose how many questions and answer choices
+2. **Answer** — select an answer and submit (keyboard: `a`–`e` to select, `Enter` to submit)
+3. **Review** — see your score, then click any question to review all answers with explanations
+4. **Retake** or **Start New** — retake the same questions or start fresh
 
 ## Scoring
 
-| Answer Type | Points |
-|-------------|--------|
-| Correct | +1 |
-| Partially correct | −2 |
-| Incorrect | −5 |
-| Ridiculous | −10 |
+| Answer Category | Points |
+|-----------------|--------|
+| Correct | **+1** |
+| Partially correct | **−2** |
+| Incorrect | **−5** |
+| Ridiculous | **−10** |
 
-Scores are tracked per question across sessions. Lower-scored questions are more likely to appear in future quizzes.
+Scores accumulate per question across sessions. The selection algorithm uses the formula `weight = max_score − score + 1`, so lower-scored questions are drawn more frequently.
+
+## Testing
+
+```bash
+# App tests (61 tests)
+cd app && pnpm vitest run
+
+# Builder tests (42 tests)
+cd builder && python -m pytest
+```
+
+## Building for Production
+
+```bash
+cd app
+pnpm build
+```
+
+The static site is output to `app/build/`.
 
 ## License
 
