@@ -606,21 +606,23 @@ Define new types and wire up the manifest JSON for the app.
 - [x] Update all test files to include new required fields (`topicId`, `subtopic`, `selectedNodeIds`)
 - [x] Verify: `pnpm check` — 0 errors, 1 pre-existing warning
 
-### Story J.b: v0.29.0 Mastery Score Computation [Planned]
+### Story J.b: v0.29.0 Mastery Score Computation [Done]
 
 Add runtime mastery score aggregation for navigation tree display.
 
-- [ ] Create `app/src/lib/engine/mastery.ts`
-  - [ ] `MasteryScore` interface: `total`, `positive`, `percent`
-  - [ ] `computeMastery(questionIds: string[], scores: QuestionScore[]) -> MasteryScore`
-  - [ ] Mastery = percentage of questions with `cumulative_score > 0`
-- [ ] Create `app/tests/engine/mastery.test.ts`
-  - [ ] Test all scores zero → 0% mastery
-  - [ ] Test all scores positive → 100% mastery
-  - [ ] Test mixed scores → correct percentage
-  - [ ] Test empty questionIds → 0 total, 0%
-  - [ ] Test negative scores count as not mastered
-- [ ] Verify: `pnpm vitest run` passes
+- [x] Create `app/src/lib/engine/mastery.ts`
+  - [x] `MasteryScore` interface: `total`, `positive`, `percent`
+  - [x] `computeMastery(questionIds: string[], scores: QuestionScore[]) -> MasteryScore`
+  - [x] Mastery = percentage of questions with `cumulative_score > 0`
+- [x] Create `app/tests/engine/mastery.test.ts`
+  - [x] Test all scores zero → 0% mastery
+  - [x] Test all scores positive → 100% mastery
+  - [x] Test mixed scores → correct percentage
+  - [x] Test empty questionIds → 0 total, 0%
+  - [x] Test negative scores count as not mastered
+  - [x] Test missing scores treated as zero
+  - [x] Test rounding (1/3 → 33%)
+- [x] Verify: `pnpm vitest run` — 90 passed (9 test files)
 
 ### Story J.c: v0.30.0 Database Isolation Per Quiz [Planned]
 
