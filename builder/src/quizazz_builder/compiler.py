@@ -23,7 +23,7 @@ from pathlib import Path
 from quizazz_builder.models import Question
 
 
-def _question_id(question_text: str) -> str:
+def question_id(question_text: str) -> str:
     """Generate a stable ID from the question text (SHA-256 hex digest)."""
     return hashlib.sha256(question_text.encode("utf-8")).hexdigest()
 
@@ -47,7 +47,7 @@ def _flatten_question(question: Question) -> dict:
             )
 
     return {
-        "id": _question_id(question.question),
+        "id": question_id(question.question),
         "question": question.question,
         "tags": question.tags or [],
         "answers": answers,

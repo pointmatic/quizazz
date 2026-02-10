@@ -510,24 +510,25 @@ Update the validator to parse the new `QuizFile` format and support recursive di
   - [x] Test empty directory raises error
 - [x] Verify: `pytest` passes in `builder/` — 71 passed (40 model + 20 validator + 11 compiler)
 
-### Story I.c: v0.24.0 Manifest Generation [Planned]
+### Story I.c: v0.24.0 Manifest Generation [Done]
 
 Build the navigation tree structure from validated quiz files and directory hierarchy.
 
-- [ ] Create `builder/src/quizazz_builder/manifest.py`
-  - [ ] `build_navigation_tree(validated_files: list[tuple[Path, QuizFile]]) -> list[dict]` — build nested tree from directory structure, file metadata, and subtopics
-  - [ ] Directory nodes: `type: "directory"`, `id` from relative path, `label` from directory name, `questionIds` aggregated from children
-  - [ ] Topic nodes: `type: "topic"`, `id` from relative file path (without extension), `label` from `menu_name`, `description` from `menu_description`, `questionIds` from all questions in the file
-  - [ ] Subtopic nodes: `type: "subtopic"`, `id` from `{topic_id}/{subtopic_slug}`, `label` from `subtopic` field, `questionIds` from subtopic's questions
-  - [ ] Question IDs use the existing SHA-256 hash of question text
-- [ ] Create `builder/tests/test_manifest.py`
-  - [ ] Test single file at root → single topic node, no directory nodes
-  - [ ] Test file with subtopics → topic node with subtopic children
-  - [ ] Test files in subdirectory → directory node wrapping topic nodes
-  - [ ] Test nested subdirectories → nested directory nodes
-  - [ ] Test `questionIds` at each node are correct and aggregated upward
-  - [ ] Test mixed bare + subtopic questions in same file
-- [ ] Verify: `pytest` passes in `builder/`
+- [x] Create `builder/src/quizazz_builder/manifest.py`
+  - [x] `build_navigation_tree(validated_files: list[tuple[Path, QuizFile]]) -> list[dict]` — build nested tree from directory structure, file metadata, and subtopics
+  - [x] Directory nodes: `type: "directory"`, `id` from relative path, `label` from directory name, `questionIds` aggregated from children
+  - [x] Topic nodes: `type: "topic"`, `id` from relative file path (without extension), `label` from `menu_name`, `description` from `menu_description`, `questionIds` from all questions in the file
+  - [x] Subtopic nodes: `type: "subtopic"`, `id` from `{topic_id}/{subtopic_slug}`, `label` from `subtopic` field, `questionIds` from subtopic's questions
+  - [x] Question IDs use the existing SHA-256 hash of question text
+- [x] Create `builder/tests/test_manifest.py`
+  - [x] Test single file at root → single topic node, no directory nodes
+  - [x] Test file with subtopics → topic node with subtopic children
+  - [x] Test files in subdirectory → directory node wrapping topic nodes
+  - [x] Test nested subdirectories → nested directory nodes
+  - [x] Test `questionIds` at each node are correct and aggregated upward
+  - [x] Test mixed bare + subtopic questions in same file
+- [x] Verify: `pytest` passes in `builder/` — 80 passed (40 model + 20 validator + 11 compiler + 9 manifest)
+- [x] Bonus: renamed `_question_id` → `question_id` (public) in compiler for shared use by manifest module
 
 ### Story I.d: v0.25.0 Compiler — Manifest JSON Output [Planned]
 

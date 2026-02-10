@@ -16,7 +16,7 @@
 
 import json
 
-from quizazz_builder.compiler import _question_id, compile_questions
+from quizazz_builder.compiler import question_id, compile_questions
 from quizazz_builder.models import Answer, AnswerSet, Question
 
 
@@ -37,17 +37,17 @@ def _make_question(text: str = "What is 2+2?") -> Question:
 
 class TestQuestionId:
     def test_stable_id(self):
-        id1 = _question_id("What is 2+2?")
-        id2 = _question_id("What is 2+2?")
+        id1 = question_id("What is 2+2?")
+        id2 = question_id("What is 2+2?")
         assert id1 == id2
 
     def test_different_text_different_id(self):
-        id1 = _question_id("What is 2+2?")
-        id2 = _question_id("What is 3+3?")
+        id1 = question_id("What is 2+2?")
+        id2 = question_id("What is 3+3?")
         assert id1 != id2
 
     def test_id_is_hex_string(self):
-        qid = _question_id("test")
+        qid = question_id("test")
         assert len(qid) == 64
         assert all(c in "0123456789abcdef" for c in qid)
 
@@ -109,7 +109,7 @@ class TestCompileQuestions:
         compile_questions([_make_question("What is 2+2?")], output)
 
         data = json.loads(output.read_text())
-        assert data[0]["id"] == _question_id("What is 2+2?")
+        assert data[0]["id"] == question_id("What is 2+2?")
 
     def test_tags_included_in_output(self, tmp_path):
         output = tmp_path / "out.json"
