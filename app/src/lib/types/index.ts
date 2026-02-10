@@ -23,12 +23,14 @@ export interface Answer {
 export interface Question {
 	id: string;
 	question: string;
+	tags: string[];
 	answers: Answer[];
 }
 
 export interface QuizConfig {
 	questionCount: number;
 	answerCount: 3 | 4 | 5;
+	selectedTags: string[];
 }
 
 export interface PresentedAnswer extends Answer {

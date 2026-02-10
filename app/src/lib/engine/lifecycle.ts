@@ -31,7 +31,7 @@ export function startQuiz(
 ): void {
 	sessionId = crypto.randomUUID();
 
-	const selected = selectQuestions(allQuestions, scores, config.questionCount);
+	const selected = selectQuestions(allQuestions, scores, config.questionCount, config.selectedTags);
 
 	const questions: QuizQuestion[] = selected.map((q) => ({
 		question: q,

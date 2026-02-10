@@ -16,10 +16,11 @@ import { describe, it, expect } from 'vitest';
 import { selectQuestions } from '$lib/engine/selection';
 import type { Question, QuestionScore } from '$lib/types';
 
-function makeQuestion(id: string): Question {
+function makeQuestion(id: string, tags: string[] = []): Question {
 	return {
 		id,
 		question: `Question ${id}?`,
+		tags,
 		answers: [
 			{ text: 'A', explanation: 'E', category: 'correct' },
 			{ text: 'B', explanation: 'E', category: 'partially_correct' },
@@ -98,5 +99,43 @@ describe('selectQuestions', () => {
 		}
 
 		expect(seen.size).toBe(3);
+	});
+});
+
+describe('selectQuestions with tag filtering', () => {
+	const tagged = [
+		makeQuestion('q1', ['math', 'science']),
+		makeQuestion('q2', ['history']),
+		makeQuestion('q3', ['math']),
+		makeQuestion('q4', []),
+		makeQuestion('q5', ['science', 'history'])
+	];
+
+	const scores: QuestionScore[] = tagged.map((q) => ({
+		questionId: q.id,
+		cumulativeScore: 0
+	}));
+
+	it('returns only questions matching the selected tag', () => {
+		const result = selectQuestions(tagged, scores, 10, ['history']);
+		const ids = result.map((q) => q.id);
+		expect(ids.sort()).toEqual(['q2', 'q5']);
+	});
+
+	it('empty tag filter returns all questions', () => {
+		const result = selectQuestions(tagged, scores, 10, []);
+		expect(result).toHaveLength(5);
+	});
+
+	it('OR logic: question matching any selected tag is included', () => {
+		const result = selectQuestions(tagged, scores, 10, ['math', 'history']);
+		const ids = result.map((q) => q.id).sort();
+		expect(ids).toEqual(['q1', 'q2', 'q3', 'q5']);
+	});
+
+	it('question with no tags is excluded when tags are active', () => {
+		const result = selectQuestions(tagged, scores, 10, ['math']);
+		const ids = result.map((q) => q.id);
+		expect(ids).not.toContain('q4');
 	});
 });

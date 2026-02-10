@@ -19,6 +19,7 @@ import type { Question } from '$lib/types';
 const question: Question = {
 	id: 'test-q',
 	question: 'Test question?',
+	tags: [],
 	answers: [
 		{ text: 'Correct 1', explanation: 'E', category: 'correct' },
 		{ text: 'Correct 2', explanation: 'E', category: 'correct' },
@@ -32,6 +33,7 @@ const question: Question = {
 const minQuestion: Question = {
 	id: 'min-q',
 	question: 'Minimal question?',
+	tags: [],
 	answers: [
 		{ text: 'Correct', explanation: 'E', category: 'correct' },
 		{ text: 'Partial', explanation: 'E', category: 'partially_correct' },

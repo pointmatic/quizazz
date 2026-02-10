@@ -25,12 +25,18 @@ import { weightedRandomIndex } from '$lib/utils/random';
 export function selectQuestions(
 	questions: Question[],
 	scores: QuestionScore[],
-	count: number
+	count: number,
+	selectedTags: string[] = []
 ): Question[] {
+	const filtered =
+		selectedTags.length > 0
+			? questions.filter((q) => q.tags.some((t) => selectedTags.includes(t)))
+			: questions;
+
 	const scoreMap = new Map(scores.map((s) => [s.questionId, s.cumulativeScore]));
 	const maxScore = scores.length > 0 ? Math.max(...scores.map((s) => s.cumulativeScore)) : 0;
 
-	const pool = questions.map((q) => ({
+	const pool = filtered.map((q) => ({
 		question: q,
 		weight: maxScore - (scoreMap.get(q.id) ?? 0) + 1
 	}));

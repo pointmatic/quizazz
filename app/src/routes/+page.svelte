@@ -44,10 +44,10 @@
 		}
 	});
 
-	function handleStart(questionCount: number, answerCount: 3 | 4 | 5) {
+	function handleStart(questionCount: number, answerCount: 3 | 4 | 5, selectedTags: string[] = []) {
 		if (!db) return;
 		scores = getScores(db);
-		startQuiz({ questionCount, answerCount }, questions, scores, db);
+		startQuiz({ questionCount, answerCount, selectedTags }, questions, scores, db);
 	}
 
 	async function handleSubmit(label: string) {

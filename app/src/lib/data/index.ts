@@ -16,3 +16,7 @@ import type { Question } from '$lib/types';
 import questionsJson from './questions.json';
 
 export const questions: Question[] = questionsJson as Question[];
+
+export const allTags: string[] = [
+	...new Set(questions.flatMap((q) => q.tags))
+].sort();

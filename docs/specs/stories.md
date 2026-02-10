@@ -334,25 +334,24 @@ Add optional `tags` field to the YAML question format. Existing tagless question
   - [x] Test compiled JSON has empty `tags` array when no tags provided
 - [x] Verify: 50 builder tests pass (`pytest`)
 
-### Story G.b: v0.16.0 App — Types, Engine, and Data for Tags [Planned]
+### Story G.b: v0.16.0 App — Types, Engine, and Data for Tags [Done]
 
 Update TypeScript types, selection engine, and lifecycle to support tag filtering.
 
-- [ ] Update `app/src/lib/types/index.ts`
-  - [ ] Add `tags: string[]` to `Question` interface
-  - [ ] Add `selectedTags: string[]` to `QuizConfig` interface
-- [ ] Update `app/src/lib/data/index.ts`
-  - [ ] Export `allTags` — a sorted, deduplicated list of all tags across all questions
-- [ ] Update `app/src/lib/engine/selection.ts`
-  - [ ] Accept optional tag filter; when non-empty, pre-filter question pool to those matching any selected tag (OR logic)
-- [ ] Update `app/src/lib/engine/lifecycle.ts`
-  - [ ] Pass `selectedTags` from config through to selection
-- [ ] Update `app/tests/engine/selection.test.ts`
-  - [ ] Test tag filtering returns only matching questions
-  - [ ] Test empty tag filter returns all questions
-  - [ ] Test OR logic: question matching any selected tag is included
-  - [ ] Test question with no tags is excluded when tags are active
-- [ ] Verify: `pnpm vitest run` and `pnpm check` pass
+- [x] Update `app/src/lib/types/index.ts`
+  - [x] Add `tags: string[]` to `Question` interface
+  - [x] Add `selectedTags: string[]` to `QuizConfig` interface
+- [x] Update `app/src/lib/data/index.ts`
+  - [x] Export `allTags` — a sorted, deduplicated list of all tags across all questions
+- [x] Update `app/src/lib/engine/selection.ts`
+  - [x] Accept optional `selectedTags` parameter; pre-filter pool with OR logic
+- [x] Update `app/src/lib/engine/lifecycle.ts`
+  - [x] Pass `config.selectedTags` through to `selectQuestions`
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] `handleStart` accepts and passes `selectedTags`
+- [x] Update all test fixtures to include `tags: []` and `selectedTags: []`
+- [x] Add 4 new tag filtering tests in `app/tests/engine/selection.test.ts`
+- [x] Verify: 65 tests pass (`pnpm vitest run`), `pnpm check` — 0 errors
 
 ### Story G.c: v0.17.0 App — ConfigView Tag Filter UI [Planned]
 
