@@ -15,9 +15,10 @@
 """Tests for quizazz_builder.compiler."""
 
 import json
+from pathlib import Path
 
-from quizazz_builder.compiler import question_id, compile_questions
-from quizazz_builder.models import Answer, AnswerSet, Question
+from quizazz_builder.compiler import compile_questions, compile_quiz, question_id
+from quizazz_builder.models import Answer, AnswerSet, Question, QuizFile, SubtopicGroup
 
 
 def _make_question(text: str = "What is 2+2?") -> Question:
@@ -126,3 +127,102 @@ class TestCompileQuestions:
 
         data = json.loads(output.read_text())
         assert data[0]["tags"] == []
+
+
+def _make_quiz_file(
+    menu_name: str = "Test Topic",
+    menu_description: str = "",
+    questions: list | None = None,
+) -> QuizFile:
+    if questions is None:
+        questions = [_make_question()]
+    return QuizFile(
+        menu_name=menu_name,
+        menu_description=menu_description,
+        questions=questions,
+    )
+
+
+class TestCompileQuiz:
+    def test_manifest_structure(self, tmp_path):
+        qf = _make_quiz_file()
+        compile_quiz([(Path("topic.yaml"), qf)], "myquiz", tmp_path)
+
+        manifest_path = tmp_path / "manifest.json"
+        assert manifest_path.exists()
+        data = json.loads(manifest_path.read_text())
+        assert data["quizName"] == "myquiz"
+        assert "tree" in data
+        assert "questions" in data
+
+    def test_questions_include_topic_id_and_subtopic(self, tmp_path):
+        q = _make_question("Q1?")
+        qf = _make_quiz_file(questions=[q])
+        compile_quiz([(Path("basics.yaml"), qf)], "quiz", tmp_path)
+
+        data = json.loads((tmp_path / "manifest.json").read_text())
+        assert len(data["questions"]) == 1
+        question = data["questions"][0]
+        assert question["topicId"] == "basics"
+        assert question["subtopic"] is None
+
+    def test_subtopic_questions_have_subtopic_name(self, tmp_path):
+        sg = SubtopicGroup(
+            subtopic="Group A",
+            questions=[_make_question("Sub Q?")],
+        )
+        qf = _make_quiz_file(questions=[sg])
+        compile_quiz([(Path("advanced.yaml"), qf)], "quiz", tmp_path)
+
+        data = json.loads((tmp_path / "manifest.json").read_text())
+        question = data["questions"][0]
+        assert question["topicId"] == "advanced"
+        assert question["subtopic"] == "Group A"
+
+    def test_stable_ids_unchanged(self, tmp_path):
+        qf = _make_quiz_file(questions=[_make_question("What is 2+2?")])
+        compile_quiz([(Path("t.yaml"), qf)], "quiz", tmp_path)
+
+        data = json.loads((tmp_path / "manifest.json").read_text())
+        assert data["questions"][0]["id"] == question_id("What is 2+2?")
+
+    def test_category_flattening_unchanged(self, tmp_path):
+        qf = _make_quiz_file()
+        compile_quiz([(Path("t.yaml"), qf)], "quiz", tmp_path)
+
+        data = json.loads((tmp_path / "manifest.json").read_text())
+        answers = data["questions"][0]["answers"]
+        categories = {a["category"] for a in answers}
+        assert categories == {"correct", "partially_correct", "incorrect", "ridiculous"}
+
+    def test_tree_matches_navigation_structure(self, tmp_path):
+        qf = _make_quiz_file(menu_name="Basics")
+        compile_quiz([(Path("basics.yaml"), qf)], "quiz", tmp_path)
+
+        data = json.loads((tmp_path / "manifest.json").read_text())
+        tree = data["tree"]
+        assert len(tree) == 1
+        assert tree[0]["type"] == "topic"
+        assert tree[0]["id"] == "basics"
+        assert tree[0]["label"] == "Basics"
+
+    def test_creates_output_directory(self, tmp_path):
+        out = tmp_path / "nested" / "dir"
+        qf = _make_quiz_file()
+        compile_quiz([(Path("t.yaml"), qf)], "quiz", out)
+        assert (out / "manifest.json").exists()
+
+    def test_mixed_bare_and_subtopic(self, tmp_path):
+        bare = _make_question("Bare?")
+        sg = SubtopicGroup(
+            subtopic="Grouped",
+            questions=[_make_question("Grouped?")],
+        )
+        qf = _make_quiz_file(questions=[bare, sg])
+        compile_quiz([(Path("mixed.yaml"), qf)], "quiz", tmp_path)
+
+        data = json.loads((tmp_path / "manifest.json").read_text())
+        questions = data["questions"]
+        assert len(questions) == 2
+        assert questions[0]["subtopic"] is None
+        assert questions[1]["subtopic"] == "Grouped"

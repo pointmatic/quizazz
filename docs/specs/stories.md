@@ -530,25 +530,26 @@ Build the navigation tree structure from validated quiz files and directory hier
 - [x] Verify: `pytest` passes in `builder/` — 80 passed (40 model + 20 validator + 11 compiler + 9 manifest)
 - [x] Bonus: renamed `_question_id` → `question_id` (public) in compiler for shared use by manifest module
 
-### Story I.d: v0.25.0 Compiler — Manifest JSON Output [Planned]
+### Story I.d: v0.25.0 Compiler — Manifest JSON Output [Done]
 
 Update the compiler to produce a `manifest.json` per quiz containing the navigation tree and all compiled questions.
 
-- [ ] Update `builder/src/quizazz_builder/compiler.py`
-  - [ ] `compile_quiz(validated_files: list[tuple[Path, QuizFile]], quiz_name: str, output_dir: Path) -> None`
-  - [ ] Generate `manifest.json` with `quizName`, `tree` (from `build_navigation_tree`), and `questions` (flat list with `topicId` and `subtopic` fields)
-  - [ ] Each question includes `topicId` (relative file path without extension) and `subtopic` (name or `null`)
-  - [ ] Stable question IDs (SHA-256 of question text, unchanged)
-  - [ ] Flatten categorized answers with `category` field (unchanged)
-  - [ ] Remove or deprecate `compile_questions()` (old single-file output)
-- [ ] Update `builder/tests/test_compiler.py`
-  - [ ] Test manifest JSON structure: `quizName`, `tree`, `questions` keys present
-  - [ ] Test questions include `topicId` and `subtopic` fields
-  - [ ] Test stable IDs unchanged from previous behavior
-  - [ ] Test category flattening unchanged
-  - [ ] Test manifest `tree` matches expected navigation structure
-  - [ ] Test output written to correct directory
-- [ ] Verify: `pytest` passes in `builder/`
+- [x] Update `builder/src/quizazz_builder/compiler.py`
+  - [x] `compile_quiz(validated_files: list[tuple[Path, QuizFile]], quiz_name: str, output_dir: Path) -> None`
+  - [x] Generate `manifest.json` with `quizName`, `tree` (from `build_navigation_tree`), and `questions` (flat list with `topicId` and `subtopic` fields)
+  - [x] Each question includes `topicId` (relative file path without extension) and `subtopic` (name or `null`)
+  - [x] Stable question IDs (SHA-256 of question text, unchanged)
+  - [x] Flatten categorized answers with `category` field (unchanged)
+  - [x] Deprecate `compile_questions()` (kept for backward compatibility)
+- [x] Update `builder/tests/test_compiler.py`
+  - [x] Test manifest JSON structure: `quizName`, `tree`, `questions` keys present
+  - [x] Test questions include `topicId` and `subtopic` fields
+  - [x] Test stable IDs unchanged from previous behavior
+  - [x] Test category flattening unchanged
+  - [x] Test manifest `tree` matches expected navigation structure
+  - [x] Test output written to correct directory
+  - [x] Test mixed bare + subtopic questions
+- [x] Verify: `pytest` passes in `builder/` — 88 passed (40 model + 20 validator + 19 compiler + 9 manifest)
 
 ### Story I.e: v0.26.0 CLI — Single Quiz and Batch Modes [Planned]
 

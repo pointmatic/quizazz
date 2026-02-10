@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Compile validated questions to JSON for the SvelteKit app."""
+"""Compile validated questions to JSON for the SvelteKit app.
+
+Provides both the new :func:`compile_quiz` (manifest.json output) and the
+deprecated :func:`compile_questions` (flat JSON list output).
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
-from quizazz_builder.models import Question
+from quizazz_builder.models import Question, QuizFile, SubtopicGroup
 
 
 def question_id(question_text: str) -> str:
@@ -54,10 +58,72 @@ def _flatten_question(question: Question) -> dict:
     }
 
 
+def _flatten_quiz_question(
+    question: Question, topic_id: str, subtopic: str | None
+) -> dict:
+    """Convert a Question into the manifest JSON format with topic context."""
+    base = _flatten_question(question)
+    base["topicId"] = topic_id
+    base["subtopic"] = subtopic
+    return base
+
+
+def _topic_id_from_path(relative_path: Path) -> str:
+    """Derive a topic ID from a relative file path (without extension)."""
+    return str(PurePosixPath(relative_path.with_suffix("")))
+
+
+def compile_quiz(
+    validated_files: list[tuple[Path, QuizFile]],
+    quiz_name: str,
+    output_dir: Path,
+) -> None:
+    """Compile validated quiz files into a manifest.json.
+
+    The manifest contains:
+    - ``quizName``: the quiz identifier
+    - ``tree``: navigation tree (from :func:`build_navigation_tree`)
+    - ``questions``: flat list of all questions with ``topicId`` and ``subtopic``
+
+    Creates parent directories if they don't exist.
+    """
+    from quizazz_builder.manifest import build_navigation_tree
+
+    tree = build_navigation_tree(validated_files)
+
+    questions: list[dict] = []
+    for relative_path, quiz_file in validated_files:
+        tid = _topic_id_from_path(relative_path)
+        for item in quiz_file.questions:
+            if isinstance(item, SubtopicGroup):
+                for q in item.questions:
+                    questions.append(
+                        _flatten_quiz_question(q, tid, item.subtopic)
+                    )
+            else:
+                questions.append(_flatten_quiz_question(item, tid, None))
+
+    manifest = {
+        "quizName": quiz_name,
+        "tree": tree,
+        "questions": questions,
+    }
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "manifest.json"
+    output_path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
 def compile_questions(questions: list[Question], output_path: Path) -> None:
     """Serialize validated questions to JSON.
 
     Creates parent directories if they don't exist.
+
+    .. deprecated::
+        Use :func:`compile_quiz` for new code.
     """
     compiled = [_flatten_question(q) for q in questions]
 
