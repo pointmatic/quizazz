@@ -27,7 +27,9 @@ const question: Question = {
 		{ text: 'Wrong', explanation: 'E', category: 'incorrect' },
 		{ text: 'Absurd 1', explanation: 'E', category: 'ridiculous' },
 		{ text: 'Absurd 2', explanation: 'E', category: 'ridiculous' }
-	]
+	],
+	topicId: 'test',
+	subtopic: null
 };
 
 const minQuestion: Question = {
@@ -40,7 +42,9 @@ const minQuestion: Question = {
 		{ text: 'Wrong', explanation: 'E', category: 'incorrect' },
 		{ text: 'Absurd 1', explanation: 'E', category: 'ridiculous' },
 		{ text: 'Absurd 2', explanation: 'E', category: 'ridiculous' }
-	]
+	],
+	topicId: 'test',
+	subtopic: null
 };
 
 describe('presentAnswers', () => {

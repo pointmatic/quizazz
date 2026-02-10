@@ -590,19 +590,21 @@ Migrate existing sample data to the new `QuizFile` format and create multi-quiz 
 
 Update the SvelteKit app to load quiz data from the manifest, display a navigation tree with mastery scores, scope question selection to selected topics/subtopics, and isolate databases per quiz.
 
-### Story J.a: v0.28.0 TypeScript Types and Manifest Import [Planned]
+### Story J.a: v0.28.0 TypeScript Types and Manifest Import [Done]
 
 Define new types and wire up the manifest JSON for the app.
 
-- [ ] Update `app/src/lib/types/index.ts`
-  - [ ] Add `topicId: string` and `subtopic: string | null` to `Question`
-  - [ ] Add `NavNode` interface: `id`, `label`, `description`, `type`, `questionIds`, `children`
-  - [ ] Add `QuizManifest` interface: `quizName`, `tree`, `questions`
-  - [ ] Add `selectedNodeIds: string[]` to `QuizConfig`
-- [ ] Update `app/src/lib/data/index.ts`
-  - [ ] Import `manifest.json` instead of `questions.json`
-  - [ ] Export typed `manifest: QuizManifest`, `questions: Question[]`, `allTags: string[]`, `navTree: NavNode[]`
-- [ ] Verify: `pnpm check` — 0 errors
+- [x] Update `app/src/lib/types/index.ts`
+  - [x] Add `topicId: string` and `subtopic: string | null` to `Question`
+  - [x] Add `NavNode` interface: `id`, `label`, `description`, `type`, `questionIds`, `children`
+  - [x] Add `NavNodeType` type: `'directory' | 'topic' | 'subtopic'`
+  - [x] Add `QuizManifest` interface: `quizName`, `tree`, `questions`
+  - [x] Add `selectedNodeIds: string[]` to `QuizConfig`
+- [x] Update `app/src/lib/data/index.ts`
+  - [x] Import `manifest.json` instead of `questions.json`
+  - [x] Export typed `manifest: QuizManifest`, `questions: Question[]`, `allTags: string[]`, `navTree: NavNode[]`
+- [x] Update all test files to include new required fields (`topicId`, `subtopic`, `selectedNodeIds`)
+- [x] Verify: `pnpm check` — 0 errors, 1 pre-existing warning
 
 ### Story J.b: v0.29.0 Mastery Score Computation [Planned]
 

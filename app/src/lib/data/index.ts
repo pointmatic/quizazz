@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { Question } from '$lib/types';
-import questionsJson from './questions.json';
+import type { NavNode, Question, QuizManifest } from '$lib/types';
+import manifestJson from './manifest.json';
 
-export const questions: Question[] = questionsJson as Question[];
+export const manifest: QuizManifest = manifestJson as QuizManifest;
+
+export const questions: Question[] = manifest.questions;
+
+export const navTree: NavNode[] = manifest.tree;
 
 export const allTags: string[] = [
 	...new Set(questions.flatMap((q) => q.tags))

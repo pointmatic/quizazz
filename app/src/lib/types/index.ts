@@ -25,12 +25,32 @@ export interface Question {
 	question: string;
 	tags: string[];
 	answers: Answer[];
+	topicId: string;
+	subtopic: string | null;
+}
+
+export type NavNodeType = 'directory' | 'topic' | 'subtopic';
+
+export interface NavNode {
+	id: string;
+	label: string;
+	description: string;
+	type: NavNodeType;
+	questionIds: string[];
+	children: NavNode[];
+}
+
+export interface QuizManifest {
+	quizName: string;
+	tree: NavNode[];
+	questions: Question[];
 }
 
 export interface QuizConfig {
 	questionCount: number;
 	answerCount: 3 | 4 | 5;
 	selectedTags: string[];
+	selectedNodeIds: string[];
 }
 
 export interface PresentedAnswer extends Answer {

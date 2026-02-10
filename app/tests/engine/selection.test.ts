@@ -27,7 +27,9 @@ function makeQuestion(id: string, tags: string[] = []): Question {
 			{ text: 'C', explanation: 'E', category: 'incorrect' },
 			{ text: 'D', explanation: 'E', category: 'ridiculous' },
 			{ text: 'E', explanation: 'E', category: 'ridiculous' }
-		]
+		],
+		topicId: 'test',
+		subtopic: null
 	};
 }
 

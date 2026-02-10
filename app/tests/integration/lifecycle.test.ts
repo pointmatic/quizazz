@@ -62,7 +62,7 @@ function makeQuestion(id: string, numAnswers: number = 5): Question {
 			category: cat
 		});
 	}
-	return { id, question: `Question ${id}?`, tags: [], answers };
+	return { id, question: `Question ${id}?`, tags: [], answers, topicId: 'test', subtopic: null };
 }
 
 function makeQuestions(count: number, answersPerQuestion: number = 5): Question[] {
@@ -110,7 +110,7 @@ describe('quiz lifecycle: full flow', () => {
 
 		// Start
 		expect(get(viewMode)).toBe('config');
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(viewMode)).toBe('quiz');
 		expect(get(quizSession)!.questions).toHaveLength(3);
 		expect(get(quizSession)!.currentIndex).toBe(0);
@@ -141,7 +141,7 @@ describe('quiz lifecycle: full flow', () => {
 		questions = makeQuestions(2);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 		expect(get(viewMode)).toBe('summary');
 
@@ -168,7 +168,7 @@ describe('quiz lifecycle: full flow', () => {
 		questions = makeQuestions(2);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 		expect(get(viewMode)).toBe('summary');
 
@@ -186,7 +186,7 @@ describe('derived stores', () => {
 
 		expect(get(currentQuestion)).toBeNull();
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		const first = get(currentQuestion);
 		expect(first).not.toBeNull();
 
@@ -201,7 +201,7 @@ describe('derived stores', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(progress)).toEqual({ current: 0, total: 3, percent: 0 });
 
 		const s1 = get(quizSession)!;
@@ -223,7 +223,7 @@ describe('quitQuiz', () => {
 		questions = makeQuestions(2);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		quitQuiz();
 		expect(get(viewMode)).toBe('config');
 		expect(get(quizSession)).toBeNull();
@@ -240,7 +240,7 @@ describe('submitAnswer edge cases', () => {
 		questions = makeQuestions(2);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		const s = get(quizSession)!;
 		const label = s.questions[0].presentedAnswers[0].label;
 		await submitAnswer(label, db);
@@ -256,7 +256,7 @@ describe('submitAnswer edge cases', () => {
 		questions = makeQuestions(2);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await submitAnswer('z', db);
 		expect(get(quizSession)!.currentIndex).toBe(0);
 		expect(get(quizSession)!.questions[0].submittedLabel).toBeNull();
@@ -268,7 +268,7 @@ describe('review carousel navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 
 		reviewQuestion(0);
@@ -285,7 +285,7 @@ describe('review carousel navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 
 		reviewQuestion(2);
@@ -297,7 +297,7 @@ describe('review carousel navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 
 		reviewQuestion(2);
@@ -312,7 +312,7 @@ describe('review carousel navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 
 		reviewQuestion(0);
@@ -326,7 +326,7 @@ describe('mid-quiz navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 
 		showAnsweredQuestions();
@@ -337,7 +337,7 @@ describe('mid-quiz navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		showAnsweredQuestions();
 		expect(get(viewMode)).toBe('quiz');
 	});
@@ -346,7 +346,7 @@ describe('mid-quiz navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
 
@@ -359,7 +359,7 @@ describe('mid-quiz navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 
 		// currentIndex is 1, so index 1 (current unanswered) should be blocked
@@ -372,7 +372,7 @@ describe('mid-quiz navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 
 		showAnsweredQuestions();
@@ -387,7 +387,7 @@ describe('mid-quiz navigation', () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
 
@@ -403,7 +403,7 @@ describe('mid-quiz navigation', () => {
 		questions = makeQuestions(4);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		// Answer 2 questions, so currentIndex = 2
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
@@ -425,7 +425,7 @@ describe('full navigation flow: mid-quiz review and continue', () => {
 		questions = makeQuestions(4);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(viewMode)).toBe('quiz');
 		expect(get(quizSession)!.currentIndex).toBe(0);
 
@@ -489,7 +489,7 @@ describe('database integration', () => {
 		questions = makeQuestions(2);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 
 		const updatedScores = getScores(db);
@@ -502,7 +502,7 @@ describe('database integration', () => {
 		questions = makeQuestions(2);
 		scores = setupDb(questions);
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await answerAllQuestions();
 
 		const results = db.exec('SELECT COUNT(*) FROM session_answers');

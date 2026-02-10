@@ -44,11 +44,11 @@ function makeTaggedQuestions(): Question[] {
 		]
 	};
 	return [
-		{ id: 'q1', question: 'Math Q1?', tags: ['math'], ...base },
-		{ id: 'q2', question: 'Science Q2?', tags: ['science'], ...base },
-		{ id: 'q3', question: 'Math+Science Q3?', tags: ['math', 'science'], ...base },
-		{ id: 'q4', question: 'History Q4?', tags: ['history'], ...base },
-		{ id: 'q5', question: 'No tags Q5?', tags: [], ...base }
+		{ id: 'q1', question: 'Math Q1?', tags: ['math'], topicId: 'test', subtopic: null, ...base },
+		{ id: 'q2', question: 'Science Q2?', tags: ['science'], topicId: 'test', subtopic: null, ...base },
+		{ id: 'q3', question: 'Math+Science Q3?', tags: ['math', 'science'], topicId: 'test', subtopic: null, ...base },
+		{ id: 'q4', question: 'History Q4?', tags: ['history'], topicId: 'test', subtopic: null, ...base },
+		{ id: 'q5', question: 'No tags Q5?', tags: [], topicId: 'test', subtopic: null, ...base }
 	];
 }
 
@@ -73,7 +73,7 @@ beforeEach(async () => {
 describe('quiz with tag filter', () => {
 	it('selects only questions matching the tag', () => {
 		const scores = getScores(db);
-		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: ['math'] }, questions, scores, db);
+		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: ['math'], selectedNodeIds: [] }, questions, scores, db);
 
 		const session = get(quizSession)!;
 		const ids = session.questions.map((q) => q.question.id);
@@ -82,7 +82,7 @@ describe('quiz with tag filter', () => {
 
 	it('OR logic: questions matching any selected tag are included', () => {
 		const scores = getScores(db);
-		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: ['math', 'history'] }, questions, scores, db);
+		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: ['math', 'history'], selectedNodeIds: [] }, questions, scores, db);
 
 		const session = get(quizSession)!;
 		const ids = session.questions.map((q) => q.question.id).sort();
@@ -93,7 +93,7 @@ describe('quiz with tag filter', () => {
 describe('quiz with no tag filter', () => {
 	it('selects from all questions when selectedTags is empty', () => {
 		const scores = getScores(db);
-		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 
 		const session = get(quizSession)!;
 		expect(session.questions).toHaveLength(5);
@@ -103,7 +103,7 @@ describe('quiz with no tag filter', () => {
 describe('tag filter with no matching questions', () => {
 	it('starts quiz with 0 questions when no match', () => {
 		const scores = getScores(db);
-		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: ['nonexistent'] }, questions, scores, db);
+		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: ['nonexistent'], selectedNodeIds: [] }, questions, scores, db);
 
 		const session = get(quizSession)!;
 		expect(session.questions).toHaveLength(0);

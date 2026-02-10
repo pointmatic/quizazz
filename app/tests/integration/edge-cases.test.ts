@@ -51,7 +51,7 @@ function makeQuestion(id: string, numAnswers: number = 5): Question {
 			category: cat
 		});
 	}
-	return { id, question: `Question ${id}?`, tags: [], answers };
+	return { id, question: `Question ${id}?`, tags: [], answers, topicId: 'test', subtopic: null };
 }
 
 function makeQuestions(count: number, answersPerQuestion: number = 5): Question[] {
@@ -79,7 +79,7 @@ describe('quiz with 1 question', () => {
 		seedScores(db, questions.map((q) => q.id));
 		const scores = getScores(db);
 
-		startQuiz({ questionCount: 1, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 1, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions).toHaveLength(1);
 
 		const s = get(quizSession)!;
@@ -95,7 +95,7 @@ describe('quiz with max questions (all in bank)', () => {
 		seedScores(db, questions.map((q) => q.id));
 		const scores = getScores(db);
 
-		startQuiz({ questionCount: 6, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 6, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions).toHaveLength(6);
 
 		const selectedIds = get(quizSession)!.questions.map((q) => q.question.id);
@@ -108,7 +108,7 @@ describe('quiz with max questions (all in bank)', () => {
 		seedScores(db, questions.map((q) => q.id));
 		const scores = getScores(db);
 
-		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 10, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions).toHaveLength(3);
 	});
 });
@@ -119,7 +119,7 @@ describe('answer choice counts', () => {
 		seedScores(db, questions.map((q) => q.id));
 		const scores = getScores(db);
 
-		startQuiz({ questionCount: 1, answerCount: 3, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 1, answerCount: 3, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions[0].presentedAnswers).toHaveLength(3);
 	});
 
@@ -128,7 +128,7 @@ describe('answer choice counts', () => {
 		seedScores(db, questions.map((q) => q.id));
 		const scores = getScores(db);
 
-		startQuiz({ questionCount: 1, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 1, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions[0].presentedAnswers).toHaveLength(4);
 	});
 
@@ -137,7 +137,7 @@ describe('answer choice counts', () => {
 		seedScores(db, questions.map((q) => q.id));
 		const scores = getScores(db);
 
-		startQuiz({ questionCount: 1, answerCount: 5, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 1, answerCount: 5, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions[0].presentedAnswers).toHaveLength(5);
 	});
 });
@@ -189,7 +189,7 @@ describe('question with many answers (10+)', () => {
 		seedScores(db, questions.map((q) => q.id));
 		const scores = getScores(db);
 
-		startQuiz({ questionCount: 5, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 5, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions).toHaveLength(5);
 
 		const ids = get(quizSession)!.questions.map((q) => q.question.id);
@@ -208,7 +208,7 @@ describe('fresh database (no prior scores)', () => {
 			expect(s.cumulativeScore).toBe(0);
 		}
 
-		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions).toHaveLength(3);
 	});
 
@@ -216,7 +216,7 @@ describe('fresh database (no prior scores)', () => {
 		const questions = makeQuestions(3);
 		const scores: QuestionScore[] = [];
 
-		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [] }, questions, scores, db);
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		expect(get(quizSession)!.questions).toHaveLength(2);
 	});
 });
