@@ -256,24 +256,29 @@ Detailed question review with explanations.
 
 ## Phase E: Testing & Quality
 
-### Story E.a: v0.13.0 Integration Tests and Edge Cases [Planned]
+### Story E.a: v0.13.0 Integration Tests and Edge Cases [Done]
 
 End-to-end verification of the full quiz flow.
 
-- [ ] Add integration tests for quiz lifecycle
-  - [ ] Config → start → answer all → summary → review → back
-  - [ ] Config → start → answer all → retake → answer all → summary
-  - [ ] Config → start → answer all → start new → config
-- [ ] Add edge case tests
-  - [ ] Quiz with 1 question
-  - [ ] Quiz with max questions (all questions in bank)
-  - [ ] 3 answer choices, 4 answer choices, 5 answer choices
-  - [ ] Question with exactly 5 answers (minimum)
-  - [ ] Question with many answers (10+)
-  - [ ] Database missing on load (fresh start)
-  - [ ] All questions have same score (uniform selection)
-  - [ ] One question has very negative score (should be selected frequently)
-- [ ] Verify: all tests pass (`pnpm test` in `app/`, `pytest` in `builder/`)
+- [x] Add integration tests for quiz lifecycle (`tests/integration/lifecycle.test.ts`)
+  - [x] Config → start → answer all → summary → review → back
+  - [x] Config → start → answer all → retake → answer all → summary
+  - [x] Config → start → answer all → start new → config
+  - [x] Derived stores (currentQuestion, progress) track correctly
+  - [x] quitQuiz clears session
+  - [x] submitAnswer edge cases (no session, already submitted, invalid label)
+  - [x] Database integration (scores updated, session answers recorded)
+- [x] Add edge case tests (`tests/integration/edge-cases.test.ts`)
+  - [x] Quiz with 1 question
+  - [x] Quiz with max questions (all questions in bank)
+  - [x] Count > pool size handled gracefully
+  - [x] 3 answer choices, 4 answer choices, 5 answer choices
+  - [x] Question with exactly 5 answers (minimum)
+  - [x] Question with many answers (12)
+  - [x] Fresh database / empty scores (fresh start)
+  - [x] All questions have same score (uniform selection)
+  - [x] One question has very negative score (statistical test, N=1000)
+- [x] Verify: all tests pass — 61 app tests (`pnpm vitest run`), 42 builder tests (`pytest`)
 
 ---
 
