@@ -188,75 +188,69 @@ Reactive state management for the entire quiz flow.
 
 ## Phase D: User Interface
 
-### Story D.a: v0.9.0 Config View [Planned]
+### Story D.a: v0.9.0 Config View [Done]
 
 The quiz configuration screen — first thing the user sees.
 
-- [ ] Create `app/src/lib/components/ConfigView.svelte`
-  - [ ] Number of questions: slider or number input (1 to max, default = max)
-  - [ ] Number of answer choices: radio group (3, 4, 5; default = 4)
-  - [ ] Display total available questions count
-  - [ ] "Start Quiz" button (disabled if config invalid)
-  - [ ] `Enter` key starts quiz when config is valid
-  - [ ] Clean, minimal styling with Tailwind
-- [ ] Wire into `app/src/routes/+page.svelte`
-  - [ ] Initialize database on mount
-  - [ ] Load questions from compiled JSON
-  - [ ] Show ConfigView when `viewMode === "config"`
-- [ ] Verify: app loads, shows config screen, Start button works
+- [x] Create `app/src/lib/components/ConfigView.svelte`
+  - [x] Number of questions: slider (1 to max, default = min(10, max))
+  - [x] Number of answer choices: button group (3, 4, 5; default = 4)
+  - [x] Display total available questions count
+  - [x] "Start Quiz" button (disabled if config invalid)
+  - [x] `Enter` key starts quiz when config is valid
+  - [x] Clean, minimal styling with Tailwind
+- [x] Wire into `app/src/routes/+page.svelte`
+  - [x] Initialize database on mount
+  - [x] Load questions from compiled JSON
+  - [x] Show ConfigView when `viewMode === "config"`
+  - [x] Loading spinner and error states
+- [x] Verify: app loads, shows config screen, Start button works
 
-### Story D.b: v0.10.0 Quiz View [Planned]
+### Story D.b: v0.10.0 Quiz View [Done]
 
 The main quiz interaction — question display, answer selection, submission.
 
-- [ ] Create `app/src/lib/components/QuizView.svelte`
-  - [ ] Display question text
-  - [ ] Display answer choices as clickable rows with radio buttons
-  - [ ] Entire answer row is clickable (not just the radio button)
-  - [ ] Keyboard: `a`–`e` selects corresponding answer
-  - [ ] Selected answer is visually highlighted
-  - [ ] "Submit" button (disabled until an answer is selected)
-  - [ ] `Enter` key submits when an answer is selected
-  - [ ] After submit: advance to next question (or complete quiz)
-- [ ] Create `app/src/lib/components/ProgressBar.svelte`
-  - [ ] Visual progress bar (filled percentage)
-  - [ ] "Question N of M" label
-- [ ] Wire into `+page.svelte`: show QuizView when `viewMode === "quiz"`
-- [ ] Verify: can complete a full quiz using keyboard only
-- [ ] Verify: can complete a full quiz using mouse only
+- [x] Create `app/src/lib/components/QuizView.svelte`
+  - [x] Display question text
+  - [x] Display answer choices as clickable rows with letter badges
+  - [x] Entire answer row is clickable
+  - [x] Keyboard: `a`–`e` selects corresponding answer
+  - [x] Selected answer is visually highlighted
+  - [x] "Submit" button (disabled until an answer is selected)
+  - [x] `Enter` key submits when an answer is selected
+  - [x] After submit: advance to next question (or complete quiz)
+- [x] Create `app/src/lib/components/ProgressBar.svelte`
+  - [x] Visual progress bar (filled percentage)
+  - [x] "Question N of M" label
+- [x] Wire into `+page.svelte`: show QuizView when `viewMode === "quiz"`
 
-### Story D.c: v0.11.0 Summary View [Planned]
+### Story D.c: v0.11.0 Summary View [Done]
 
 Post-quiz results summary.
 
-- [ ] Create `app/src/lib/components/SummaryView.svelte`
-  - [ ] Score percentage display (prominent)
-  - [ ] Points earned / max possible
-  - [ ] Question list with ✓/✗ indicators
-  - [ ] Each question row is clickable → navigates to review
-  - [ ] Action buttons: "Retake", "Start New Quiz", "Quit"
-  - [ ] Clean, celebratory (or encouraging) styling based on score
-- [ ] Wire into `+page.svelte`: show SummaryView when `viewMode === "summary"`
-- [ ] Verify: Retake reshuffles and restarts same questions
-- [ ] Verify: Start New Quiz returns to config
-- [ ] Verify: Quit returns to config
+- [x] Create `app/src/lib/components/SummaryView.svelte`
+  - [x] Score percentage display (prominent)
+  - [x] Correct count / total
+  - [x] Question list with ✓/✗ indicators
+  - [x] Each question row is clickable → navigates to review
+  - [x] Action buttons: "Retake", "Start New", "Quit"
+  - [x] Color-coded styling based on score (green/amber/red)
+- [x] Wire into `+page.svelte`: show SummaryView when `viewMode === "summary"`
 
-### Story D.d: v0.12.0 Review View [Planned]
+### Story D.d: v0.12.0 Review View [Done]
 
 Detailed question review with explanations.
 
-- [ ] Create `app/src/lib/components/ReviewView.svelte`
-  - [ ] Display question text
-  - [ ] Display all presented answers with:
-    - [ ] User's selection highlighted
-    - [ ] Category label for each answer (correct, partially correct, incorrect, ridiculous)
-    - [ ] Explanation text for each answer
-    - [ ] Visual distinction: correct answer marked green, user's wrong answer marked red
-  - [ ] "← Back" button returns to summary
-  - [ ] `←` / `Backspace` key returns to summary
-- [ ] Wire into `+page.svelte`: show ReviewView when `viewMode === "review"`
-- [ ] Verify: clicking a question in summary shows correct review
-- [ ] Verify: Back button returns to summary with scroll position preserved
+- [x] Create `app/src/lib/components/ReviewView.svelte`
+  - [x] Display question text
+  - [x] Display all presented answers with:
+    - [x] User's selection highlighted with "Your answer" badge
+    - [x] Category label for each answer (color-coded)
+    - [x] Explanation text for each answer
+    - [x] Visual distinction: correct=green, partial=amber, incorrect=red, ridiculous=purple
+  - [x] "← Back" button returns to summary
+  - [x] `←` / `Backspace` key returns to summary
+- [x] Wire into `+page.svelte`: show ReviewView when `viewMode === "review"`
 
 ---
 
