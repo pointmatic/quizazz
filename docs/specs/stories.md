@@ -551,22 +551,23 @@ Update the compiler to produce a `manifest.json` per quiz containing the navigat
   - [x] Test mixed bare + subtopic questions
 - [x] Verify: `pytest` passes in `builder/` — 88 passed (40 model + 20 validator + 19 compiler + 9 manifest)
 
-### Story I.e: v0.26.0 CLI — Single Quiz and Batch Modes [Planned]
+### Story I.e: v0.26.0 CLI — Single Quiz and Batch Modes [Done]
 
 Enhance the CLI to support building a single quiz or all quizzes in batch.
 
-- [ ] Update `builder/src/quizazz_builder/__main__.py`
-  - [ ] Single quiz mode: `python -m quizazz_builder --input data/quiz/ --output app/build/quiz/`
-    - [ ] `--input` is a quiz directory (contains `.yaml` files)
-    - [ ] `--output` is the target directory for `manifest.json`
-  - [ ] Batch mode: `python -m quizazz_builder --all --input data/ --output app/build/`
-    - [ ] Each immediate subdirectory of `--input` is treated as a separate quiz
-    - [ ] Each quiz compiled to `--output/{quiz_name}/manifest.json`
-  - [ ] `--all` flag is mutually exclusive with single-quiz mode (error if `--input` points to a file)
-  - [ ] Print summary: "Compiled N questions in M topics for quiz '{name}' to {output_dir}"
-  - [ ] Exit 0 on success, exit 1 with descriptive error on validation failure
-- [ ] Verify: `python -m quizazz_builder --input data/quiz/ --output app/build/quiz/` produces valid `manifest.json`
-- [ ] Verify: `python -m quizazz_builder --all --input data/ --output app/build/` compiles all quiz directories
+- [x] Update `builder/src/quizazz_builder/__main__.py`
+  - [x] Single quiz mode: `python -m quizazz_builder --input data/quiz/ --output app/build/quiz/`
+    - [x] `--input` is a quiz directory (contains `.yaml` files)
+    - [x] `--output` is the target directory for `manifest.json`
+  - [x] Batch mode: `python -m quizazz_builder --all --input data/ --output app/build/`
+    - [x] Each immediate subdirectory of `--input` is treated as a separate quiz
+    - [x] Each quiz compiled to `--output/{quiz_name}/manifest.json`
+  - [x] `--all` flag errors if `--input` is not a directory
+  - [x] Print summary: "Compiled N questions in M topics for quiz '{name}' to {output_dir}"
+  - [x] Exit 0 on success, exit 1 with descriptive error on validation failure
+- [x] Verify: single quiz mode produces valid `manifest.json`
+- [x] Verify: batch mode compiles all quiz directories
+- [x] Verify: `pytest` passes in `builder/` — 88 passed (unchanged)
 
 ### Story I.f: v0.27.0 Migrate Sample Data and Builder Tests [Planned]
 
