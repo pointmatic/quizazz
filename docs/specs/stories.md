@@ -692,21 +692,23 @@ Integrate the navigation tree into the quiz lifecycle and page routing.
   - [x] Test quitQuiz returns to nav
 - [x] Verify: `pnpm vitest run` — 101 passed, `pnpm check` — 0 errors
 
-### Story J.f: v0.33.0 Sample Data Migration, README, and Final Tests [Planned]
+### Story J.f: v0.33.0 Sample Data Migration, README, and Final Tests [Done]
 
 Complete the migration, update documentation, and ensure full test coverage.
 
-- [ ] Compile `data/quiz/` → `app/src/lib/data/manifest.json` (final location)
-- [ ] Remove old `app/src/lib/data/questions.json` if still present
-- [ ] Update root `README.md`
-  - [ ] Update project description to mention multi-quiz support
-  - [ ] Update YAML format documentation with `menu_name`, `menu_description`, `quiz_description`, and subtopic examples
-  - [ ] Update setup instructions: builder commands for single quiz and batch mode
-  - [ ] Update "Taking a Quiz" section: navigation tree → config → quiz flow
-  - [ ] Add "Creating a New Quiz" section
-  - [ ] Update test counts
-- [ ] Final verification
-  - [ ] Clean compile: `python -m quizazz_builder --input data/quiz/ --output app/build/quiz/`
-  - [ ] Clean build: `pnpm build` succeeds
-  - [ ] `pnpm check` — 0 errors
-  - [ ] All tests pass (app + builder)
+- [x] Compile `data/quiz/` → `app/src/lib/data/manifest.json` (19 questions, 2 topics)
+- [x] Remove old `app/src/lib/data/questions.json`
+- [x] Update root `README.md`
+  - [x] Update project description to mention multi-quiz support, navigation tree, mastery tracking
+  - [x] Update features list: multi-quiz, navigation tree, mastery tracking, per-quiz DB isolation
+  - [x] Update YAML format documentation with `menu_name`, `menu_description`, and subtopic examples
+  - [x] Update setup instructions: builder commands for single quiz and batch mode
+  - [x] Update "Taking a Quiz" section: navigation tree → config → quiz flow
+  - [x] Add "Creating a New Quiz" section
+  - [x] Update test counts (101 app tests)
+- [x] Final verification
+  - [x] Clean compile: `python -m quizazz_builder --input data/quiz/ --output app/src/lib/data/`
+  - [x] Clean build: `pnpm build` succeeds
+  - [x] `pnpm check` — 0 errors
+  - [x] App tests: 101 passed (10 files)
+  - [x] Builder tests: 88 passed
