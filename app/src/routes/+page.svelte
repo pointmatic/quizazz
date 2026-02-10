@@ -17,11 +17,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Database } from 'sql.js';
-	import { manifest, questions, allTags } from '$lib/data';
+	import { manifest, questions, allTags, navTree } from '$lib/data';
 	import { initDatabase, getScores, seedScores } from '$lib/db';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
-	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, reviewAnsweredQuestion, backToQuiz } from '$lib/engine/lifecycle';
-	import type { QuestionScore } from '$lib/types';
+	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, reviewAnsweredQuestion, backToQuiz, setNavNodes } from '$lib/engine/lifecycle';
+	import type { Question, QuestionScore } from '$lib/types';
+	import NavigationTree from '$lib/components/NavigationTree.svelte';
 	import ConfigView from '$lib/components/ConfigView.svelte';
 	import QuizView from '$lib/components/QuizView.svelte';
 	import SummaryView from '$lib/components/SummaryView.svelte';
@@ -32,9 +33,16 @@
 	let scores: QuestionScore[] = $state([]);
 	let loading = $state(true);
 	let error = $state<string | null>(null);
+	let selectedNodeIds = $state<string[]>([]);
+	let filteredQuestions = $state<Question[]>(questions);
+
+	let filteredTags = $derived(
+		[...new Set(filteredQuestions.flatMap((q) => q.tags))].sort()
+	);
 
 	onMount(async () => {
 		try {
+			setNavNodes(navTree);
 			db = await initDatabase(manifest.quizName);
 			seedScores(db, questions.map((q) => q.id));
 			scores = getScores(db);
@@ -45,10 +53,32 @@
 		}
 	});
 
+	function handleContinue(nodeIds: string[]) {
+		selectedNodeIds = nodeIds;
+		// Pre-filter questions by selected nodes
+		const selectedQids = new Set<string>();
+		function collect(nodes: typeof navTree) {
+			for (const node of nodes) {
+				if (nodeIds.includes(node.id)) {
+					for (const qid of node.questionIds) selectedQids.add(qid);
+				} else if (node.children.length > 0) {
+					collect(node.children);
+				}
+			}
+		}
+		collect(navTree);
+		filteredQuestions = questions.filter((q) => selectedQids.has(q.id));
+		viewMode.set('config');
+	}
+
+	function handleBack() {
+		viewMode.set('nav');
+	}
+
 	function handleStart(questionCount: number, answerCount: 3 | 4 | 5, selectedTags: string[] = []) {
 		if (!db) return;
 		scores = getScores(db);
-		startQuiz({ questionCount, answerCount, selectedTags, selectedNodeIds: [] }, questions, scores, db, manifest.quizName);
+		startQuiz({ questionCount, answerCount, selectedTags, selectedNodeIds }, filteredQuestions, scores, db, manifest.quizName);
 	}
 
 	async function handleSubmit(label: string) {
@@ -60,7 +90,7 @@
 	function handleRetake() {
 		if (!db) return;
 		scores = getScores(db);
-		retakeQuiz(db, questions, scores);
+		retakeQuiz(db, filteredQuestions, scores);
 	}
 
 	function handleNewQuiz() {
@@ -100,8 +130,10 @@
 			</button>
 		</div>
 	</div>
+{:else if $viewMode === 'nav'}
+	<NavigationTree tree={navTree} {scores} onContinue={handleContinue} />
 {:else if $viewMode === 'config'}
-	<ConfigView {questions} {allTags} onStart={handleStart} />
+	<ConfigView questions={filteredQuestions} allTags={filteredTags} onStart={handleStart} onBack={handleBack} />
 {:else if $viewMode === 'quiz' && $quizSession}
 	{@const current = $quizSession.questions[$quizSession.currentIndex]}
 	{@const answered = $quizSession.questions.filter((q) => q.submittedLabel !== null).length}

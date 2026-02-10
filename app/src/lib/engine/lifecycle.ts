@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { Database } from 'sql.js';
-import type { Question, QuestionScore, QuizConfig, QuizQuestion } from '$lib/types';
+import type { NavNode, Question, QuestionScore, QuizConfig, QuizQuestion } from '$lib/types';
 import { selectQuestions } from '$lib/engine/selection';
 import { presentAnswers } from '$lib/engine/presentation';
 import { scoreAnswer } from '$lib/engine/scoring';
@@ -23,6 +23,30 @@ import { get } from 'svelte/store';
 
 let sessionId = crypto.randomUUID();
 let activeQuizName = '';
+
+let allNavNodes: NavNode[] = [];
+
+export function setNavNodes(nodes: NavNode[]): void {
+	allNavNodes = nodes;
+}
+
+function collectQuestionIds(nodeIds: string[], nodes: NavNode[]): Set<string> {
+	const ids = new Set<string>();
+	function walk(node: NavNode) {
+		if (nodeIds.includes(node.id)) {
+			for (const qid of node.questionIds) ids.add(qid);
+			return;
+		}
+		for (const child of node.children) walk(child);
+	}
+	for (const node of nodes) walk(node);
+	return ids;
+}
+
+function filterByNodeIds(questions: Question[], nodeIds: string[], nodes: NavNode[]): Question[] {
+	const questionIds = collectQuestionIds(nodeIds, nodes);
+	return questions.filter((q) => questionIds.has(q.id));
+}
 
 export function startQuiz(
 	config: QuizConfig,
@@ -34,7 +58,12 @@ export function startQuiz(
 	sessionId = crypto.randomUUID();
 	activeQuizName = quizName;
 
-	const selected = selectQuestions(allQuestions, scores, config.questionCount, config.selectedTags);
+	const pool =
+		config.selectedNodeIds.length > 0
+			? filterByNodeIds(allQuestions, config.selectedNodeIds, allNavNodes)
+			: allQuestions;
+
+	const selected = selectQuestions(pool, scores, config.questionCount, config.selectedTags);
 
 	const questions: QuizQuestion[] = selected.map((q) => ({
 		question: q,
@@ -117,7 +146,7 @@ export function retakeQuiz(db: Database, allQuestions: Question[], scores: Quest
 export function newQuiz(): void {
 	quizSession.set(null);
 	reviewIndex.set(null);
-	viewMode.set('config');
+	viewMode.set('nav');
 }
 
 export function quitQuiz(): void {

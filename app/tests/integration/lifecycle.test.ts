@@ -173,7 +173,7 @@ describe('quiz lifecycle: full flow', () => {
 		expect(get(viewMode)).toBe('summary');
 
 		newQuiz();
-		expect(get(viewMode)).toBe('config');
+		expect(get(viewMode)).toBe('nav');
 		expect(get(quizSession)).toBeNull();
 		expect(get(reviewIndex)).toBeNull();
 	});
@@ -225,7 +225,7 @@ describe('quitQuiz', () => {
 
 		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		quitQuiz();
-		expect(get(viewMode)).toBe('config');
+		expect(get(viewMode)).toBe('nav');
 		expect(get(quizSession)).toBeNull();
 	});
 });

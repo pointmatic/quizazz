@@ -662,30 +662,35 @@ Build the navigation tree UI with topic/subtopic selection and mastery scores.
   - [x] Default `viewMode` to `"nav"`
 - [x] Verify: `pnpm check` — 0 errors, `pnpm vitest run` — 93 passed
 
-### Story J.e: v0.32.0 Wire Navigation Tree into Quiz Flow [Planned]
+### Story J.e: v0.32.0 Wire Navigation Tree into Quiz Flow [Done]
 
 Integrate the navigation tree into the quiz lifecycle and page routing.
 
-- [ ] Update `app/src/routes/+page.svelte`
-  - [ ] Show `NavigationTree` when `viewMode === "nav"`
-  - [ ] Pass `navTree`, `scores` to NavigationTree
-  - [ ] On "Continue": transition to `"config"` view with selected node IDs
-  - [ ] Pass selected question pool (filtered by node IDs) to ConfigView
-- [ ] Update `app/src/lib/engine/lifecycle.ts`
-  - [ ] `startQuiz` receives `selectedNodeIds` in config; filters questions by selected nodes before weighted selection
-  - [ ] `newQuiz()` and `quitQuiz()` return to `"nav"` view (not `"config"`)
-- [ ] Update `app/src/lib/engine/selection.ts`
-  - [ ] Accept question pool already scoped by navigation selection (no change needed if caller pre-filters)
-- [ ] Update `app/src/lib/components/ConfigView.svelte`
-  - [ ] Accept pre-filtered question pool from navigation selection
-  - [ ] "← Back" button returns to navigation tree
-- [ ] Create `app/tests/integration/navigation.test.ts`
-  - [ ] Test selecting a topic scopes questions to that topic
-  - [ ] Test selecting a subtopic scopes questions to that subtopic
-  - [ ] Test selecting a directory selects all children
-  - [ ] Test selecting all nodes includes all questions
-  - [ ] Test nav → config → quiz → summary → nav flow
-- [ ] Verify: `pnpm vitest run` passes, `pnpm check` — 0 errors
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] Show `NavigationTree` when `viewMode === "nav"`
+  - [x] Pass `navTree`, `scores` to NavigationTree
+  - [x] On "Continue": transition to `"config"` view with selected node IDs, pre-filter questions
+  - [x] Pass filtered question pool and derived tags to ConfigView
+  - [x] Call `setNavNodes(navTree)` on mount for lifecycle filtering
+- [x] Update `app/src/lib/engine/lifecycle.ts`
+  - [x] Add `setNavNodes`, `collectQuestionIds`, `filterByNodeIds` helpers
+  - [x] `startQuiz` filters questions by `selectedNodeIds` via nav tree before weighted selection
+  - [x] `newQuiz()` and `quitQuiz()` return to `"nav"` view (not `"config"`)
+- [x] Update `app/src/lib/engine/selection.ts`
+  - [x] No change needed — caller pre-filters question pool
+- [x] Update `app/src/lib/components/ConfigView.svelte`
+  - [x] Accept pre-filtered question pool from navigation selection
+  - [x] Optional `onBack` prop with "← Topics" back button
+- [x] Create `app/tests/integration/navigation.test.ts`
+  - [x] Test selecting a topic scopes questions to that topic
+  - [x] Test selecting a subtopic scopes questions to that subtopic
+  - [x] Test selecting a directory selects all children
+  - [x] Test selecting all nodes includes all questions
+  - [x] Test empty selectedNodeIds uses all questions
+  - [x] Test multiple non-overlapping nodes combine questions
+  - [x] Test nav → config → quiz → summary → nav flow
+  - [x] Test quitQuiz returns to nav
+- [x] Verify: `pnpm vitest run` — 101 passed, `pnpm check` — 0 errors
 
 ### Story J.f: v0.33.0 Sample Data Migration, README, and Final Tests [Planned]
 

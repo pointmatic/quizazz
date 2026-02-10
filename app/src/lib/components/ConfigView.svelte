@@ -15,16 +15,17 @@
 -->
 
 <script lang="ts">
-	import { BookOpen } from 'lucide-svelte';
+	import { BookOpen, ArrowLeft } from 'lucide-svelte';
 	import type { Question } from '$lib/types';
 
 	interface Props {
 		questions: Question[];
 		allTags: string[];
 		onStart: (questionCount: number, answerCount: 3 | 4 | 5, selectedTags: string[]) => void;
+		onBack?: () => void;
 	}
 
-	let { questions, allTags, onStart }: Props = $props();
+	let { questions, allTags, onStart, onBack }: Props = $props();
 
 	let selectedTags = $state<string[]>([]);
 	let answerCount = $state<3 | 4 | 5>(4);
@@ -74,6 +75,18 @@
 <div class="flex min-h-screen items-center justify-center bg-gray-950 px-4">
 	<div class="w-full max-w-md">
 		<div class="mb-10 text-center">
+			{#if onBack}
+				<div class="mb-4 flex justify-start">
+					<button
+						type="button"
+						class="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
+						onclick={onBack}
+					>
+						<ArrowLeft class="h-4 w-4" />
+						Topics
+					</button>
+				</div>
+			{/if}
 			<div class="mb-4 flex justify-center">
 				<div class="rounded-2xl bg-indigo-500/10 p-4">
 					<BookOpen class="h-10 w-10 text-indigo-400" />
