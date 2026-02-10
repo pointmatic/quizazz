@@ -118,46 +118,46 @@ Set up sql.js with IndexedDB persistence and the score schema.
   - [x] Test seedScores is idempotent (INSERT OR IGNORE)
 - [x] Verify: `pnpm vitest run` passes in `app/`
 
-### Story B.b: v0.6.0 Weighted Random Selection [Planned]
+### Story B.b: v0.6.0 Weighted Random Selection [Done]
 
 Question selection engine that favors lower-scored questions.
 
-- [ ] Create `app/src/lib/utils/random.ts`
-  - [ ] `shuffle<T>(array: T[]): T[]` — Fisher-Yates shuffle (returns new array)
-  - [ ] `weightedRandomIndex(weights: number[]): number` — pick index proportional to weight
-- [ ] Create `app/src/lib/engine/selection.ts`
-  - [ ] `selectQuestions(questions, scores, count)` — weighted random without replacement
-  - [ ] Weight formula: `max_score - score + 1` (minimum weight = 1)
-- [ ] Create `app/tests/utils/random.test.ts`
-  - [ ] Test shuffle returns all elements
-  - [ ] Test shuffle does not mutate original
-  - [ ] Test weightedRandomIndex respects weights (statistical test, N=10000)
-- [ ] Create `app/tests/engine/selection.test.ts`
-  - [ ] Test selects correct count
-  - [ ] Test handles count > pool size (returns all)
-  - [ ] Test lower-scored questions selected more often (statistical test, N=10000)
-  - [ ] Test all questions have nonzero selection probability
-- [ ] Verify: `pnpm test` passes
+- [x] Create `app/src/lib/utils/random.ts`
+  - [x] `shuffle<T>(array: T[]): T[]` — Fisher-Yates shuffle (returns new array)
+  - [x] `weightedRandomIndex(weights: number[]): number` — pick index proportional to weight
+- [x] Create `app/src/lib/engine/selection.ts`
+  - [x] `selectQuestions(questions, scores, count)` — weighted random without replacement
+  - [x] Weight formula: `max_score - score + 1` (minimum weight = 1)
+- [x] Create `app/tests/utils/random.test.ts`
+  - [x] Test shuffle returns all elements
+  - [x] Test shuffle does not mutate original
+  - [x] Test weightedRandomIndex respects weights (statistical test, N=10000)
+- [x] Create `app/tests/engine/selection.test.ts`
+  - [x] Test selects correct count
+  - [x] Test handles count > pool size (returns all)
+  - [x] Test lower-scored questions selected more often (statistical test, N=10000)
+  - [x] Test all questions have nonzero selection probability
+- [x] Verify: `pnpm vitest run` passes
 
-### Story B.c: v0.7.0 Answer Presentation and Scoring [Planned]
+### Story B.c: v0.7.0 Answer Presentation and Scoring [Done]
 
 Answer selection, shuffling, and point calculation.
 
-- [ ] Create `app/src/lib/engine/presentation.ts`
-  - [ ] `presentAnswers(question, answerCount)` — pick 1 correct + (N-1) others, shuffle, label
-- [ ] Create `app/src/lib/engine/scoring.ts`
-  - [ ] `SCORE_MAP` constant
-  - [ ] `scoreAnswer(category)` function
-- [ ] Create `app/tests/engine/presentation.test.ts`
-  - [ ] Test exactly 1 correct answer in presented set
-  - [ ] Test total presented count matches answerCount (3, 4, 5)
-  - [ ] Test labels are sequential ("a", "b", "c", ...)
-  - [ ] Test answers are shuffled (statistical test over N runs)
-  - [ ] Test handles question with exactly 5 answers and answerCount=5
-- [ ] Create `app/tests/engine/scoring.test.ts`
-  - [ ] Test each category returns correct point value
-  - [ ] Test correct → +1, partially_correct → -2, incorrect → -5, ridiculous → -10
-- [ ] Verify: `pnpm test` passes
+- [x] Create `app/src/lib/engine/presentation.ts`
+  - [x] `presentAnswers(question, answerCount)` — pick 1 correct + (N-1) others, shuffle, label
+- [x] Create `app/src/lib/engine/scoring.ts`
+  - [x] `SCORE_MAP` constant
+  - [x] `scoreAnswer(category)` function
+- [x] Create `app/tests/engine/presentation.test.ts`
+  - [x] Test exactly 1 correct answer in presented set
+  - [x] Test total presented count matches answerCount (3, 4, 5)
+  - [x] Test labels are sequential ("a", "b", "c", ...)
+  - [x] Test answers are shuffled (statistical test over N runs)
+  - [x] Test handles question with exactly 5 answers and answerCount=5
+- [x] Create `app/tests/engine/scoring.test.ts`
+  - [x] Test each category returns correct point value
+  - [x] Test correct → +1, partially_correct → -2, incorrect → -5, ridiculous → -10
+- [x] Verify: `pnpm vitest run` passes
 
 ---
 
