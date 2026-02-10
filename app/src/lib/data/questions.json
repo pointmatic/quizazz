@@ -1,0 +1,188 @@
+[
+  {
+    "id": "115049a298532be2f181edb03f766770c0db84c22aff39003fec340deaec7545",
+    "question": "What is the capital of France?",
+    "answers": [
+      {
+        "text": "Paris",
+        "explanation": "Paris has been the capital of France since the late 10th century.",
+        "category": "correct"
+      },
+      {
+        "text": "Lyon",
+        "explanation": "Lyon is the third-largest city in France and a major economic hub, but it is not the capital.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "Berlin",
+        "explanation": "Berlin is the capital of Germany, not France.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Madrid",
+        "explanation": "Madrid is the capital of Spain, not France.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Atlantis",
+        "explanation": "Atlantis is a mythical island from Plato's dialogues and does not exist.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "1d8f9d4c176552e6ba08506efe5d9b00d4bdc2631fe69419b7e5b3b156fae484",
+    "question": "Which planet is closest to the Sun?",
+    "answers": [
+      {
+        "text": "Mercury",
+        "explanation": "Mercury orbits at an average distance of about 58 million km from the Sun.",
+        "category": "correct"
+      },
+      {
+        "text": "Venus",
+        "explanation": "Venus is the second planet from the Sun, not the closest.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "Earth",
+        "explanation": "Earth is the third planet from the Sun.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Mars",
+        "explanation": "Mars is the fourth planet from the Sun.",
+        "category": "incorrect"
+      },
+      {
+        "text": "The Sun itself",
+        "explanation": "The Sun is a star, not a planet, and cannot be closest to itself.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "8a6d0e35154544734bcce4ea39d959b2b94fadb4c53d059923fa92f8d42e1e22",
+    "question": "What does HTTP stand for?",
+    "answers": [
+      {
+        "text": "HyperText Transfer Protocol",
+        "explanation": "HTTP is the foundational protocol for data communication on the World Wide Web.",
+        "category": "correct"
+      },
+      {
+        "text": "HyperText Transport Protocol",
+        "explanation": "Close, but the correct word is 'Transfer', not 'Transport'.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "High Transfer Text Protocol",
+        "explanation": "This is not a real protocol name.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Home Tool Transfer Protocol",
+        "explanation": "This is a fabricated acronym.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Hippos Typing Terrible Poetry",
+        "explanation": "This is a humorous but entirely fictional expansion of the acronym.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "eda75f91a234995e35d44fa9a1d676d885f99338c3b8c52bc5566f6cde7154a1",
+    "question": "What is the time complexity of binary search?",
+    "answers": [
+      {
+        "text": "O(log n)",
+        "explanation": "Binary search halves the search space with each comparison, yielding logarithmic time complexity.",
+        "category": "correct"
+      },
+      {
+        "text": "O(n)",
+        "explanation": "O(n) is the complexity of linear search, not binary search. Binary search is faster.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "O(n²)",
+        "explanation": "O(n²) is typical of naive sorting algorithms, not search algorithms.",
+        "category": "incorrect"
+      },
+      {
+        "text": "O(1)",
+        "explanation": "O(1) would mean constant time regardless of input size, which is not how binary search works.",
+        "category": "incorrect"
+      },
+      {
+        "text": "O(n!)",
+        "explanation": "Factorial time complexity would make binary search slower than almost any known algorithm.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "0690301b84122589ff51a2d536310dc7a68dc381db052b0ab2f9d6fa0a4576b5",
+    "question": "Which element has the chemical symbol 'O'?",
+    "answers": [
+      {
+        "text": "Oxygen",
+        "explanation": "Oxygen's chemical symbol is O, with atomic number 8.",
+        "category": "correct"
+      },
+      {
+        "text": "Osmium",
+        "explanation": "Osmium's chemical symbol is Os, not O. Close but not correct.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "Gold",
+        "explanation": "Gold's chemical symbol is Au, from the Latin 'aurum'.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Iron",
+        "explanation": "Iron's chemical symbol is Fe, from the Latin 'ferrum'.",
+        "category": "incorrect"
+      },
+      {
+        "text": "Unobtanium",
+        "explanation": "Unobtanium is a fictional material from the movie Avatar.",
+        "category": "ridiculous"
+      }
+    ]
+  },
+  {
+    "id": "8ed8910cac1fa7a9ee9e419e0786ef5b49da3c49feb8d480b63ba1874758d3ba",
+    "question": "In which year did the World Wide Web become publicly available?",
+    "answers": [
+      {
+        "text": "1991",
+        "explanation": "Tim Berners-Lee made the World Wide Web publicly available on August 6, 1991.",
+        "category": "correct"
+      },
+      {
+        "text": "1989",
+        "explanation": "1989 is when Tim Berners-Lee wrote the original proposal, but the web was not yet public.",
+        "category": "partially_correct"
+      },
+      {
+        "text": "2000",
+        "explanation": "By 2000, the web was already widely adopted. It became public nearly a decade earlier.",
+        "category": "incorrect"
+      },
+      {
+        "text": "1975",
+        "explanation": "The internet's precursor ARPANET existed in 1975, but the World Wide Web had not been invented.",
+        "category": "incorrect"
+      },
+      {
+        "text": "1776",
+        "explanation": "1776 is the year of the American Declaration of Independence, centuries before computers existed.",
+        "category": "ridiculous"
+      }
+    ]
+  }
+]

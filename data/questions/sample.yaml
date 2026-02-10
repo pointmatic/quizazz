@@ -1,0 +1,101 @@
+- question: "What is the capital of France?"
+  answers:
+    correct:
+      - text: "Paris"
+        explanation: "Paris has been the capital of France since the late 10th century."
+    partially_correct:
+      - text: "Lyon"
+        explanation: "Lyon is the third-largest city in France and a major economic hub, but it is not the capital."
+    incorrect:
+      - text: "Berlin"
+        explanation: "Berlin is the capital of Germany, not France."
+      - text: "Madrid"
+        explanation: "Madrid is the capital of Spain, not France."
+    ridiculous:
+      - text: "Atlantis"
+        explanation: "Atlantis is a mythical island from Plato's dialogues and does not exist."
+
+- question: "Which planet is closest to the Sun?"
+  answers:
+    correct:
+      - text: "Mercury"
+        explanation: "Mercury orbits at an average distance of about 58 million km from the Sun."
+    partially_correct:
+      - text: "Venus"
+        explanation: "Venus is the second planet from the Sun, not the closest."
+    incorrect:
+      - text: "Earth"
+        explanation: "Earth is the third planet from the Sun."
+      - text: "Mars"
+        explanation: "Mars is the fourth planet from the Sun."
+    ridiculous:
+      - text: "The Sun itself"
+        explanation: "The Sun is a star, not a planet, and cannot be closest to itself."
+
+- question: "What does HTTP stand for?"
+  answers:
+    correct:
+      - text: "HyperText Transfer Protocol"
+        explanation: "HTTP is the foundational protocol for data communication on the World Wide Web."
+    partially_correct:
+      - text: "HyperText Transport Protocol"
+        explanation: "Close, but the correct word is 'Transfer', not 'Transport'."
+    incorrect:
+      - text: "High Transfer Text Protocol"
+        explanation: "This is not a real protocol name."
+      - text: "Home Tool Transfer Protocol"
+        explanation: "This is a fabricated acronym."
+    ridiculous:
+      - text: "Hippos Typing Terrible Poetry"
+        explanation: "This is a humorous but entirely fictional expansion of the acronym."
+
+- question: "What is the time complexity of binary search?"
+  answers:
+    correct:
+      - text: "O(log n)"
+        explanation: "Binary search halves the search space with each comparison, yielding logarithmic time complexity."
+    partially_correct:
+      - text: "O(n)"
+        explanation: "O(n) is the complexity of linear search, not binary search. Binary search is faster."
+    incorrect:
+      - text: "O(n²)"
+        explanation: "O(n²) is typical of naive sorting algorithms, not search algorithms."
+      - text: "O(1)"
+        explanation: "O(1) would mean constant time regardless of input size, which is not how binary search works."
+    ridiculous:
+      - text: "O(n!)"
+        explanation: "Factorial time complexity would make binary search slower than almost any known algorithm."
+
+- question: "Which element has the chemical symbol 'O'?"
+  answers:
+    correct:
+      - text: "Oxygen"
+        explanation: "Oxygen's chemical symbol is O, with atomic number 8."
+    partially_correct:
+      - text: "Osmium"
+        explanation: "Osmium's chemical symbol is Os, not O. Close but not correct."
+    incorrect:
+      - text: "Gold"
+        explanation: "Gold's chemical symbol is Au, from the Latin 'aurum'."
+      - text: "Iron"
+        explanation: "Iron's chemical symbol is Fe, from the Latin 'ferrum'."
+    ridiculous:
+      - text: "Unobtanium"
+        explanation: "Unobtanium is a fictional material from the movie Avatar."
+
+- question: "In which year did the World Wide Web become publicly available?"
+  answers:
+    correct:
+      - text: "1991"
+        explanation: "Tim Berners-Lee made the World Wide Web publicly available on August 6, 1991."
+    partially_correct:
+      - text: "1989"
+        explanation: "1989 is when Tim Berners-Lee wrote the original proposal, but the web was not yet public."
+    incorrect:
+      - text: "2000"
+        explanation: "By 2000, the web was already widely adopted. It became public nearly a decade earlier."
+      - text: "1975"
+        explanation: "The internet's precursor ARPANET existed in 1975, but the World Wide Web had not been invented."
+    ridiculous:
+      - text: "1776"
+        explanation: "1776 is the year of the American Declaration of Independence, centuries before computers existed."

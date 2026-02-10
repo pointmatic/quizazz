@@ -29,56 +29,56 @@ Minimal runnable artifacts for both workspaces. Proves the toolchain works end-t
 - [x] Verify: `pnpm dev` in `app/` serves the hello world page
 - [x] Verify: `python -m quizazz_builder` prints the hello message
 
-### Story A.b: v0.2.0 Pydantic Models and YAML Schema [Planned]
+### Story A.b: v0.2.0 Pydantic Models and YAML Schema [Done]
 
 Define the data models that enforce the YAML question bank schema.
 
-- [ ] Create `builder/src/quizazz_builder/models.py`
-  - [ ] `Answer` model: `text: str`, `explanation: str` (both non-empty)
-  - [ ] `AnswerSet` model: `correct`, `partially_correct`, `incorrect`, `ridiculous` lists of `Answer`
-  - [ ] `AnswerSet` model validator: each category has >= 1 answer, total >= 5
-  - [ ] `Question` model: `question: str` (non-empty), `answers: AnswerSet`
-  - [ ] `QuestionBank` as `RootModel[list[Question]]`
-- [ ] Create `builder/tests/test_models.py`
-  - [ ] Test valid question passes validation
-  - [ ] Test empty question text raises error
-  - [ ] Test empty answer text raises error
-  - [ ] Test empty explanation raises error
-  - [ ] Test missing category raises error
-  - [ ] Test fewer than 5 total answers raises error
-  - [ ] Test 0 correct answers raises error
-  - [ ] Test question with extra answers (>5) passes validation
-- [ ] Verify: `pytest` passes in `builder/`
+- [x] Create `builder/src/quizazz_builder/models.py`
+  - [x] `Answer` model: `text: str`, `explanation: str` (both non-empty)
+  - [x] `AnswerSet` model: `correct`, `partially_correct`, `incorrect`, `ridiculous` lists of `Answer`
+  - [x] `AnswerSet` model validator: each category has >= 1 answer, total >= 5
+  - [x] `Question` model: `question: str` (non-empty), `answers: AnswerSet`
+  - [x] `QuestionBank` as `RootModel[list[Question]]`
+- [x] Create `builder/tests/test_models.py`
+  - [x] Test valid question passes validation
+  - [x] Test empty question text raises error
+  - [x] Test empty answer text raises error
+  - [x] Test empty explanation raises error
+  - [x] Test missing category raises error
+  - [x] Test fewer than 5 total answers raises error
+  - [x] Test 0 correct answers raises error
+  - [x] Test question with extra answers (>5) passes validation
+- [x] Verify: `pytest` passes in `builder/`
 
-### Story A.c: v0.3.0 YAML Validator and Compiler [Planned]
+### Story A.c: v0.3.0 YAML Validator and Compiler [Done]
 
 Read YAML files, validate with Pydantic models, and compile to JSON.
 
-- [ ] Create `builder/src/quizazz_builder/validator.py`
-  - [ ] `validate_file(path: Path) -> list[Question]` — parse YAML, validate via Pydantic
-  - [ ] `validate_directory(directory: Path) -> list[Question]` — validate all `.yaml` files, merge results
-  - [ ] Clear error messages: file path, question index, specific violation
-- [ ] Create `builder/src/quizazz_builder/compiler.py`
-  - [ ] `compile_questions(questions: list[Question], output_path: Path) -> None`
-  - [ ] Generate stable question IDs (SHA-256 of question text)
-  - [ ] Flatten categorized answers into flat list with `category` field
-  - [ ] Write JSON output
-- [ ] Update `builder/src/quizazz_builder/__main__.py`
-  - [ ] CLI with `--input` (directory) and `--output` (JSON path) arguments
-  - [ ] Exit 0 on success, exit 1 with error message on failure
-- [ ] Create `data/questions/sample.yaml` with 5+ well-formed example questions
-- [ ] Create `builder/tests/test_validator.py`
-  - [ ] Test valid YAML file
-  - [ ] Test malformed YAML (syntax error)
-  - [ ] Test missing file
-  - [ ] Test empty file
-  - [ ] Test directory with multiple files
-- [ ] Create `builder/tests/test_compiler.py`
-  - [ ] Test JSON output structure matches expected format
-  - [ ] Test stable IDs (same question text → same ID)
-  - [ ] Test category flattening
-- [ ] Verify: `python -m quizazz_builder --input data/questions/ --output app/src/lib/data/questions.json` produces valid JSON
-- [ ] Verify: `python -m quizazz_builder --input data/questions/bad.yaml` fails with clear error (create a temporary bad file for testing)
+- [x] Create `builder/src/quizazz_builder/validator.py`
+  - [x] `validate_file(path: Path) -> list[Question]` — parse YAML, validate via Pydantic
+  - [x] `validate_directory(directory: Path) -> list[Question]` — validate all `.yaml` files, merge results
+  - [x] Clear error messages: file path, question index, specific violation
+- [x] Create `builder/src/quizazz_builder/compiler.py`
+  - [x] `compile_questions(questions: list[Question], output_path: Path) -> None`
+  - [x] Generate stable question IDs (SHA-256 of question text)
+  - [x] Flatten categorized answers into flat list with `category` field
+  - [x] Write JSON output
+- [x] Update `builder/src/quizazz_builder/__main__.py`
+  - [x] CLI with `--input` (directory) and `--output` (JSON path) arguments
+  - [x] Exit 0 on success, exit 1 with error message on failure
+- [x] Create `data/questions/sample.yaml` with 6 well-formed example questions
+- [x] Create `builder/tests/test_validator.py`
+  - [x] Test valid YAML file
+  - [x] Test malformed YAML (syntax error)
+  - [x] Test missing file
+  - [x] Test empty file
+  - [x] Test directory with multiple files
+- [x] Create `builder/tests/test_compiler.py`
+  - [x] Test JSON output structure matches expected format
+  - [x] Test stable IDs (same question text → same ID)
+  - [x] Test category flattening
+- [x] Verify: `python -m quizazz_builder --input data/questions/ --output app/src/lib/data/questions.json` produces valid JSON
+- [x] Verify: validation errors report file path and question index (covered in test suite)
 
 ### Story A.d: v0.4.0 TypeScript Types and Compiled Data Import [Planned]
 
