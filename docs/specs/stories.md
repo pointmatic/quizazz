@@ -642,23 +642,25 @@ Make the IndexedDB database name dynamic, keyed by quiz name.
   - [x] Test same quiz produces consistent DB name
 - [x] Verify: `pnpm vitest run` — 93 passed, `pnpm check` — 0 errors
 
-### Story J.d: v0.31.0 Navigation Tree Component [Planned]
+### Story J.d: v0.31.0 Navigation Tree Component [Done]
 
 Build the navigation tree UI with topic/subtopic selection and mastery scores.
 
-- [ ] Create `app/src/lib/components/NavigationTree.svelte`
-  - [ ] Render tree from `NavNode[]` recursively
-  - [ ] Directory nodes: expandable/collapsible groups
-  - [ ] Topic nodes: show `label`, `description`, mastery percentage
-  - [ ] Subtopic nodes: show `label`, mastery percentage
-  - [ ] Checkbox selection: select/deselect nodes (selecting a parent selects all children)
-  - [ ] "Select All" / "Clear" controls
-  - [ ] "Continue" button (disabled if no nodes selected) → proceeds to ConfigView
-  - [ ] Clean, minimal styling consistent with existing UI
-- [ ] Update `app/src/lib/stores/quiz.ts`
-  - [ ] Add `"nav"` to `ViewMode` type (already added in tech_spec)
-  - [ ] Default `viewMode` to `"nav"`
-- [ ] Verify: `pnpm check` — 0 errors
+- [x] Create `app/src/lib/components/NavigationTree.svelte`
+  - [x] Render tree from `NavNode[]` recursively using Svelte 5 snippets
+  - [x] Directory nodes: expandable/collapsible with chevron toggle
+  - [x] Topic nodes: show `label`, `description`, mastery percentage badge
+  - [x] Subtopic nodes: show `label`, mastery percentage badge
+  - [x] Checkbox selection: select/deselect nodes (parent selects all children, children auto-check parent)
+  - [x] "Select All" / "Clear" controls
+  - [x] "Continue" button (disabled if no nodes selected) shows selected question count
+  - [x] Icons: FolderOpen (directory), FileText (topic), List (subtopic)
+  - [x] Mastery badges: green (≥80%), amber (≥40%), gray (<40%)
+  - [x] Clean, minimal styling consistent with existing dark UI
+- [x] Update `app/src/lib/stores/quiz.ts`
+  - [x] Add `"nav"` to `ViewMode` type
+  - [x] Default `viewMode` to `"nav"`
+- [x] Verify: `pnpm check` — 0 errors, `pnpm vitest run` — 93 passed
 
 ### Story J.e: v0.32.0 Wire Navigation Tree into Quiz Flow [Planned]
 
