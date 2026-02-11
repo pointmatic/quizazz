@@ -756,33 +756,91 @@ local development experience.
   - [x] Use `quizazz-builder` CLI command throughout
 - [x] Verify: `pnpm vitest run` — 101 passed (10 files), `pnpm check` — 0 errors
 
-### Story J.h: v0.35.0 Per-Question Timer
+### Story J.h: v0.35.0 Per-Question Timer [Done]
 
 Track how long the user spends on each question. The timer starts when a question
 is displayed, pauses when the user navigates away, and resumes if they return to
 edit their answer. Elapsed time is stored per question and aggregated in the
 summary and database, mirroring how scores are tracked today.
 
-- [ ] Add `elapsedMs` field to `QuizQuestion` type (default `0`)
-- [ ] Timer logic in `lifecycle.ts`
-  - [ ] Record `Date.now()` when a question becomes active (`startQuiz`, `submitAnswer` advancing, `editAnsweredQuestion`)
-  - [ ] On leaving a question (`submitAnswer`, `editAnsweredQuestion`, `showAnsweredQuestions`), accumulate elapsed time into `elapsedMs`
-  - [ ] Resuming an edited question resumes from its existing `elapsedMs`
-- [ ] Display timer in `QuizView`
-  - [ ] Show live elapsed time (mm:ss) while answering
-  - [ ] Timer counts up, no time limit
-- [ ] Store elapsed time in database
-  - [ ] Add `elapsed_ms` column to `session_answers` table
-  - [ ] Schema migration: detect version 0 (no `schema_version`), add column, set version to 1
-  - [ ] Pass `elapsedMs` through `recordAnswer` and `finalizeQuiz`
-- [ ] Display in `SummaryView`
-  - [ ] Per-question time in review list
-  - [ ] Total quiz time and average time per question
-- [ ] Display in `ReviewView`
-  - [ ] Show time spent on each question
+- [x] Add `elapsedMs` field to `QuizQuestion` type (default `0`)
+- [x] Timer logic in `lifecycle.ts`
+  - [x] Record `Date.now()` when a question becomes active (`startQuiz`, `submitAnswer` advancing, `editAnsweredQuestion`)
+  - [x] On leaving a question (`submitAnswer`, `editAnsweredQuestion`, `showAnsweredQuestions`), accumulate elapsed time into `elapsedMs`
+  - [x] Resuming an edited question resumes from its existing `elapsedMs`
+- [x] Display timer in `QuizView`
+  - [x] Show live elapsed time (mm:ss) while answering
+  - [x] Timer counts up, no time limit
+- [x] Store elapsed time in database
+  - [x] Add `elapsed_ms` column to `session_answers` table
+  - [x] Schema migration: detect version 0 (no `schema_version`), add column, set version to 1
+  - [x] Pass `elapsedMs` through `recordAnswer` and `finalizeQuiz`
+- [x] Display in `SummaryView`
+  - [x] Per-question time in review list
+  - [x] Total quiz time and average time per question
+- [x] Display in `ReviewView`
+  - [x] Show time spent on each question
+- [x] Tests
+  - [x] Timer accumulates across edits
+  - [x] Timer resets on retake
+  - [x] Schema migration from version 0 → 1
+  - [x] `elapsedMs` persisted in `session_answers`
+  - [x] `formatTime` utility (6 tests)
+  - [x] `showAnsweredQuestions` snapshots elapsed time
+- [x] Verify: `pnpm check` — 0 errors, 115 tests passed (11 files)
+
+### Story J.i: v0.36.0 Named Manifests and Multi-Quiz Discovery
+
+Rename the builder output from `manifest.json` to `{quiz_name}.json` (matching
+the package folder name). Update the app to discover all `.json` quiz packages
+in the data directory at build time — auto-load if only one, show a chooser if
+multiple.
+
+- [ ] Builder: rename output file
+  - [ ] `compile_quiz` outputs `{quiz_name}.json` instead of `manifest.json`
+  - [ ] Update `--output` help text
+  - [ ] Update builder tests for new filename
+- [ ] App: multi-manifest data layer
+  - [ ] Change `$lib/data` to export a list of available manifests (auto-discovered from `*.json` in data dir)
+  - [ ] Add manifest store: reactive store holding the active `QuizManifest`
+  - [ ] Derived `questions`, `navTree`, `allTags` from the active manifest
+- [ ] App: quiz chooser
+  - [ ] If one manifest, auto-load it (current behavior)
+  - [ ] If multiple, show a chooser screen before the nav tree
+  - [ ] Display quiz name and question count for each option
+- [ ] Wire active manifest into quiz flow
+  - [ ] Replace static imports with manifest store reads in `+page.svelte`
+  - [ ] Initialize per-quiz DB using active manifest's `quizName`
+  - [ ] Reset session state when switching quizzes
+- [ ] Update `serve.py` and README for new filename convention
 - [ ] Tests
-  - [ ] Timer accumulates across edits
-  - [ ] Timer resets on retake
-  - [ ] Schema migration from version 0 → 1
-  - [ ] `elapsedMs` persisted in `session_answers`
+  - [ ] Builder outputs `{quiz_name}.json`
+  - [ ] Single manifest auto-loads
+  - [ ] Multiple manifests show chooser
+  - [ ] Switching quizzes resets session and DB
+- [ ] Verify: `pnpm check` — 0 errors, all tests pass
+
+### Story J.j: v0.37.0 Upload Custom Quiz Package
+
+Allow the user to upload a compiled `.json` quiz package at runtime instead of
+using the baked-in data. This lets anyone run a custom quiz without rebuilding
+the app — just compile YAML with `quizazz-builder` and upload the resulting file.
+
+- [ ] Add `QuizManifest` validation utility
+  - [ ] Validate shape: `quizName` (string), `tree` (NavNode[]), `questions` (Question[])
+  - [ ] Return typed errors for malformed files
+- [ ] Upload UI on nav/chooser screen
+  - [ ] File input accepting `.json` files
+  - [ ] Drag-and-drop zone as alternative
+  - [ ] Show upload errors inline
+  - [ ] Uploaded quiz appears alongside built-in quizzes
+- [ ] Wire uploaded manifest into quiz flow
+  - [ ] Initialize per-quiz DB using uploaded `quizName`
+  - [ ] Reset session state when loading uploaded quiz
+- [ ] "Remove uploaded quiz" option
+- [ ] Tests
+  - [ ] Valid upload adds quiz to chooser
+  - [ ] Invalid JSON shows error
+  - [ ] Missing fields show validation error
+  - [ ] Quiz flow works end-to-end with uploaded manifest
 - [ ] Verify: `pnpm check` — 0 errors, all tests pass

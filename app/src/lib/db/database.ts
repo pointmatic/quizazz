@@ -21,6 +21,8 @@ export function getDbName(quizName: string): string {
 	return `quizazz-${quizName}`;
 }
 
+const CURRENT_SCHEMA_VERSION = 1;
+
 export function createSchema(db: Database): void {
 	db.run(`
 		CREATE TABLE IF NOT EXISTS question_scores (
@@ -35,9 +37,50 @@ export function createSchema(db: Database): void {
 			question_id TEXT NOT NULL,
 			selected_category TEXT NOT NULL,
 			points INTEGER NOT NULL,
-			timestamp INTEGER NOT NULL
+			timestamp INTEGER NOT NULL,
+			elapsed_ms INTEGER NOT NULL DEFAULT 0
 		)
 	`);
+
+	// Migrate existing databases before setting the version
+	migrateSchema(db);
+
+	db.run(`
+		CREATE TABLE IF NOT EXISTS schema_version (
+			id INTEGER PRIMARY KEY CHECK (id = 1),
+			version INTEGER NOT NULL
+		)
+	`);
+	db.run('INSERT OR IGNORE INTO schema_version (id, version) VALUES (1, ?)', [CURRENT_SCHEMA_VERSION]);
+}
+
+function getSchemaVersion(db: Database): number {
+	const results = db.exec("SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'");
+	if (results.length === 0 || results[0].values.length === 0) return 0;
+	const versionResult = db.exec('SELECT version FROM schema_version WHERE id = 1');
+	if (versionResult.length === 0 || versionResult[0].values.length === 0) return 0;
+	return versionResult[0].values[0][0] as number;
+}
+
+function migrateSchema(db: Database): void {
+	const version = getSchemaVersion(db);
+	if (version < 1) {
+		// Migration 0 → 1: add elapsed_ms column if missing
+		const cols = db.exec("PRAGMA table_info(session_answers)");
+		if (cols.length > 0) {
+			const hasElapsedMs = cols[0].values.some((row) => row[1] === 'elapsed_ms');
+			if (!hasElapsedMs) {
+				db.run('ALTER TABLE session_answers ADD COLUMN elapsed_ms INTEGER NOT NULL DEFAULT 0');
+			}
+		}
+		db.run(`
+			CREATE TABLE IF NOT EXISTS schema_version (
+				id INTEGER PRIMARY KEY CHECK (id = 1),
+				version INTEGER NOT NULL
+			)
+		`);
+		db.run('INSERT OR REPLACE INTO schema_version (id, version) VALUES (1, ?)', [CURRENT_SCHEMA_VERSION]);
+	}
 }
 
 function openIndexedDB(dbName: string): Promise<IDBDatabase> {

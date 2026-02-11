@@ -31,7 +31,8 @@ import {
 	showAnsweredQuestions,
 	editAnsweredQuestion,
 	backToQuiz,
-	getFrontierIndex
+	getFrontierIndex,
+	getQuestionStartTime
 } from '$lib/engine/lifecycle';
 import type { Question, QuestionScore } from '$lib/types';
 
@@ -514,5 +515,195 @@ describe('database integration', () => {
 		const results = db.exec('SELECT COUNT(*) FROM session_answers');
 		const count = results[0].values[0][0] as number;
 		expect(count).toBe(2);
+	});
+
+	it('elapsed_ms is stored in session_answers', async () => {
+		questions = makeQuestions(2);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+		await answerAllQuestions();
+
+		const results = db.exec('SELECT elapsed_ms FROM session_answers');
+		expect(results.length).toBe(1);
+		expect(results[0].values.length).toBe(2);
+		// elapsed_ms should be a non-negative number for each answer
+		for (const row of results[0].values) {
+			expect(typeof row[0]).toBe('number');
+			expect(row[0] as number).toBeGreaterThanOrEqual(0);
+		}
+	});
+});
+
+describe('per-question timer', () => {
+	it('questions start with elapsedMs of 0', () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+		for (const q of get(quizSession)!.questions) {
+			expect(q.elapsedMs).toBe(0);
+		}
+	});
+
+	it('elapsedMs accumulates time on submit', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+
+		// Submitting an answer should accumulate some elapsed time on question 0
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+		const q0elapsed = get(quizSession)!.questions[0].elapsedMs;
+		expect(q0elapsed).toBeGreaterThanOrEqual(0);
+	});
+
+	it('elapsedMs accumulates across edits', async () => {
+		questions = makeQuestions(4);
+		scores = setupDb(questions);
+
+		vi.useFakeTimers();
+		const baseTime = Date.now();
+		vi.setSystemTime(baseTime);
+
+		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+
+		// Spend 5s on question 0
+		vi.setSystemTime(baseTime + 5000);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+		expect(get(quizSession)!.questions[0].elapsedMs).toBe(5000);
+
+		// Spend 3s on question 1
+		vi.setSystemTime(baseTime + 8000);
+		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
+		expect(get(quizSession)!.questions[1].elapsedMs).toBe(3000);
+
+		// Edit question 0 — snapshot current question (2) first
+		vi.setSystemTime(baseTime + 10000);
+		editAnsweredQuestion(0);
+		// Question 2 should have accumulated 2s (8000→10000)
+		expect(get(quizSession)!.questions[2].elapsedMs).toBe(2000);
+
+		// Spend 2s re-answering question 0
+		vi.setSystemTime(baseTime + 12000);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[1].label, db);
+		// Question 0 should now have 5000 + 2000 = 7000
+		expect(get(quizSession)!.questions[0].elapsedMs).toBe(7000);
+
+		vi.useRealTimers();
+	});
+
+	it('elapsedMs resets on retake', async () => {
+		questions = makeQuestions(2);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 2, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+		await answerAllQuestions();
+
+		// After completing, questions should have some elapsed time
+		const beforeRetake = get(quizSession)!.questions.map((q) => q.elapsedMs);
+		expect(beforeRetake.some((ms) => ms >= 0)).toBe(true);
+
+		scores = getScores(db);
+		retakeQuiz(db, questions, scores);
+
+		// After retake, all elapsed times should be 0
+		for (const q of get(quizSession)!.questions) {
+			expect(q.elapsedMs).toBe(0);
+		}
+	});
+
+	it('showAnsweredQuestions snapshots elapsed time', async () => {
+		questions = makeQuestions(3);
+		scores = setupDb(questions);
+
+		vi.useFakeTimers();
+		const baseTime = Date.now();
+		vi.setSystemTime(baseTime);
+
+		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+
+		// Answer question 0
+		vi.setSystemTime(baseTime + 4000);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+
+		// Spend 2s on question 1, then show answered
+		vi.setSystemTime(baseTime + 6000);
+		showAnsweredQuestions();
+
+		// Question 1 (current at frontier) should have 2s snapshotted
+		expect(get(quizSession)!.questions[1].elapsedMs).toBe(2000);
+
+		vi.useRealTimers();
+	});
+});
+
+describe('schema migration', () => {
+	it('migrates version 0 DB to version 1 with elapsed_ms column', async () => {
+		const SQL = await initSqlJs();
+		const oldDb = new SQL.Database();
+
+		// Create old schema (version 0) without elapsed_ms or schema_version
+		oldDb.run(`
+			CREATE TABLE question_scores (
+				question_id TEXT PRIMARY KEY,
+				cumulative_score INTEGER NOT NULL DEFAULT 0
+			)
+		`);
+		oldDb.run(`
+			CREATE TABLE session_answers (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				session_id TEXT NOT NULL,
+				question_id TEXT NOT NULL,
+				selected_category TEXT NOT NULL,
+				points INTEGER NOT NULL,
+				timestamp INTEGER NOT NULL
+			)
+		`);
+
+		// Insert a row in old format
+		oldDb.run(
+			'INSERT INTO session_answers (session_id, question_id, selected_category, points, timestamp) VALUES (?, ?, ?, ?, ?)',
+			['s1', 'q1', 'correct', 3, 1000]
+		);
+
+		// Run createSchema which should migrate
+		createSchema(oldDb);
+
+		// elapsed_ms column should now exist with default 0
+		const results = oldDb.exec('SELECT elapsed_ms FROM session_answers');
+		expect(results.length).toBe(1);
+		expect(results[0].values[0][0]).toBe(0);
+
+		// schema_version should be 1
+		const versionResult = oldDb.exec('SELECT version FROM schema_version WHERE id = 1');
+		expect(versionResult[0].values[0][0]).toBe(1);
+
+		// Can insert new rows with elapsed_ms
+		oldDb.run(
+			'INSERT INTO session_answers (session_id, question_id, selected_category, points, timestamp, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?)',
+			['s2', 'q2', 'incorrect', -1, 2000, 5000]
+		);
+		const newResults = oldDb.exec('SELECT elapsed_ms FROM session_answers WHERE session_id = ?', ['s2']);
+		expect(newResults[0].values[0][0]).toBe(5000);
+
+		oldDb.close();
+	});
+
+	it('fresh DB gets version 1 schema directly', async () => {
+		const SQL = await initSqlJs();
+		const freshDb = new SQL.Database();
+		createSchema(freshDb);
+
+		// schema_version should be 1
+		const versionResult = freshDb.exec('SELECT version FROM schema_version WHERE id = 1');
+		expect(versionResult[0].values[0][0]).toBe(1);
+
+		// elapsed_ms column should exist
+		const cols = freshDb.exec('PRAGMA table_info(session_answers)');
+		const hasElapsedMs = cols[0].values.some((row) => row[1] === 'elapsed_ms');
+		expect(hasElapsedMs).toBe(true);
+
+		freshDb.close();
 	});
 });

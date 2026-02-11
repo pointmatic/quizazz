@@ -45,10 +45,11 @@ export function recordAnswer(
 	sessionId: string,
 	questionId: string,
 	category: AnswerCategory,
-	points: number
+	points: number,
+	elapsedMs: number = 0
 ): void {
 	db.run(
-		'INSERT INTO session_answers (session_id, question_id, selected_category, points, timestamp) VALUES (?, ?, ?, ?, ?)',
-		[sessionId, questionId, category, points, Date.now()]
+		'INSERT INTO session_answers (session_id, question_id, selected_category, points, timestamp, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?)',
+		[sessionId, questionId, category, points, Date.now(), elapsedMs]
 	);
 }

@@ -20,7 +20,7 @@
 	import { manifest, questions, allTags, navTree } from '$lib/data';
 	import { initDatabase, getScores, seedScores } from '$lib/db';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
-	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, editAnsweredQuestion, backToQuiz, setNavNodes, getFrontierIndex } from '$lib/engine/lifecycle';
+	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, editAnsweredQuestion, backToQuiz, setNavNodes, getFrontierIndex, getQuestionStartTime } from '$lib/engine/lifecycle';
 	import type { Question, QuestionScore } from '$lib/types';
 	import NavigationTree from '$lib/components/NavigationTree.svelte';
 	import ConfigView from '$lib/components/ConfigView.svelte';
@@ -145,6 +145,7 @@
 			progressTotal={$quizSession.questions.length}
 			progressPercent={Math.round((answered / $quizSession.questions.length) * 100)}
 			hasAnswered={frontier > 0}
+			startedAt={getQuestionStartTime()}
 			onSubmit={handleSubmit}
 			onShowAnswered={showAnsweredQuestions}
 		/>

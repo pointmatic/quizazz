@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { Database } from 'sql.js';
-import type { NavNode, Question, QuestionScore, QuizConfig, QuizQuestion } from '$lib/types';
+import type { NavNode, Question, QuestionScore, QuizConfig, QuizQuestion, QuizSession } from '$lib/types';
 import { selectQuestions } from '$lib/engine/selection';
 import { presentAnswers } from '$lib/engine/presentation';
 import { scoreAnswer } from '$lib/engine/scoring';
@@ -23,6 +23,7 @@ import { get } from 'svelte/store';
 
 let sessionId = crypto.randomUUID();
 let activeQuizName = '';
+let questionStartTime = 0;
 
 let allNavNodes: NavNode[] = [];
 
@@ -70,7 +71,8 @@ export function startQuiz(
 		question: q,
 		presentedAnswers: presentAnswers(q, config.answerCount),
 		selectedLabel: null,
-		submittedLabel: null
+		submittedLabel: null,
+		elapsedMs: 0
 	}));
 
 	quizSession.set({
@@ -80,6 +82,7 @@ export function startQuiz(
 		completed: false
 	});
 
+	questionStartTime = Date.now();
 	viewMode.set('quiz');
 }
 
@@ -87,6 +90,25 @@ let frontierIndex = 0;
 
 export function getFrontierIndex(): number {
 	return frontierIndex;
+}
+
+export function getQuestionStartTime(): number {
+	return questionStartTime;
+}
+
+function snapshotElapsed(session: QuizSession): QuizQuestion[] {
+	const now = Date.now();
+	const delta = now - questionStartTime;
+	questionStartTime = now;
+	const updatedQuestions = [...session.questions];
+	const current = updatedQuestions[session.currentIndex];
+	if (current) {
+		updatedQuestions[session.currentIndex] = {
+			...current,
+			elapsedMs: current.elapsedMs + delta
+		};
+	}
+	return updatedQuestions;
 }
 
 export async function submitAnswer(label: string, db: Database): Promise<void> {
@@ -99,9 +121,9 @@ export async function submitAnswer(label: string, db: Database): Promise<void> {
 	const selectedAnswer = current.presentedAnswers.find((a) => a.label === label);
 	if (!selectedAnswer) return;
 
-	const updatedQuestions = [...session.questions];
+	const updatedQuestions = snapshotElapsed(session);
 	updatedQuestions[session.currentIndex] = {
-		...current,
+		...updatedQuestions[session.currentIndex],
 		selectedLabel: label,
 		submittedLabel: label
 	};
@@ -148,7 +170,7 @@ async function finalizeQuiz(questions: QuizQuestion[], db: Database): Promise<vo
 		if (!answer) continue;
 		const points = scoreAnswer(answer.category);
 		updateScore(db, qq.question.id, points);
-		recordAnswer(db, sessionId, qq.question.id, answer.category, points);
+		recordAnswer(db, sessionId, qq.question.id, answer.category, points, qq.elapsedMs);
 	}
 	await persistDatabase(db, activeQuizName);
 }
@@ -157,11 +179,15 @@ export function editAnsweredQuestion(index: number): void {
 	const session = get(quizSession);
 	if (!session || index >= frontierIndex) return;
 
+	const updatedQuestions = snapshotElapsed(session);
+
 	quizSession.set({
 		...session,
+		questions: updatedQuestions,
 		currentIndex: index
 	});
 
+	questionStartTime = Date.now();
 	reviewIndex.set(null);
 	viewMode.set('quiz');
 }
@@ -177,7 +203,8 @@ export function retakeQuiz(db: Database, allQuestions: Question[], scores: Quest
 		question: qq.question,
 		presentedAnswers: presentAnswers(qq.question, session.config.answerCount),
 		selectedLabel: null,
-		submittedLabel: null
+		submittedLabel: null,
+		elapsedMs: 0
 	}));
 
 	quizSession.set({
@@ -187,6 +214,7 @@ export function retakeQuiz(db: Database, allQuestions: Question[], scores: Quest
 		completed: false
 	});
 
+	questionStartTime = Date.now();
 	viewMode.set('quiz');
 }
 
@@ -213,6 +241,13 @@ export function backToSummary(): void {
 export function showAnsweredQuestions(): void {
 	const session = get(quizSession);
 	if (!session || frontierIndex === 0) return;
+
+	const updatedQuestions = snapshotElapsed(session);
+	quizSession.set({
+		...session,
+		questions: updatedQuestions
+	});
+
 	reviewIndex.set(null);
 	viewMode.set('quiz-answered');
 }
@@ -225,6 +260,7 @@ export function backToQuiz(): void {
 			currentIndex: frontierIndex
 		});
 	}
+	questionStartTime = Date.now();
 	reviewIndex.set(null);
 	viewMode.set('quiz');
 }

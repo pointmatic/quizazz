@@ -15,8 +15,9 @@
 -->
 
 <script lang="ts">
-	import { Trophy, RotateCcw, Play, LogOut, Check, X } from 'lucide-svelte';
+	import { Trophy, RotateCcw, Play, LogOut, Check, X, Clock } from 'lucide-svelte';
 	import type { QuizQuestion } from '$lib/types';
+	import { formatTime } from '$lib/utils/format';
 
 	interface Props {
 		questions: QuizQuestion[];
@@ -36,6 +37,8 @@
 		}).length
 	);
 	let scorePercent = $derived(totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0);
+	let totalTimeMs = $derived(questions.reduce((sum, q) => sum + q.elapsedMs, 0));
+	let avgTimeMs = $derived(totalQuestions > 0 ? Math.round(totalTimeMs / totalQuestions) : 0);
 
 	function isCorrect(q: QuizQuestion): boolean {
 		const submitted = q.presentedAnswers.find((a) => a.label === q.submittedLabel);
@@ -58,6 +61,10 @@
 			<p class="mt-2 text-sm text-gray-400">
 				{correctCount} of {totalQuestions} correct
 			</p>
+			<div class="mt-3 flex items-center justify-center gap-4 text-xs text-gray-500">
+				<span class="flex items-center gap-1"><Clock class="h-3.5 w-3.5" /> {formatTime(totalTimeMs)} total</span>
+				<span>{formatTime(avgTimeMs)} avg</span>
+			</div>
 		</div>
 
 		<!-- Question list -->
@@ -75,7 +82,8 @@
 							<X class="h-4 w-4 text-red-400" />
 						{/if}
 					</span>
-					<span class="truncate text-sm text-gray-300">{q.question.question}</span>
+					<span class="flex-1 truncate text-sm text-gray-300">{q.question.question}</span>
+					<span class="shrink-0 text-xs tabular-nums text-gray-500">{formatTime(q.elapsedMs)}</span>
 				</button>
 			{/each}
 		</div>

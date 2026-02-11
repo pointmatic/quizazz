@@ -15,8 +15,10 @@
 -->
 
 <script lang="ts">
-	import { ArrowLeft } from 'lucide-svelte';
+	import { ArrowLeft, Clock } from 'lucide-svelte';
+	import { onDestroy } from 'svelte';
 	import type { QuizQuestion } from '$lib/types';
+	import { formatTime } from '$lib/utils/format';
 	import ProgressBar from './ProgressBar.svelte';
 
 	interface Props {
@@ -25,13 +27,20 @@
 		progressTotal: number;
 		progressPercent: number;
 		hasAnswered: boolean;
+		startedAt: number;
 		onSubmit: (label: string) => void;
 		onShowAnswered: () => void;
 	}
 
-	let { question, progressCurrent, progressTotal, progressPercent, hasAnswered, onSubmit, onShowAnswered }: Props = $props();
+	let { question, progressCurrent, progressTotal, progressPercent, hasAnswered, startedAt, onSubmit, onShowAnswered }: Props = $props();
 
 	let selectedLabel = $state<string | null>(null);
+	let now = $state(Date.now());
+
+	const timer = setInterval(() => { now = Date.now(); }, 1000);
+	onDestroy(() => clearInterval(timer));
+
+	let displayMs = $derived(question.elapsedMs + (now - startedAt));
 
 	$effect(() => {
 		// Pre-select previous answer when editing, or reset for new questions
@@ -76,8 +85,14 @@
 			</button>
 		{/if}
 
-		<div class="mb-8">
-			<ProgressBar current={progressCurrent} total={progressTotal} percent={progressPercent} />
+		<div class="mb-8 flex items-center gap-4">
+			<div class="flex-1">
+				<ProgressBar current={progressCurrent} total={progressTotal} percent={progressPercent} />
+			</div>
+			<div class="flex items-center gap-1.5 text-sm tabular-nums text-gray-400">
+				<Clock class="h-4 w-4" />
+				{formatTime(displayMs)}
+			</div>
 		</div>
 
 		<div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">

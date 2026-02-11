@@ -62,6 +62,7 @@ export interface QuizQuestion {
 	presentedAnswers: PresentedAnswer[];
 	selectedLabel: string | null;
 	submittedLabel: string | null;
+	elapsedMs: number;
 }
 
 export interface QuizSession {

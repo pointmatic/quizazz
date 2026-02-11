@@ -15,8 +15,9 @@
 -->
 
 <script lang="ts">
-	import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-svelte';
+	import { ArrowLeft, ChevronLeft, ChevronRight, Clock } from 'lucide-svelte';
 	import type { QuizQuestion } from '$lib/types';
+	import { formatTime } from '$lib/utils/format';
 
 	interface Props {
 		question: QuizQuestion;
@@ -71,9 +72,15 @@
 		</button>
 
 		<div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-			<h2 class="mb-6 text-xl font-semibold text-white">
-				{question.question.question}
-			</h2>
+			<div class="mb-6">
+				<h2 class="text-xl font-semibold text-white">
+					{question.question.question}
+				</h2>
+				<div class="mt-2 flex items-center gap-1.5 text-xs text-gray-500">
+					<Clock class="h-3.5 w-3.5" />
+					{formatTime(question.elapsedMs)}
+				</div>
+			</div>
 
 			<div class="space-y-3">
 				{#each question.presentedAnswers as answer}
