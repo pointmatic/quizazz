@@ -15,7 +15,7 @@
 import { writable, derived } from 'svelte/store';
 import type { QuizSession, QuizQuestion } from '$lib/types';
 
-export type ViewMode = 'nav' | 'config' | 'quiz' | 'quiz-answered' | 'quiz-review' | 'summary' | 'review';
+export type ViewMode = 'nav' | 'config' | 'quiz' | 'quiz-answered' | 'summary' | 'review';
 
 export const quizSession = writable<QuizSession | null>(null);
 export const viewMode = writable<ViewMode>('nav');

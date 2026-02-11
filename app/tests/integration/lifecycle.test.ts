@@ -29,8 +29,9 @@ import {
 	reviewPrev,
 	reviewNext,
 	showAnsweredQuestions,
-	reviewAnsweredQuestion,
-	backToQuiz
+	editAnsweredQuestion,
+	backToQuiz,
+	getFrontierIndex
 } from '$lib/engine/lifecycle';
 import type { Question, QuestionScore } from '$lib/types';
 
@@ -342,7 +343,7 @@ describe('mid-quiz navigation', () => {
 		expect(get(viewMode)).toBe('quiz');
 	});
 
-	it('reviewAnsweredQuestion sets quiz-review mode and reviewIndex', async () => {
+	it('editAnsweredQuestion navigates to that question for re-answering', async () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
@@ -350,25 +351,48 @@ describe('mid-quiz navigation', () => {
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
 
-		reviewAnsweredQuestion(0);
-		expect(get(viewMode)).toBe('quiz-review');
-		expect(get(reviewIndex)).toBe(0);
+		editAnsweredQuestion(0);
+		expect(get(viewMode)).toBe('quiz');
+		expect(get(quizSession)!.currentIndex).toBe(0);
 	});
 
-	it('reviewAnsweredQuestion guards against unanswered questions', async () => {
+	it('editAnsweredQuestion guards against unanswered questions', async () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
 		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 
-		// currentIndex is 1, so index 1 (current unanswered) should be blocked
-		reviewAnsweredQuestion(1);
+		// frontier is 1, so index 1 (current unanswered) should be blocked
+		editAnsweredQuestion(1);
 		expect(get(viewMode)).toBe('quiz');
-		expect(get(reviewIndex)).toBeNull();
+		expect(get(quizSession)!.currentIndex).toBe(1);
 	});
 
-	it('backToQuiz restores quiz view mode', async () => {
+	it('re-submitting an edited answer returns to frontier', async () => {
+		questions = makeQuestions(4);
+		scores = setupDb(questions);
+
+		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
+		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
+		expect(get(quizSession)!.currentIndex).toBe(2);
+		expect(getFrontierIndex()).toBe(2);
+
+		// Edit question 0
+		editAnsweredQuestion(0);
+		expect(get(quizSession)!.currentIndex).toBe(0);
+
+		// Re-submit with a different answer
+		const newLabel = get(quizSession)!.questions[0].presentedAnswers[1].label;
+		await submitAnswer(newLabel, db);
+
+		// Should return to frontier
+		expect(get(quizSession)!.currentIndex).toBe(2);
+		expect(get(quizSession)!.questions[0].submittedLabel).toBe(newLabel);
+	});
+
+	it('backToQuiz restores quiz view mode and returns to frontier', async () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
@@ -381,47 +405,37 @@ describe('mid-quiz navigation', () => {
 		backToQuiz();
 		expect(get(viewMode)).toBe('quiz');
 		expect(get(reviewIndex)).toBeNull();
+		expect(get(quizSession)!.currentIndex).toBe(getFrontierIndex());
 	});
 
-	it('Escape from quiz-review returns to quiz-answered via showAnsweredQuestions', async () => {
+	it('scoring is deferred until quiz completion', async () => {
 		questions = makeQuestions(3);
 		scores = setupDb(questions);
 
 		startQuiz({ questionCount: 3, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
+
+		// Answer first two questions
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
 
-		reviewAnsweredQuestion(0);
-		expect(get(viewMode)).toBe('quiz-review');
+		// Scores should NOT have changed yet (deferred)
+		const midScores = getScores(db);
+		const midChanged = midScores.some((s) => s.cumulativeScore !== 0);
+		expect(midChanged).toBe(false);
 
-		// Simulate what Escape does in quiz-review: calls showAnsweredQuestions
-		showAnsweredQuestions();
-		expect(get(viewMode)).toBe('quiz-answered');
-	});
+		// Complete the quiz
+		await submitAnswer(get(quizSession)!.questions[2].presentedAnswers[0].label, db);
+		expect(get(viewMode)).toBe('summary');
 
-	it('reviewNext in quiz-review clamps to answered questions only', async () => {
-		questions = makeQuestions(4);
-		scores = setupDb(questions);
-
-		startQuiz({ questionCount: 4, answerCount: 4, selectedTags: [], selectedNodeIds: [] }, questions, scores, db);
-		// Answer 2 questions, so currentIndex = 2
-		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
-		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
-
-		reviewAnsweredQuestion(0);
-		expect(get(viewMode)).toBe('quiz-review');
-
-		reviewNext();
-		expect(get(reviewIndex)).toBe(1);
-
-		// Should clamp — can't go to index 2 (unanswered)
-		reviewNext();
-		expect(get(reviewIndex)).toBe(1);
+		// Now scores should be updated
+		const finalScores = getScores(db);
+		const finalChanged = finalScores.some((s) => s.cumulativeScore !== 0);
+		expect(finalChanged).toBe(true);
 	});
 });
 
-describe('full navigation flow: mid-quiz review and continue', () => {
-	it('answer → go back → review answered → return → continue → summary', async () => {
+describe('full navigation flow: mid-quiz edit and continue', () => {
+	it('answer → go back → edit answer → return to frontier → continue → summary', async () => {
 		questions = makeQuestions(4);
 		scores = setupDb(questions);
 
@@ -433,32 +447,24 @@ describe('full navigation flow: mid-quiz review and continue', () => {
 		await submitAnswer(get(quizSession)!.questions[0].presentedAnswers[0].label, db);
 		await submitAnswer(get(quizSession)!.questions[1].presentedAnswers[0].label, db);
 		expect(get(quizSession)!.currentIndex).toBe(2);
+		expect(getFrontierIndex()).toBe(2);
 
 		// Go to answered questions list
 		showAnsweredQuestions();
 		expect(get(viewMode)).toBe('quiz-answered');
 
-		// Review first answered question
-		reviewAnsweredQuestion(0);
-		expect(get(viewMode)).toBe('quiz-review');
-		expect(get(reviewIndex)).toBe(0);
-
-		// Navigate to second answered question via carousel
-		reviewNext();
-		expect(get(reviewIndex)).toBe(1);
-
-		// Can't go further (only 2 answered)
-		reviewNext();
-		expect(get(reviewIndex)).toBe(1);
-
-		// Go back to answered list
-		showAnsweredQuestions();
-		expect(get(viewMode)).toBe('quiz-answered');
-
-		// Return to quiz
-		backToQuiz();
+		// Edit first answered question (change answer)
+		editAnsweredQuestion(0);
 		expect(get(viewMode)).toBe('quiz');
+		expect(get(quizSession)!.currentIndex).toBe(0);
+
+		// Re-submit with a different answer
+		const newLabel = get(quizSession)!.questions[0].presentedAnswers[1].label;
+		await submitAnswer(newLabel, db);
+
+		// Returns to frontier
 		expect(get(quizSession)!.currentIndex).toBe(2);
+		expect(get(quizSession)!.questions[0].submittedLabel).toBe(newLabel);
 
 		// Continue answering remaining questions
 		await submitAnswer(get(quizSession)!.questions[2].presentedAnswers[0].label, db);

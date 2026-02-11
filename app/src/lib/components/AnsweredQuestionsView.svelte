@@ -15,24 +15,19 @@
 -->
 
 <script lang="ts">
-	import { ArrowLeft, Check, X } from 'lucide-svelte';
+	import { ArrowLeft } from 'lucide-svelte';
 	import type { QuizQuestion } from '$lib/types';
 
 	interface Props {
 		answeredQuestions: QuizQuestion[];
 		currentQuestionNumber: number;
 		totalQuestions: number;
-		onReview: (index: number) => void;
+		onSelect: (index: number) => void;
 		onBack: () => void;
 	}
 
-	let { answeredQuestions, currentQuestionNumber, totalQuestions, onReview, onBack }: Props =
+	let { answeredQuestions, currentQuestionNumber, totalQuestions, onSelect, onBack }: Props =
 		$props();
-
-	function isCorrect(q: QuizQuestion): boolean {
-		const submitted = q.presentedAnswers.find((a) => a.label === q.submittedLabel);
-		return submitted?.category === 'correct';
-	}
 
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
@@ -66,18 +61,12 @@
 				<button
 					type="button"
 					class="flex w-full items-center gap-3 rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 text-left transition-colors hover:border-gray-700 hover:bg-gray-800/80"
-					onclick={() => onReview(i)}
+					onclick={() => onSelect(i)}
 				>
 					<span
-						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full {isCorrect(q)
-							? 'bg-emerald-500/20'
-							: 'bg-red-500/20'}"
+						class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-700"
 					>
-						{#if isCorrect(q)}
-							<Check class="h-4 w-4 text-emerald-400" />
-						{:else}
-							<X class="h-4 w-4 text-red-400" />
-						{/if}
+						<span class="text-xs font-bold text-gray-300">{i + 1}</span>
 					</span>
 					<span class="truncate text-sm text-gray-300">{q.question.question}</span>
 				</button>

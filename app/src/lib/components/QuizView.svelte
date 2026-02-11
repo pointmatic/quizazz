@@ -34,9 +34,8 @@
 	let selectedLabel = $state<string | null>(null);
 
 	$effect(() => {
-		// Reset selection when question changes
-		question;
-		selectedLabel = null;
+		// Pre-select previous answer when editing, or reset for new questions
+		selectedLabel = question.submittedLabel;
 	});
 
 	function handleSubmit() {

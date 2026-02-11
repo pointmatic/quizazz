@@ -20,6 +20,7 @@ optional subtopic groups) and backward-compatible directory validation.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -33,7 +34,40 @@ class QuizValidationError(Exception):
 
     def __init__(self, path: Path, message: str) -> None:
         self.path = path
-        super().__init__(f"{path}: {message}")
+        super().__init__(f"{path}:\n{message}")
+
+
+
+def _clean_loc(loc: tuple) -> str:
+    """Convert a Pydantic error location tuple to a human-readable path.
+
+    Strips internal union discriminator noise like
+    'function-after[check_has_questions(), SubtopicGroup]' down to 'subtopic'.
+    """
+    parts: list[str] = []
+    for segment in loc:
+        s = str(segment)
+        # Skip Pydantic union discriminator internals
+        if s.startswith("function-after[") or s.startswith("function-before["):
+            continue
+        if s in ("Question", "SubtopicGroup"):
+            continue
+        parts.append(s)
+    return ".".join(parts)
+
+
+def _format_validation_errors(exc: "ValidationError") -> str:
+    """Format Pydantic validation errors as clean, deduplicated, one-per-line output."""
+    seen: set[str] = set()
+    lines: list[str] = []
+    for e in exc.errors():
+        loc = _clean_loc(e["loc"])
+        msg = e["msg"]
+        key = f"{loc}: {msg}"
+        if key not in seen:
+            seen.add(key)
+            lines.append(f"  {key}")
+    return "\n".join(lines)
 
 
 def validate_file(path: Path) -> QuizFile:
@@ -66,10 +100,7 @@ def validate_file(path: Path) -> QuizFile:
     try:
         quiz_file = QuizFile.model_validate(raw)
     except ValidationError as exc:
-        errors = "; ".join(
-            f"{'.'.join(str(loc) for loc in e['loc'])}: {e['msg']}"
-            for e in exc.errors()
-        )
+        errors = _format_validation_errors(exc)
         raise QuizValidationError(path, errors) from exc
 
     return quiz_file

@@ -22,6 +22,10 @@ dev = [
     "ruff>=0.11",
 ]
 
+[project.scripts]
+quizazz-builder = "quizazz_builder.__main__:main"
+quizazz_builder = "quizazz_builder.__main__:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

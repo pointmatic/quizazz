@@ -39,7 +39,7 @@ A browser-based study tool that quizzes you on your understanding of a topic. Qu
 
 ```bash
 # From the repository root (with venv activated)
-pip install -e builder[dev]
+pip install -e "builder[dev]"
 ```
 
 ### 2. Compile Questions
@@ -47,13 +47,13 @@ pip install -e builder[dev]
 **Single quiz** (compile one quiz directory):
 
 ```bash
-python -m quizazz_builder --input data/quiz/ --output app/src/lib/data/
+quizazz-builder --input data/quiz/ --output app/src/lib/data/
 ```
 
 **Batch mode** (compile all quizzes under a parent directory):
 
 ```bash
-python -m quizazz_builder --all --input data/ --output app/build/
+quizazz-builder --all --input data/ --output app/build/
 ```
 
 ### 3. SvelteKit App
@@ -65,6 +65,16 @@ pnpm dev
 ```
 
 The app will be available at `http://localhost:5173`.
+
+### 4. Run the Quiz
+
+After compiling questions and installing dependencies, run:
+
+```bash
+python serve.py
+```
+
+This builds the app (if needed), starts a local server, and opens the quiz in your browser at `http://localhost:8000`.
 
 ## Usage
 
@@ -135,7 +145,7 @@ questions:
 After editing YAML files, recompile:
 
 ```bash
-python -m quizazz_builder --input data/quiz/ --output app/src/lib/data/
+quizazz-builder --input data/quiz/ --output app/src/lib/data/
 ```
 
 ### Creating a New Quiz
@@ -143,7 +153,7 @@ python -m quizazz_builder --input data/quiz/ --output app/src/lib/data/
 1. Create a new directory under `data/`, e.g., `data/my-quiz/`
 2. Add YAML files with questions (each file becomes a topic)
 3. Optionally use subdirectories for organization (they become directory nodes in the nav tree)
-4. Compile: `python -m quizazz_builder --input data/my-quiz/ --output app/src/lib/data/`
+4. Compile: `quizazz-builder --input data/my-quiz/ --output app/src/lib/data/`
 5. Run the app: `cd app && pnpm dev`
 
 ### Taking a Quiz

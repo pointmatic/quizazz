@@ -712,3 +712,77 @@ Complete the migration, update documentation, and ensure full test coverage.
   - [x] `pnpm check` — 0 errors
   - [x] App tests: 101 passed (10 files)
   - [x] Builder tests: 88 passed
+
+### Story J.g: v0.34.0 Deferred Scoring, Answer Changing, and Developer Experience [Done]
+
+Change mid-quiz review to allow changing answers instead of revealing corrections.
+Scoring is deferred until the quiz is fully completed. Improve builder CLI and
+local development experience.
+
+- [x] Update `app/src/lib/engine/lifecycle.ts`
+  - [x] Defer scoring: `submitAnswer` records choice only; `finalizeQuiz` scores all answers on quiz completion
+  - [x] Track `frontierIndex` (furthest unanswered question) separately from `currentIndex`
+  - [x] Add `editAnsweredQuestion(index)` — navigates to a previous question for re-answering
+  - [x] Re-submitting an edited answer returns to the frontier
+  - [x] `backToQuiz` restores `currentIndex` to frontier
+  - [x] Export `getFrontierIndex()` getter
+  - [x] Remove `reviewAnsweredQuestion` (replaced by `editAnsweredQuestion`)
+  - [x] Remove `quiz-review` view mode references
+- [x] Update `app/src/lib/components/AnsweredQuestionsView.svelte`
+  - [x] Remove ✓/✗ correctness icons — show neutral numbered list
+  - [x] Replace `onReview` prop with `onSelect` prop
+- [x] Update `app/src/lib/components/QuizView.svelte`
+  - [x] Pre-select previous answer (`submittedLabel`) when editing a question
+- [x] Update `app/src/lib/stores/quiz.ts`
+  - [x] Remove `quiz-review` from `ViewMode` type
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] Replace `reviewAnsweredQuestion` with `editAnsweredQuestion`
+  - [x] Remove `quiz-review` view block
+  - [x] Use `getFrontierIndex()` for `hasAnswered` and answered questions slice
+- [x] Update `app/tests/integration/lifecycle.test.ts`
+  - [x] Replace `reviewAnsweredQuestion` tests with `editAnsweredQuestion` tests
+  - [x] Add test: re-submitting edited answer returns to frontier
+  - [x] Add test: scoring is deferred until quiz completion
+  - [x] Rewrite full navigation flow test for edit-and-continue behavior
+- [x] Add `quizazz-builder` CLI entry point
+  - [x] Add `[project.scripts]` to `builder/pyproject.toml` (both `quizazz-builder` and `quizazz_builder`)
+- [x] Improve builder validation error formatting
+  - [x] Add `_clean_loc` — strips Pydantic union discriminator noise from error paths
+  - [x] Add `_format_validation_errors` — deduplicated, one error per line
+- [x] Add `serve.py` — builds app (if needed), serves locally, opens browser
+- [x] Update `README.md`
+  - [x] Fix `pip install` quoting for zsh
+  - [x] Add "Run the Quiz" section with `python serve.py`
+  - [x] Use `quizazz-builder` CLI command throughout
+- [x] Verify: `pnpm vitest run` — 101 passed (10 files), `pnpm check` — 0 errors
+
+### Story J.h: v0.35.0 Per-Question Timer
+
+Track how long the user spends on each question. The timer starts when a question
+is displayed, pauses when the user navigates away, and resumes if they return to
+edit their answer. Elapsed time is stored per question and aggregated in the
+summary and database, mirroring how scores are tracked today.
+
+- [ ] Add `elapsedMs` field to `QuizQuestion` type (default `0`)
+- [ ] Timer logic in `lifecycle.ts`
+  - [ ] Record `Date.now()` when a question becomes active (`startQuiz`, `submitAnswer` advancing, `editAnsweredQuestion`)
+  - [ ] On leaving a question (`submitAnswer`, `editAnsweredQuestion`, `showAnsweredQuestions`), accumulate elapsed time into `elapsedMs`
+  - [ ] Resuming an edited question resumes from its existing `elapsedMs`
+- [ ] Display timer in `QuizView`
+  - [ ] Show live elapsed time (mm:ss) while answering
+  - [ ] Timer counts up, no time limit
+- [ ] Store elapsed time in database
+  - [ ] Add `elapsed_ms` column to `session_answers` table
+  - [ ] Schema migration: detect version 0 (no `schema_version`), add column, set version to 1
+  - [ ] Pass `elapsedMs` through `recordAnswer` and `finalizeQuiz`
+- [ ] Display in `SummaryView`
+  - [ ] Per-question time in review list
+  - [ ] Total quiz time and average time per question
+- [ ] Display in `ReviewView`
+  - [ ] Show time spent on each question
+- [ ] Tests
+  - [ ] Timer accumulates across edits
+  - [ ] Timer resets on retake
+  - [ ] Schema migration from version 0 → 1
+  - [ ] `elapsedMs` persisted in `session_answers`
+- [ ] Verify: `pnpm check` — 0 errors, all tests pass

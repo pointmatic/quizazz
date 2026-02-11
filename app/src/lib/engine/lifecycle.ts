@@ -57,6 +57,7 @@ export function startQuiz(
 ): void {
 	sessionId = crypto.randomUUID();
 	activeQuizName = quizName;
+	frontierIndex = 0;
 
 	const pool =
 		config.selectedNodeIds.length > 0
@@ -82,20 +83,21 @@ export function startQuiz(
 	viewMode.set('quiz');
 }
 
+let frontierIndex = 0;
+
+export function getFrontierIndex(): number {
+	return frontierIndex;
+}
+
 export async function submitAnswer(label: string, db: Database): Promise<void> {
 	const session = get(quizSession);
 	if (!session) return;
 
 	const current = session.questions[session.currentIndex];
-	if (!current || current.submittedLabel !== null) return;
+	if (!current) return;
 
 	const selectedAnswer = current.presentedAnswers.find((a) => a.label === label);
 	if (!selectedAnswer) return;
-
-	const points = scoreAnswer(selectedAnswer.category);
-
-	updateScore(db, current.question.id, points);
-	recordAnswer(db, sessionId, current.question.id, selectedAnswer.category, points);
 
 	const updatedQuestions = [...session.questions];
 	updatedQuestions[session.currentIndex] = {
@@ -104,20 +106,64 @@ export async function submitAnswer(label: string, db: Database): Promise<void> {
 		submittedLabel: label
 	};
 
-	const isLast = session.currentIndex >= session.questions.length - 1;
+	const isEditing = session.currentIndex < frontierIndex;
+
+	if (isEditing) {
+		// Return to frontier after changing a previous answer
+		quizSession.set({
+			...session,
+			questions: updatedQuestions,
+			currentIndex: frontierIndex
+		});
+	} else {
+		// Normal forward progression
+		const isLast = frontierIndex >= session.questions.length - 1;
+
+		if (isLast) {
+			quizSession.set({
+				...session,
+				questions: updatedQuestions,
+				currentIndex: session.currentIndex,
+				completed: true
+			});
+			await finalizeQuiz(updatedQuestions, db);
+			viewMode.set('summary');
+			return;
+		} else {
+			frontierIndex = session.currentIndex + 1;
+			quizSession.set({
+				...session,
+				questions: updatedQuestions,
+				currentIndex: frontierIndex,
+				completed: false
+			});
+		}
+	}
+}
+
+async function finalizeQuiz(questions: QuizQuestion[], db: Database): Promise<void> {
+	for (const qq of questions) {
+		if (!qq.submittedLabel) continue;
+		const answer = qq.presentedAnswers.find((a) => a.label === qq.submittedLabel);
+		if (!answer) continue;
+		const points = scoreAnswer(answer.category);
+		updateScore(db, qq.question.id, points);
+		recordAnswer(db, sessionId, qq.question.id, answer.category, points);
+	}
+	await persistDatabase(db, activeQuizName);
+}
+
+export function editAnsweredQuestion(index: number): void {
+	const session = get(quizSession);
+	if (!session || index >= frontierIndex) return;
 
 	quizSession.set({
 		...session,
-		questions: updatedQuestions,
-		currentIndex: isLast ? session.currentIndex : session.currentIndex + 1,
-		completed: isLast
+		currentIndex: index
 	});
 
-	if (isLast) {
-		viewMode.set('summary');
-	}
-
-	await persistDatabase(db, activeQuizName);
+	reviewIndex.set(null);
+	viewMode.set('quiz');
 }
 
 export function retakeQuiz(db: Database, allQuestions: Question[], scores: QuestionScore[]): void {
@@ -125,6 +171,7 @@ export function retakeQuiz(db: Database, allQuestions: Question[], scores: Quest
 	if (!session) return;
 
 	sessionId = crypto.randomUUID();
+	frontierIndex = 0;
 
 	const questions: QuizQuestion[] = session.questions.map((qq) => ({
 		question: qq.question,
@@ -165,19 +212,19 @@ export function backToSummary(): void {
 
 export function showAnsweredQuestions(): void {
 	const session = get(quizSession);
-	if (!session || session.currentIndex === 0) return;
+	if (!session || frontierIndex === 0) return;
 	reviewIndex.set(null);
 	viewMode.set('quiz-answered');
 }
 
-export function reviewAnsweredQuestion(index: number): void {
-	const session = get(quizSession);
-	if (!session || index >= session.currentIndex) return;
-	reviewIndex.set(index);
-	viewMode.set('quiz-review');
-}
-
 export function backToQuiz(): void {
+	const session = get(quizSession);
+	if (session) {
+		quizSession.set({
+			...session,
+			currentIndex: frontierIndex
+		});
+	}
 	reviewIndex.set(null);
 	viewMode.set('quiz');
 }
@@ -194,11 +241,7 @@ export function reviewNext(): void {
 	const idx = get(reviewIndex);
 	if (!session || idx === null) return;
 
-	const mode = get(viewMode);
-	const maxIndex =
-		mode === 'quiz-review' ? session.currentIndex - 1 : session.questions.length - 1;
-
-	if (idx < maxIndex) {
+	if (idx < session.questions.length - 1) {
 		reviewIndex.set(idx + 1);
 	}
 }

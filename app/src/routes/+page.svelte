@@ -20,7 +20,7 @@
 	import { manifest, questions, allTags, navTree } from '$lib/data';
 	import { initDatabase, getScores, seedScores } from '$lib/db';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
-	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, reviewAnsweredQuestion, backToQuiz, setNavNodes } from '$lib/engine/lifecycle';
+	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, editAnsweredQuestion, backToQuiz, setNavNodes, getFrontierIndex } from '$lib/engine/lifecycle';
 	import type { Question, QuestionScore } from '$lib/types';
 	import NavigationTree from '$lib/components/NavigationTree.svelte';
 	import ConfigView from '$lib/components/ConfigView.svelte';
@@ -136,6 +136,7 @@
 	<ConfigView questions={filteredQuestions} allTags={filteredTags} onStart={handleStart} onBack={handleBack} />
 {:else if $viewMode === 'quiz' && $quizSession}
 	{@const current = $quizSession.questions[$quizSession.currentIndex]}
+	{@const frontier = getFrontierIndex()}
 	{@const answered = $quizSession.questions.filter((q) => q.submittedLabel !== null).length}
 	{#if current}
 		<QuizView
@@ -143,32 +144,20 @@
 			progressCurrent={answered}
 			progressTotal={$quizSession.questions.length}
 			progressPercent={Math.round((answered / $quizSession.questions.length) * 100)}
-			hasAnswered={$quizSession.currentIndex > 0}
+			hasAnswered={frontier > 0}
 			onSubmit={handleSubmit}
 			onShowAnswered={showAnsweredQuestions}
 		/>
 	{/if}
 {:else if $viewMode === 'quiz-answered' && $quizSession}
+	{@const frontier = getFrontierIndex()}
 	<AnsweredQuestionsView
-		answeredQuestions={$quizSession.questions.slice(0, $quizSession.currentIndex)}
-		currentQuestionNumber={$quizSession.currentIndex + 1}
+		answeredQuestions={$quizSession.questions.slice(0, frontier)}
+		currentQuestionNumber={frontier + 1}
 		totalQuestions={$quizSession.questions.length}
-		onReview={reviewAnsweredQuestion}
+		onSelect={editAnsweredQuestion}
 		onBack={backToQuiz}
 	/>
-{:else if $viewMode === 'quiz-review' && $quizSession && $reviewIndex !== null}
-	{@const q = $quizSession.questions[$reviewIndex]}
-	{@const answeredCount = $quizSession.currentIndex}
-	{#if q}
-		<ReviewView
-			question={q}
-			currentIndex={$reviewIndex}
-			totalQuestions={answeredCount}
-			onBack={showAnsweredQuestions}
-			onPrev={reviewPrev}
-			onNext={reviewNext}
-		/>
-	{/if}
 {:else if $viewMode === 'summary' && $quizSession}
 	<SummaryView
 		questions={$quizSession.questions}
