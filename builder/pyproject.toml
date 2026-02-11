@@ -23,6 +23,7 @@ dev = [
 ]
 
 [project.scripts]
+quizazz = "quizazz_builder.cli:main"
 quizazz-builder = "quizazz_builder.__main__:main"
 quizazz_builder = "quizazz_builder.__main__:main"
 

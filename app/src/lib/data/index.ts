@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import type { NavNode, Question, QuizManifest } from '$lib/types';
-import manifestJson from './manifest.json';
+import manifestJson from './aws-ml-specialty-exam.json';
 
 export const manifest: QuizManifest = manifestJson as QuizManifest;
 

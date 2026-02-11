@@ -47,34 +47,38 @@ pip install -e "builder[dev]"
 **Single quiz** (compile one quiz directory):
 
 ```bash
-quizazz-builder --input data/quiz/ --output app/src/lib/data/
+quizazz generate --input data/aws-ml-specialty-exam/
 ```
 
 **Batch mode** (compile all quizzes under a parent directory):
 
 ```bash
-quizazz-builder --all --input data/ --output app/build/
+quizazz generate --all --input data/
 ```
+
+Both `--input` and `--output` have sensible defaults (`data/quiz/` and `app/src/lib/data/`).
 
 ### 3. SvelteKit App
 
 ```bash
-cd app
-pnpm install
-pnpm dev
+pnpm --dir app install
 ```
-
-The app will be available at `http://localhost:5173`.
 
 ### 4. Run the Quiz
 
-After compiling questions and installing dependencies, run:
+After compiling questions and installing dependencies:
 
 ```bash
-python serve.py
+quizazz run
 ```
 
-This builds the app (if needed), starts a local server, and opens the quiz in your browser at `http://localhost:8000`.
+This builds the app (if needed), starts a local server, and opens the quiz in your browser at `http://localhost:8000`. Use `--port` to change the port.
+
+For development with hot reload:
+
+```bash
+pnpm --dir app dev
+```
 
 ## Usage
 
@@ -145,7 +149,7 @@ questions:
 After editing YAML files, recompile:
 
 ```bash
-quizazz-builder --input data/quiz/ --output app/src/lib/data/
+quizazz generate --input data/aws-ml-specialty-exam/
 ```
 
 ### Creating a New Quiz
@@ -153,8 +157,8 @@ quizazz-builder --input data/quiz/ --output app/src/lib/data/
 1. Create a new directory under `data/`, e.g., `data/my-quiz/`
 2. Add YAML files with questions (each file becomes a topic)
 3. Optionally use subdirectories for organization (they become directory nodes in the nav tree)
-4. Compile: `quizazz-builder --input data/my-quiz/ --output app/src/lib/data/`
-5. Run the app: `cd app && pnpm dev`
+4. Compile: `quizazz generate --input data/my-quiz/`
+5. Run the app: `quizazz run`
 
 ### Taking a Quiz
 
@@ -187,21 +191,30 @@ Mastery badges show your progress: green (≥80%), amber (≥40%), gray (<40%). 
 
 Scores accumulate per question across sessions. The selection algorithm uses the formula `weight = max_score − score + 1`, so lower-scored questions are drawn more frequently.
 
+## CLI Reference
+
+| Command | Description |
+|---------|-------------|
+| `quizazz generate` | Compile YAML question banks into a quiz manifest |
+| `quizazz build` | Build the Svelte application for production |
+| `quizazz run` | Launch a local web server and open the app |
+
+All commands support `--help` for full option details. The legacy `quizazz-builder` command still works but prints a deprecation notice.
+
 ## Testing
 
 ```bash
-# App tests (101 tests)
-cd app && pnpm vitest run
+# App tests (115 tests)
+pnpm --dir app vitest run
 
-# Builder tests
-cd builder && python -m pytest
+# Builder tests (99 tests)
+python -m pytest builder/
 ```
 
 ## Building for Production
 
 ```bash
-cd app
-pnpm build
+quizazz build
 ```
 
 The static site is output to `app/build/`.

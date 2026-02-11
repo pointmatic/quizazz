@@ -110,7 +110,7 @@ def compile_quiz(
     }
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / "manifest.json"
+    output_path = output_dir / f"{quiz_name}.json"
     output_path.write_text(
         json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

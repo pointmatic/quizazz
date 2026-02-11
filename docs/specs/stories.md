@@ -789,7 +789,49 @@ summary and database, mirroring how scores are tracked today.
   - [x] `showAnsweredQuestions` snapshots elapsed time
 - [x] Verify: `pnpm check` — 0 errors, 115 tests passed (11 files)
 
-### Story J.i: v0.36.0 Named Manifests and Multi-Quiz Discovery
+### Story J.i: v0.36.0 Unified `quizazz` CLI [Done]
+
+Replace the separate `quizazz-builder` entry point and `serve.py` script with a
+single `quizazz` command that handles generation, building, and serving. All
+subcommands use sensible defaults so they work with zero flags from the repo root.
+
+```
+quizazz generate [--input data/quiz/] [--output app/src/lib/data/]
+quizazz build    [--output app/build/]
+quizazz run      [--port 8000]
+```
+
+- [x] Create `quizazz` CLI entry point (Python, installed via pip)
+  - [x] `generate` subcommand — calls existing `compile_quiz` internals
+    - [x] `--input` defaults to `data/quiz/`
+    - [x] `--output` defaults to `app/src/lib/data/`
+    - [x] `--all` batch mode carried over from `quizazz-builder`
+    - [x] Output file named `{input_dir_name}.json` (not `manifest.json`)
+  - [x] `build` subcommand — shells out to `pnpm --dir app build`
+    - [x] `--output` defaults to `app/build/`
+    - [x] Checks pnpm is available, prints helpful error if not
+  - [x] `run` subcommand — serves built app and opens browser
+    - [x] `--port` defaults to `8000`
+    - [x] Auto-builds if `app/build/` is missing or stale
+    - [x] Replaces `serve.py`
+- [x] Deprecate `quizazz-builder` entry point (keep as alias, print deprecation notice)
+- [x] Remove `serve.py` (functionality moved to `quizazz run`)
+- [x] Rename `manifest.json` to `{quiz_name}.json` in compiler and app data layer
+- [x] Update README with new CLI commands and CLI reference table
+- [x] Tests (11 new CLI tests)
+  - [x] `quizazz generate` produces named manifest with defaults
+  - [x] `quizazz generate --input --output` overrides work
+  - [x] Batch mode generates per-quiz manifests
+  - [x] Invalid input exits with error
+  - [x] Manifest uses folder name as filename
+  - [x] `quizazz build` checks for pnpm and app directory
+  - [x] `quizazz run` checks for build and pnpm
+  - [x] `--version` flag works
+  - [x] No subcommand exits with error
+  - [x] End-to-end generate via main entry point
+- [x] Verify: 99 builder tests passed, 115 app tests passed, `pnpm check` — 0 errors
+
+### Story J.j: v0.37.0 Named Manifests and Multi-Quiz Discovery
 
 Rename the builder output from `manifest.json` to `{quiz_name}.json` (matching
 the package folder name). Update the app to discover all `.json` quiz packages
@@ -820,7 +862,7 @@ multiple.
   - [ ] Switching quizzes resets session and DB
 - [ ] Verify: `pnpm check` — 0 errors, all tests pass
 
-### Story J.j: v0.37.0 Upload Custom Quiz Package
+### Story J.k: v0.38.0 Upload Custom Quiz Package
 
 Allow the user to upload a compiled `.json` quiz package at runtime instead of
 using the baked-in data. This lets anyone run a custom quiz without rebuilding

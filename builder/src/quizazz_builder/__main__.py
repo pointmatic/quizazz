@@ -67,9 +67,13 @@ def _build_all_quizzes(input_path: Path, output_path: Path) -> None:
 
 
 def main() -> None:
+    print(
+        "WARNING: 'quizazz-builder' is deprecated. Use 'quizazz generate' instead.",
+        file=sys.stderr,
+    )
     parser = argparse.ArgumentParser(
         prog="quizazz-builder",
-        description="Validate and compile YAML question banks for Quizazz.",
+        description="[Deprecated] Validate and compile YAML question banks for Quizazz. Use 'quizazz generate' instead.",
     )
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"

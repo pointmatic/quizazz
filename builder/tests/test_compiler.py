@@ -148,7 +148,7 @@ class TestCompileQuiz:
         qf = _make_quiz_file()
         compile_quiz([(Path("topic.yaml"), qf)], "myquiz", tmp_path)
 
-        manifest_path = tmp_path / "manifest.json"
+        manifest_path = tmp_path / "myquiz.json"
         assert manifest_path.exists()
         data = json.loads(manifest_path.read_text())
         assert data["quizName"] == "myquiz"
@@ -160,7 +160,7 @@ class TestCompileQuiz:
         qf = _make_quiz_file(questions=[q])
         compile_quiz([(Path("basics.yaml"), qf)], "quiz", tmp_path)
 
-        data = json.loads((tmp_path / "manifest.json").read_text())
+        data = json.loads((tmp_path / "quiz.json").read_text())
         assert len(data["questions"]) == 1
         question = data["questions"][0]
         assert question["topicId"] == "basics"
@@ -174,7 +174,7 @@ class TestCompileQuiz:
         qf = _make_quiz_file(questions=[sg])
         compile_quiz([(Path("advanced.yaml"), qf)], "quiz", tmp_path)
 
-        data = json.loads((tmp_path / "manifest.json").read_text())
+        data = json.loads((tmp_path / "quiz.json").read_text())
         question = data["questions"][0]
         assert question["topicId"] == "advanced"
         assert question["subtopic"] == "Group A"
@@ -183,14 +183,14 @@ class TestCompileQuiz:
         qf = _make_quiz_file(questions=[_make_question("What is 2+2?")])
         compile_quiz([(Path("t.yaml"), qf)], "quiz", tmp_path)
 
-        data = json.loads((tmp_path / "manifest.json").read_text())
+        data = json.loads((tmp_path / "quiz.json").read_text())
         assert data["questions"][0]["id"] == question_id("What is 2+2?")
 
     def test_category_flattening_unchanged(self, tmp_path):
         qf = _make_quiz_file()
         compile_quiz([(Path("t.yaml"), qf)], "quiz", tmp_path)
 
-        data = json.loads((tmp_path / "manifest.json").read_text())
+        data = json.loads((tmp_path / "quiz.json").read_text())
         answers = data["questions"][0]["answers"]
         categories = {a["category"] for a in answers}
         assert categories == {"correct", "partially_correct", "incorrect", "ridiculous"}
@@ -199,7 +199,7 @@ class TestCompileQuiz:
         qf = _make_quiz_file(menu_name="Basics")
         compile_quiz([(Path("basics.yaml"), qf)], "quiz", tmp_path)
 
-        data = json.loads((tmp_path / "manifest.json").read_text())
+        data = json.loads((tmp_path / "quiz.json").read_text())
         tree = data["tree"]
         assert len(tree) == 1
         assert tree[0]["type"] == "topic"
@@ -210,7 +210,7 @@ class TestCompileQuiz:
         out = tmp_path / "nested" / "dir"
         qf = _make_quiz_file()
         compile_quiz([(Path("t.yaml"), qf)], "quiz", out)
-        assert (out / "manifest.json").exists()
+        assert (out / "quiz.json").exists()
 
     def test_mixed_bare_and_subtopic(self, tmp_path):
         bare = _make_question("Bare?")
@@ -221,7 +221,7 @@ class TestCompileQuiz:
         qf = _make_quiz_file(questions=[bare, sg])
         compile_quiz([(Path("mixed.yaml"), qf)], "quiz", tmp_path)
 
-        data = json.loads((tmp_path / "manifest.json").read_text())
+        data = json.loads((tmp_path / "quiz.json").read_text())
         questions = data["questions"]
         assert len(questions) == 2
         assert questions[0]["subtopic"] is None
