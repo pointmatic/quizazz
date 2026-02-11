@@ -38,6 +38,9 @@
 	let error = $state<string | null>(null);
 	let selectedNodeIds = $state<string[]>([]);
 	let filteredQuestions = $state<Question[]>([]);
+	let uploadedManifests = $state<QuizManifest[]>([]);
+
+	let hasMultipleQuizzes = $derived(manifests.length + uploadedManifests.length > 1);
 
 	let filteredTags = $derived(
 		[...new Set(filteredQuestions.flatMap((q) => q.tags))].sort()
@@ -47,11 +50,8 @@
 		try {
 			if (manifests.length === 1) {
 				await selectManifest(manifests[0]);
-			} else if (manifests.length > 1) {
-				viewMode.set('chooser');
-				loading = false;
 			} else {
-				error = 'No quiz manifests found in data directory.';
+				viewMode.set('chooser');
 				loading = false;
 			}
 		} catch (e) {
@@ -129,10 +129,23 @@
 
 	function handleQuit() {
 		quitQuiz();
-		if (manifests.length > 1) {
+		if (hasMultipleQuizzes) {
 			activeManifest.set(null);
 			viewMode.set('chooser');
 		}
+	}
+
+	function handleUpload(m: QuizManifest) {
+		const exists = uploadedManifests.some((u) => u.quizName === m.quizName);
+		if (exists) {
+			uploadedManifests = uploadedManifests.map((u) => u.quizName === m.quizName ? m : u);
+		} else {
+			uploadedManifests = [...uploadedManifests, m];
+		}
+	}
+
+	function handleRemove(quizName: string) {
+		uploadedManifests = uploadedManifests.filter((u) => u.quizName !== quizName);
 	}
 
 	function handleReview(index: number) {
@@ -165,7 +178,7 @@
 		</div>
 	</div>
 {:else if $viewMode === 'chooser'}
-	<QuizChooser {manifests} onSelect={selectManifest} />
+	<QuizChooser {manifests} {uploadedManifests} onSelect={selectManifest} onUpload={handleUpload} onRemove={handleRemove} />
 {:else if $viewMode === 'nav'}
 	<NavigationTree tree={$navTreeStore} {scores} onContinue={handleContinue} />
 {:else if $viewMode === 'config'}

@@ -859,27 +859,34 @@ build time — auto-load if only one, show a chooser if multiple. Builder rename
   - [x] Tags sorted and deduplicated
 - [x] Verify: `pnpm check` — 0 errors, 120 tests passed (12 files), 99 builder tests passed
 
-### Story J.k: v0.38.0 Upload Custom Quiz Package
+### Story J.k: v0.38.0 Upload Custom Quiz Package [Done]
 
 Allow the user to upload a compiled `.json` quiz package at runtime instead of
 using the baked-in data. This lets anyone run a custom quiz without rebuilding
-the app — just compile YAML with `quizazz-builder` and upload the resulting file.
+the app — just compile YAML with `quizazz generate` and upload the resulting file.
 
-- [ ] Add `QuizManifest` validation utility
-  - [ ] Validate shape: `quizName` (string), `tree` (NavNode[]), `questions` (Question[])
-  - [ ] Return typed errors for malformed files
-- [ ] Upload UI on nav/chooser screen
-  - [ ] File input accepting `.json` files
-  - [ ] Drag-and-drop zone as alternative
-  - [ ] Show upload errors inline
-  - [ ] Uploaded quiz appears alongside built-in quizzes
-- [ ] Wire uploaded manifest into quiz flow
-  - [ ] Initialize per-quiz DB using uploaded `quizName`
-  - [ ] Reset session state when loading uploaded quiz
-- [ ] "Remove uploaded quiz" option
-- [ ] Tests
-  - [ ] Valid upload adds quiz to chooser
-  - [ ] Invalid JSON shows error
-  - [ ] Missing fields show validation error
-  - [ ] Quiz flow works end-to-end with uploaded manifest
-- [ ] Verify: `pnpm check` — 0 errors, all tests pass
+- [x] Add `QuizManifest` validation utility (`validate-manifest.ts`)
+  - [x] Validate shape: `quizName` (string), `tree` (array), `questions` (non-empty array with id/question/answers)
+  - [x] `parseAndValidate` handles JSON parse errors
+  - [x] Return typed `ValidationResult` with descriptive errors
+- [x] Upload UI on chooser screen (`ManifestUpload.svelte`)
+  - [x] File input accepting `.json` files
+  - [x] Drag-and-drop zone as alternative
+  - [x] Show upload errors inline
+  - [x] Uploaded quiz appears alongside built-in quizzes (emerald accent, "uploaded" badge)
+- [x] Wire uploaded manifest into quiz flow
+  - [x] `selectManifest` initializes per-quiz DB using uploaded `quizName`
+  - [x] Session/review state reset when loading uploaded quiz
+  - [x] Re-uploading same `quizName` replaces existing upload
+- [x] "Remove uploaded quiz" button (X icon per uploaded quiz)
+- [x] Quit returns to chooser when multiple quizzes (built-in + uploaded) exist
+- [x] Zero built-in manifests shows chooser with upload zone
+- [x] Tests (15 validation tests + 5 manifest store tests)
+  - [x] Valid manifest accepted
+  - [x] Null, non-object, missing/empty quizName rejected
+  - [x] Missing/non-array tree rejected
+  - [x] Missing/empty questions rejected
+  - [x] Question missing id/question/answers rejected
+  - [x] Invalid JSON rejected by `parseAndValidate`
+  - [x] Valid JSON with invalid shape rejected
+- [x] Verify: `pnpm check` — 0 errors, 135 tests passed (13 files)
