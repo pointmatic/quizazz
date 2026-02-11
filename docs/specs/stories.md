@@ -890,3 +890,11 @@ the app — just compile YAML with `quizazz generate` and upload the resulting f
   - [x] Invalid JSON rejected by `parseAndValidate`
   - [x] Valid JSON with invalid shape rejected
 - [x] Verify: `pnpm check` — 0 errors, 135 tests passed (13 files)
+
+### Story J.l: Housekeeping [Done]
+
+Minor developer-experience improvements.
+
+- [x] Add `install.sh` script at repo root (`pip install -e "builder[dev]"`)
+- [x] Update README step 1 to use `./install.sh`
+- [x] Add Pyve tip to README for automatic virtual environment setup
