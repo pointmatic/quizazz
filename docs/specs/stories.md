@@ -831,36 +831,33 @@ quizazz run      [--port 8000]
   - [x] End-to-end generate via main entry point
 - [x] Verify: 99 builder tests passed, 115 app tests passed, `pnpm check` — 0 errors
 
-### Story J.j: v0.37.0 Named Manifests and Multi-Quiz Discovery
+### Story J.j: v0.37.0 Multi-Quiz Discovery and Chooser [Done]
 
-Rename the builder output from `manifest.json` to `{quiz_name}.json` (matching
-the package folder name). Update the app to discover all `.json` quiz packages
-in the data directory at build time — auto-load if only one, show a chooser if
-multiple.
+Update the app to discover all `.json` quiz packages in the data directory at
+build time — auto-load if only one, show a chooser if multiple. Builder rename
+(`manifest.json` → `{quiz_name}.json`) was completed in Story J.i.
 
-- [ ] Builder: rename output file
-  - [ ] `compile_quiz` outputs `{quiz_name}.json` instead of `manifest.json`
-  - [ ] Update `--output` help text
-  - [ ] Update builder tests for new filename
-- [ ] App: multi-manifest data layer
-  - [ ] Change `$lib/data` to export a list of available manifests (auto-discovered from `*.json` in data dir)
-  - [ ] Add manifest store: reactive store holding the active `QuizManifest`
-  - [ ] Derived `questions`, `navTree`, `allTags` from the active manifest
-- [ ] App: quiz chooser
-  - [ ] If one manifest, auto-load it (current behavior)
-  - [ ] If multiple, show a chooser screen before the nav tree
-  - [ ] Display quiz name and question count for each option
-- [ ] Wire active manifest into quiz flow
-  - [ ] Replace static imports with manifest store reads in `+page.svelte`
-  - [ ] Initialize per-quiz DB using active manifest's `quizName`
-  - [ ] Reset session state when switching quizzes
-- [ ] Update `serve.py` and README for new filename convention
-- [ ] Tests
-  - [ ] Builder outputs `{quiz_name}.json`
-  - [ ] Single manifest auto-loads
-  - [ ] Multiple manifests show chooser
-  - [ ] Switching quizzes resets session and DB
-- [ ] Verify: `pnpm check` — 0 errors, all tests pass
+- [x] Builder: rename output file (done in J.i)
+- [x] App: multi-manifest data layer
+  - [x] Vite `import.meta.glob` discovers all `*.json` in data dir
+  - [x] Manifest store: `activeManifest` with derived `questions`, `navTree`, `allTags`
+- [x] App: quiz chooser
+  - [x] Single manifest auto-loads (current behavior preserved)
+  - [x] Multiple manifests show chooser screen with `BookOpen` icons
+  - [x] Display quiz name and question count for each option
+  - [x] `chooser` view mode added to `ViewMode` type
+- [x] Wire active manifest into quiz flow
+  - [x] `+page.svelte` reads from manifest store instead of static imports
+  - [x] Per-quiz DB initialized using active manifest's `quizName`
+  - [x] Session/review state reset when switching quizzes
+  - [x] "Quit" returns to chooser when multiple manifests exist
+- [x] Tests (5 new manifest store tests)
+  - [x] Derived stores empty when no manifest active
+  - [x] Setting manifest populates derived stores
+  - [x] Switching manifests updates derived stores
+  - [x] Clearing manifest empties derived stores
+  - [x] Tags sorted and deduplicated
+- [x] Verify: `pnpm check` — 0 errors, 120 tests passed (12 files), 99 builder tests passed
 
 ### Story J.k: v0.38.0 Upload Custom Quiz Package
 

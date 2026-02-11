@@ -12,8 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { QuizManifest } from '$lib/types';
+import { writable, derived } from 'svelte/store';
+import type { NavNode, Question, QuizManifest } from '$lib/types';
 
-const modules = import.meta.glob<QuizManifest>('./*.json', { eager: true, import: 'default' });
+export const activeManifest = writable<QuizManifest | null>(null);
 
-export const manifests: QuizManifest[] = Object.values(modules).map((m) => m as QuizManifest);
+export const questions = derived(activeManifest, ($m): Question[] => $m?.questions ?? []);
+
+export const navTree = derived(activeManifest, ($m): NavNode[] => $m?.tree ?? []);
+
+export const allTags = derived(questions, ($q): string[] =>
+	[...new Set($q.flatMap((q) => q.tags))].sort()
+);

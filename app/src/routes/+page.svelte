@@ -16,12 +16,15 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { get } from 'svelte/store';
 	import type { Database } from 'sql.js';
-	import { manifest, questions, allTags, navTree } from '$lib/data';
+	import { manifests } from '$lib/data';
 	import { initDatabase, getScores, seedScores } from '$lib/db';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
+	import { activeManifest, questions as questionsStore, navTree as navTreeStore, allTags as allTagsStore } from '$lib/stores/manifest';
 	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, editAnsweredQuestion, backToQuiz, setNavNodes, getFrontierIndex, getQuestionStartTime } from '$lib/engine/lifecycle';
-	import type { Question, QuestionScore } from '$lib/types';
+	import type { Question, QuestionScore, QuizManifest, NavNode } from '$lib/types';
+	import QuizChooser from '$lib/components/QuizChooser.svelte';
 	import NavigationTree from '$lib/components/NavigationTree.svelte';
 	import ConfigView from '$lib/components/ConfigView.svelte';
 	import QuizView from '$lib/components/QuizView.svelte';
@@ -34,7 +37,7 @@
 	let loading = $state(true);
 	let error = $state<string | null>(null);
 	let selectedNodeIds = $state<string[]>([]);
-	let filteredQuestions = $state<Question[]>(questions);
+	let filteredQuestions = $state<Question[]>([]);
 
 	let filteredTags = $derived(
 		[...new Set(filteredQuestions.flatMap((q) => q.tags))].sort()
@@ -42,22 +45,47 @@
 
 	onMount(async () => {
 		try {
-			setNavNodes(navTree);
-			db = await initDatabase(manifest.quizName);
-			seedScores(db, questions.map((q) => q.id));
+			if (manifests.length === 1) {
+				await selectManifest(manifests[0]);
+			} else if (manifests.length > 1) {
+				viewMode.set('chooser');
+				loading = false;
+			} else {
+				error = 'No quiz manifests found in data directory.';
+				loading = false;
+			}
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to initialize';
+			loading = false;
+		}
+	});
+
+	async function selectManifest(m: QuizManifest) {
+		loading = true;
+		error = null;
+		try {
+			activeManifest.set(m);
+			setNavNodes(m.tree);
+			db = await initDatabase(m.quizName);
+			seedScores(db, m.questions.map((q) => q.id));
 			scores = getScores(db);
+			filteredQuestions = m.questions;
+			quizSession.set(null);
+			reviewIndex.set(null);
+			viewMode.set('nav');
 			loading = false;
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to initialize database';
 			loading = false;
 		}
-	});
+	}
 
 	function handleContinue(nodeIds: string[]) {
+		const currentTree = get(navTreeStore);
+		const currentQuestions = get(questionsStore);
 		selectedNodeIds = nodeIds;
-		// Pre-filter questions by selected nodes
 		const selectedQids = new Set<string>();
-		function collect(nodes: typeof navTree) {
+		function collect(nodes: NavNode[]) {
 			for (const node of nodes) {
 				if (nodeIds.includes(node.id)) {
 					for (const qid of node.questionIds) selectedQids.add(qid);
@@ -66,8 +94,8 @@
 				}
 			}
 		}
-		collect(navTree);
-		filteredQuestions = questions.filter((q) => selectedQids.has(q.id));
+		collect(currentTree);
+		filteredQuestions = currentQuestions.filter((q) => selectedQids.has(q.id));
 		viewMode.set('config');
 	}
 
@@ -77,8 +105,10 @@
 
 	function handleStart(questionCount: number, answerCount: 3 | 4 | 5, selectedTags: string[] = []) {
 		if (!db) return;
+		const m = get(activeManifest);
+		if (!m) return;
 		scores = getScores(db);
-		startQuiz({ questionCount, answerCount, selectedTags, selectedNodeIds }, filteredQuestions, scores, db, manifest.quizName);
+		startQuiz({ questionCount, answerCount, selectedTags, selectedNodeIds }, filteredQuestions, scores, db, m.quizName);
 	}
 
 	async function handleSubmit(label: string) {
@@ -99,6 +129,10 @@
 
 	function handleQuit() {
 		quitQuiz();
+		if (manifests.length > 1) {
+			activeManifest.set(null);
+			viewMode.set('chooser');
+		}
 	}
 
 	function handleReview(index: number) {
@@ -130,8 +164,10 @@
 			</button>
 		</div>
 	</div>
+{:else if $viewMode === 'chooser'}
+	<QuizChooser {manifests} onSelect={selectManifest} />
 {:else if $viewMode === 'nav'}
-	<NavigationTree tree={navTree} {scores} onContinue={handleContinue} />
+	<NavigationTree tree={$navTreeStore} {scores} onContinue={handleContinue} />
 {:else if $viewMode === 'config'}
 	<ConfigView questions={filteredQuestions} allTags={filteredTags} onStart={handleStart} onBack={handleBack} />
 {:else if $viewMode === 'quiz' && $quizSession}
