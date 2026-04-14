@@ -1,8 +1,30 @@
-# Python
-.venv
+# macOS only
+.DS_Store
+
+# Python build and test artifacts
 __pycache__
+*.pyc
+*.pyo
+*.pyd
 *.egg-info
+*.egg
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
 dist/
+build/
+
+# Jupyter notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Pyve virtual environment
+.pyve/testenv
+.envrc
+.env
+.venv
+# Python
 
 # Project
 data/*
@@ -11,11 +33,8 @@ docs/specs/llm*
 docs/specs/multi*
 
 # Pyve
-.pyve/testenv
 
 # Environment
-.env
-.envrc
 
 # Node
 node_modules/
@@ -25,4 +44,6 @@ app/.svelte-kit/
 app/build/
 
 # OS
-.DS_Store
+
+# project-guide
+docs/project-guide/**/*.bak.*
