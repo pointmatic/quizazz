@@ -21,7 +21,7 @@ from pathlib import Path
 from quizazz_builder import __version__
 from quizazz_builder.compiler import compile_quiz
 from quizazz_builder.models import SubtopicGroup
-from quizazz_builder.validator import QuizValidationError, validate_quiz_directory
+from quizazz_builder.validator import ValidationError, validate_quiz_directory
 
 
 def _count_questions(validated_files: list) -> int:
@@ -108,7 +108,7 @@ def main() -> None:
             sys.exit(1)
         try:
             _build_all_quizzes(input_path, output_path)
-        except QuizValidationError as exc:
+        except ValidationError as exc:
             print(f"Validation error: {exc}", file=sys.stderr)
             sys.exit(1)
     else:
@@ -120,7 +120,7 @@ def main() -> None:
             sys.exit(1)
         try:
             _build_single_quiz(input_path, output_path)
-        except QuizValidationError as exc:
+        except ValidationError as exc:
             print(f"Validation error: {exc}", file=sys.stderr)
             sys.exit(1)
 

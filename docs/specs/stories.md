@@ -14,24 +14,24 @@ Expose `quizazz_builder` as a public Python library so host frameworks (starting
 
 Phase K is the Python side of the UC-3 host-integration contract defined in [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md). The SvelteKit `<QuizBlock>` component and its npm package are deferred to Phase L.
 
-### Story K.a: v0.39.0 Structured `ValidationError` [Planned]
+### Story K.a: v0.39.0 Structured `ValidationError` [Done]
 
 Rename `QuizValidationError` to `ValidationError` and give it structured attributes so host frameworks can catch it, inspect the offending file path, read a human-readable message, and optionally drill into per-violation detail. Internal-only refactor — no change to CLI output format or existing tests' assertions on `str(exc)`.
 
-- [ ] Update `builder/src/quizazz_builder/validator.py`
-  - [ ] Rename class `QuizValidationError` → `ValidationError`
-  - [ ] Add constructor `__init__(self, file_path: Path, message: str, detail: dict | None = None)`
-  - [ ] Store attributes: `file_path`, `message`, `detail`
-  - [ ] `__str__` returns a concatenated human-readable form: `"<file_path>: <message>"` plus detail summary if present
-  - [ ] Update every `raise QuizValidationError(...)` site to pass `file_path` + `message` (+ `detail` where applicable)
-- [ ] Update `builder/src/quizazz_builder/cli.py`
-  - [ ] Import `ValidationError` (was `QuizValidationError`)
-  - [ ] Error-handling branch still prints `Validation error: {exc}` to stderr
-- [ ] Update `builder/tests/test_validator.py`
-  - [ ] Assert `ValidationError.file_path` populated for every violation scenario
-  - [ ] Assert `ValidationError.message` populated
-  - [ ] Assert `ValidationError.detail` populated for violations that have structured context (e.g., question index)
-- [ ] Verify: all builder tests pass; CLI validation error messages are unchanged for end users
+- [x] Update `builder/src/quizazz_builder/validator.py`
+  - [x] Rename class `QuizValidationError` → `ValidationError`
+  - [x] Add constructor `__init__(self, file_path: Path, message: str, detail: dict | None = None)`
+  - [x] Store attributes: `file_path`, `message`, `detail`
+  - [x] `__str__` returns a concatenated human-readable form: `"<file_path>: <message>"` plus detail summary if present
+  - [x] Update every `raise QuizValidationError(...)` site to pass `file_path` + `message` (+ `detail` where applicable)
+- [x] Update `builder/src/quizazz_builder/cli.py`
+  - [x] Import `ValidationError` (was `QuizValidationError`)
+  - [x] Error-handling branch still prints `Validation error: {exc}` to stderr
+- [x] Update `builder/tests/test_validator.py`
+  - [x] Assert `ValidationError.file_path` populated for every violation scenario
+  - [x] Assert `ValidationError.message` populated
+  - [x] Assert `ValidationError.detail` populated for violations that have structured context (e.g., question index)
+- [x] Verify: all builder tests pass; CLI validation error messages are unchanged for end users
 
 ### Story K.b: v0.40.0 Shared Compile Core and `schemaVersion` [Planned]
 

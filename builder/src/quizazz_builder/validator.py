@@ -20,22 +20,41 @@ optional subtopic groups) and backward-compatible directory validation.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 import yaml
-from pydantic import ValidationError
+from pydantic import ValidationError as _PydanticValidationError
 
 from quizazz_builder.models import Question, QuizFile, SubtopicGroup
 
 
-class QuizValidationError(Exception):
-    """Raised when a question file fails validation."""
+class ValidationError(Exception):
+    """Raised when a quiz YAML file or directory fails validation.
 
-    def __init__(self, path: Path, message: str) -> None:
-        self.path = path
-        super().__init__(f"{path}:\n{message}")
+    Structured attributes for programmatic inspection by library consumers:
+    - ``file_path``: the offending path
+    - ``message``: human-readable violation summary
+    - ``detail``: optional structured context (e.g. per-field Pydantic errors)
+    """
 
+    def __init__(
+        self,
+        file_path: Path,
+        message: str,
+        detail: dict | None = None,
+    ) -> None:
+        self.file_path = file_path
+        self.message = message
+        self.detail = detail
+        super().__init__(self._format())
+
+    def _format(self) -> str:
+        sep = ":\n" if "\n" in self.message else ": "
+        text = f"{self.file_path}{sep}{self.message}"
+        extras = {k: v for k, v in (self.detail or {}).items() if k != "errors"}
+        if extras:
+            text += f"\n  detail: {extras}"
+        return text
 
 
 def _clean_loc(loc: tuple) -> str:
@@ -56,52 +75,62 @@ def _clean_loc(loc: tuple) -> str:
     return ".".join(parts)
 
 
-def _format_validation_errors(exc: "ValidationError") -> str:
-    """Format Pydantic validation errors as clean, deduplicated, one-per-line output."""
+def _cleaned_pydantic_errors(exc: _PydanticValidationError) -> list[dict]:
+    """Return deduplicated Pydantic errors with cleaned `loc` strings."""
     seen: set[str] = set()
-    lines: list[str] = []
+    out: list[dict] = []
     for e in exc.errors():
         loc = _clean_loc(e["loc"])
         msg = e["msg"]
         key = f"{loc}: {msg}"
-        if key not in seen:
-            seen.add(key)
-            lines.append(f"  {key}")
-    return "\n".join(lines)
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append({"loc": loc, "msg": msg})
+    return out
+
+
+def _format_validation_errors(errors: list[dict]) -> str:
+    """Render a cleaned error list as indented one-per-line text."""
+    return "\n".join(f"  {e['loc']}: {e['msg']}" for e in errors)
 
 
 def validate_file(path: Path) -> QuizFile:
     """Parse and validate a single YAML file in QuizFile format.
 
     Returns a validated QuizFile object.
-    Raises QuizValidationError with file path and specific violation details.
+    Raises ValidationError with file path and specific violation details.
     """
     if not path.exists():
-        raise QuizValidationError(path, "File not found")
+        raise ValidationError(path, "File not found")
 
     if not path.is_file():
-        raise QuizValidationError(path, "Not a file")
+        raise ValidationError(path, "Not a file")
 
     text = path.read_text(encoding="utf-8")
     if not text.strip():
-        raise QuizValidationError(path, "File is empty")
+        raise ValidationError(path, "File is empty")
 
     try:
         raw = yaml.safe_load(text)
     except yaml.YAMLError as exc:
-        raise QuizValidationError(path, f"YAML syntax error: {exc}") from exc
+        raise ValidationError(path, f"YAML syntax error: {exc}") from exc
 
     if not isinstance(raw, dict):
-        raise QuizValidationError(
+        raise ValidationError(
             path,
             f"Expected a YAML mapping with menu_name and questions, got {type(raw).__name__}",
         )
 
     try:
         quiz_file = QuizFile.model_validate(raw)
-    except ValidationError as exc:
-        errors = _format_validation_errors(exc)
-        raise QuizValidationError(path, errors) from exc
+    except _PydanticValidationError as exc:
+        errors = _cleaned_pydantic_errors(exc)
+        raise ValidationError(
+            path,
+            _format_validation_errors(errors),
+            detail={"errors": errors},
+        ) from exc
 
     return quiz_file
 
@@ -124,17 +153,17 @@ def validate_quiz_directory(
 
     Returns a list of (relative_path, QuizFile) tuples preserving the
     directory hierarchy.  Relative paths are computed from *quiz_dir*.
-    Raises QuizValidationError on the first file that fails validation.
+    Raises ValidationError on the first file that fails validation.
     """
     if not quiz_dir.exists():
-        raise QuizValidationError(quiz_dir, "Directory not found")
+        raise ValidationError(quiz_dir, "Directory not found")
 
     if not quiz_dir.is_dir():
-        raise QuizValidationError(quiz_dir, "Not a directory")
+        raise ValidationError(quiz_dir, "Not a directory")
 
     yaml_files = sorted(quiz_dir.rglob("*.yaml"))
     if not yaml_files:
-        raise QuizValidationError(quiz_dir, "No .yaml files found")
+        raise ValidationError(quiz_dir, "No .yaml files found")
 
     results: list[tuple[Path, QuizFile]] = []
     for yaml_file in yaml_files:
@@ -149,7 +178,7 @@ def validate_directory(directory: Path) -> list[Question]:
     """Validate all .yaml files in a directory (backward-compatible).
 
     Returns the merged list of validated questions from all files.
-    Raises QuizValidationError on the first file that fails validation.
+    Raises ValidationError on the first file that fails validation.
 
     .. deprecated::
         Use :func:`validate_quiz_directory` for new code.

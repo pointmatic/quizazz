@@ -20,7 +20,7 @@ import pytest
 
 from quizazz_builder.models import QuizFile, SubtopicGroup
 from quizazz_builder.validator import (
-    QuizValidationError,
+    ValidationError,
     validate_directory,
     validate_file,
     validate_quiz_directory,
@@ -181,36 +181,36 @@ questions:
 """
         f = tmp_path / "no_name.yaml"
         f.write_text(yaml_content)
-        with pytest.raises(QuizValidationError, match="menu_name"):
+        with pytest.raises(ValidationError, match="menu_name"):
             validate_file(f)
 
     def test_old_bare_list_format_fails(self, tmp_path):
         f = tmp_path / "old.yaml"
         f.write_text(OLD_BARE_LIST_YAML)
-        with pytest.raises(QuizValidationError, match="Expected a YAML mapping"):
+        with pytest.raises(ValidationError, match="Expected a YAML mapping"):
             validate_file(f)
 
     def test_missing_file(self, tmp_path):
         f = tmp_path / "missing.yaml"
-        with pytest.raises(QuizValidationError, match="File not found"):
+        with pytest.raises(ValidationError, match="File not found"):
             validate_file(f)
 
     def test_empty_file(self, tmp_path):
         f = tmp_path / "empty.yaml"
         f.write_text("")
-        with pytest.raises(QuizValidationError, match="File is empty"):
+        with pytest.raises(ValidationError, match="File is empty"):
             validate_file(f)
 
     def test_blank_file(self, tmp_path):
         f = tmp_path / "blank.yaml"
         f.write_text("   \n  \n")
-        with pytest.raises(QuizValidationError, match="File is empty"):
+        with pytest.raises(ValidationError, match="File is empty"):
             validate_file(f)
 
     def test_malformed_yaml(self, tmp_path):
         f = tmp_path / "bad.yaml"
         f.write_text(":\n  - :\n    - : [invalid")
-        with pytest.raises(QuizValidationError, match="YAML syntax error"):
+        with pytest.raises(ValidationError, match="YAML syntax error"):
             validate_file(f)
 
     def test_validation_error_includes_path(self, tmp_path):
@@ -236,7 +236,7 @@ questions:
 """
         f = tmp_path / "bad_q.yaml"
         f.write_text(yaml_content)
-        with pytest.raises(QuizValidationError, match="bad_q.yaml"):
+        with pytest.raises(ValidationError, match="bad_q.yaml"):
             validate_file(f)
 
 
@@ -279,13 +279,13 @@ class TestValidateQuizDirectory:
 
     def test_missing_directory(self, tmp_path):
         d = tmp_path / "nonexistent"
-        with pytest.raises(QuizValidationError, match="Directory not found"):
+        with pytest.raises(ValidationError, match="Directory not found"):
             validate_quiz_directory(d)
 
     def test_empty_directory(self, tmp_path):
         d = tmp_path / "empty"
         d.mkdir()
-        with pytest.raises(QuizValidationError, match="No .yaml files found"):
+        with pytest.raises(ValidationError, match="No .yaml files found"):
             validate_quiz_directory(d)
 
     def test_ignores_non_yaml_files(self, tmp_path):
@@ -315,3 +315,119 @@ class TestValidateDirectoryBackwardCompat:
         (tmp_path / "b.yaml").write_text(VALID_SUBTOPIC_YAML)
         questions = validate_directory(tmp_path)
         assert len(questions) == 2
+
+
+BAD_QUESTION_YAML = """\
+menu_name: "Topic"
+questions:
+  - question: ""
+    answers:
+      correct:
+        - text: "R"
+          explanation: "E"
+      partially_correct:
+        - text: "P"
+          explanation: "E"
+      incorrect:
+        - text: "W"
+          explanation: "E"
+      ridiculous:
+        - text: "A1"
+          explanation: "E"
+        - text: "A2"
+          explanation: "E"
+"""
+
+
+class TestValidationErrorAttributes:
+    """ValidationError exposes structured `file_path`, `message`, `detail` attributes."""
+
+    def test_direct_construction_defaults_detail_to_none(self):
+        exc = ValidationError(file_path=Path("/tmp/x.yaml"), message="oops")
+        assert exc.file_path == Path("/tmp/x.yaml")
+        assert exc.message == "oops"
+        assert exc.detail is None
+
+    def test_direct_construction_with_detail(self):
+        detail = {"question_index": 2, "field": "answers"}
+        exc = ValidationError(
+            file_path=Path("/tmp/x.yaml"),
+            message="oops",
+            detail=detail,
+        )
+        assert exc.detail == detail
+
+    def test_str_includes_file_path_and_message(self):
+        exc = ValidationError(file_path=Path("/tmp/x.yaml"), message="File not found")
+        s = str(exc)
+        assert "/tmp/x.yaml" in s
+        assert "File not found" in s
+
+    def test_str_preserves_multi_line_message(self):
+        exc = ValidationError(
+            file_path=Path("/tmp/x.yaml"),
+            message="  loc1: msg1\n  loc2: msg2",
+        )
+        s = str(exc)
+        assert "loc1: msg1" in s
+        assert "loc2: msg2" in s
+
+    def test_missing_file_violation(self, tmp_path):
+        f = tmp_path / "missing.yaml"
+        with pytest.raises(ValidationError) as ei:
+            validate_file(f)
+        assert ei.value.file_path == f
+        assert ei.value.message == "File not found"
+
+    def test_empty_file_violation(self, tmp_path):
+        f = tmp_path / "empty.yaml"
+        f.write_text("")
+        with pytest.raises(ValidationError) as ei:
+            validate_file(f)
+        assert ei.value.file_path == f
+        assert ei.value.message == "File is empty"
+
+    def test_malformed_yaml_violation(self, tmp_path):
+        f = tmp_path / "bad.yaml"
+        f.write_text(":\n  - :\n    - : [invalid")
+        with pytest.raises(ValidationError) as ei:
+            validate_file(f)
+        assert ei.value.file_path == f
+        assert "YAML syntax error" in ei.value.message
+
+    def test_non_mapping_violation(self, tmp_path):
+        f = tmp_path / "list.yaml"
+        f.write_text("- a\n- b\n")
+        with pytest.raises(ValidationError) as ei:
+            validate_file(f)
+        assert ei.value.file_path == f
+        assert "YAML mapping" in ei.value.message
+
+    def test_pydantic_violation_populates_structured_detail(self, tmp_path):
+        f = tmp_path / "bad_q.yaml"
+        f.write_text(BAD_QUESTION_YAML)
+        with pytest.raises(ValidationError) as ei:
+            validate_file(f)
+        assert ei.value.file_path == f
+        assert ei.value.message
+        assert ei.value.detail is not None
+        assert "errors" in ei.value.detail
+        errors = ei.value.detail["errors"]
+        assert isinstance(errors, list) and len(errors) >= 1
+        first = errors[0]
+        assert "loc" in first and "msg" in first
+
+    def test_directory_not_found_violation(self, tmp_path):
+        missing = tmp_path / "nope"
+        with pytest.raises(ValidationError) as ei:
+            validate_quiz_directory(missing)
+        assert ei.value.file_path == missing
+        assert ei.value.message == "Directory not found"
+
+    def test_empty_directory_violation(self, tmp_path):
+        d = tmp_path / "empty_dir"
+        d.mkdir()
+        with pytest.raises(ValidationError) as ei:
+            validate_quiz_directory(d)
+        assert ei.value.file_path == d
+        assert ei.value.message == "No .yaml files found"

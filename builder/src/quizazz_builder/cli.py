@@ -27,7 +27,7 @@ from pathlib import Path
 from quizazz_builder import __version__
 from quizazz_builder.compiler import compile_quiz
 from quizazz_builder.models import SubtopicGroup
-from quizazz_builder.validator import QuizValidationError, validate_quiz_directory
+from quizazz_builder.validator import ValidationError, validate_quiz_directory
 
 DEFAULT_INPUT = "data/quiz/"
 DEFAULT_GENERATE_OUTPUT = "app/src/lib/data/"
@@ -89,7 +89,7 @@ def cmd_generate(args: argparse.Namespace) -> None:
             _build_all_quizzes(input_path, output_path)
         else:
             _build_single_quiz(input_path, output_path)
-    except QuizValidationError as exc:
+    except ValidationError as exc:
         print(f"Validation error: {exc}", file=sys.stderr)
         sys.exit(1)
 

@@ -5,4 +5,4 @@ metadata_file: .metadata.yml
 current_mode: code_test_first
 test_first: false
 pyve_version: null
-project_name: ''
+project_name: 'quizazz'
