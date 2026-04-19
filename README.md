@@ -37,7 +37,7 @@ A browser-based study tool that quizzes you on your understanding of a topic. Qu
 
 ### 1. Python Builder
 
-> **Tip:** Consider installing [Pyve](https://github.com/pointmatic/hitloop) to automatically handle virtual environment setup and activation.
+> **Tip:** Consider installing the Homebrew package [Pyve](https://pointmatic.github.io/pyve) to automatically handle virtual environment setup and activation.
 
 ```bash
 # From the repository root (with venv activated)

@@ -20,17 +20,17 @@ build/
 *.ipynb_checkpoints
 
 # Pyve virtual environment
+.venv
+.pyve/envs
 .pyve/testenv
 .envrc
 .env
-.venv
+.vscode/settings.json
 # Python
 
 # Project
 data/*
 !data/quiz/
-docs/specs/llm*
-docs/specs/multi*
 
 # Pyve
 
