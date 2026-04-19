@@ -33,7 +33,7 @@ Rename `QuizValidationError` to `ValidationError` and give it structured attribu
   - [x] Assert `ValidationError.detail` populated for violations that have structured context (e.g., question index)
 - [x] Verify: all builder tests pass; CLI validation error messages are unchanged for end users
 
-### Story K.b: v0.40.0 Shared Compile Core and `schemaVersion` [Done]
+### Story K.b: v0.40.0 Shared Compile Core and 'schemaVersion' [Done]
 
 Extract `compile_quiz_to_dict` as the shared compilation core used by both the CLI (wraps it with a disk write) and the future library API (calls it directly). Introduce a `MANIFEST_SCHEMA_VERSION` constant and inject `schemaVersion: "1.0"` as a top-level field in every emitted manifest. Add the matching optional field to the TypeScript `QuizManifest` type — reserved for Phase L consumption, no runtime use yet.
 
@@ -54,7 +54,7 @@ Extract `compile_quiz_to_dict` as the shared compilation core used by both the C
 - [x] Regenerate any checked-in sample manifest JSON files under `app/src/lib/data/` so the `schemaVersion` field appears
 - [x] Verify: all builder tests pass; `pnpm check` — 0 errors; existing app tests still pass (optional new field doesn't break anything)
 
-### Story K.c: v0.41.0 Public Library API [Planned]
+### Story K.c: v0.41.0 Public Library API [Done]
 
 Create `quizazz_builder/api.py` with `compile_assessment(yaml_path, base_dir) -> dict`, `validate_assessment(yaml_path, base_dir) -> list[str]`, and a path-escape guard. Export the public surface from the package's `__init__.py`. This is the first release where `from quizazz_builder import compile_assessment, validate_assessment, ValidationError` is a stable, documented contract.
 
@@ -69,36 +69,36 @@ errors = validate_assessment("bad.yaml", base_dir=Path("content"))
 # → ["content/bad.yaml: Must have at least 1 correct answer", ...]
 ```
 
-- [ ] Create `builder/src/quizazz_builder/api.py`
-  - [ ] `compile_assessment(yaml_path: Path | str, base_dir: Path | str) -> dict`
-    - [ ] Accepts `str` or `Path` for both args; coerce to `Path` internally
-    - [ ] Calls `_resolve_under_base`, then `validate_file`, then `compile_quiz_to_dict`
-    - [ ] Raises `ValidationError` on any violation
-  - [ ] `validate_assessment(yaml_path: Path | str, base_dir: Path | str) -> list[str]`
-    - [ ] Returns `[]` on success
-    - [ ] Returns list of error strings (one per violation) on failure
-    - [ ] Never raises (swallows `ValidationError` into the list)
-  - [ ] `_resolve_under_base(yaml_path, base_dir) -> Path`
-    - [ ] `base = Path(base_dir).resolve()`, `full = (base / yaml_path).resolve()`
-    - [ ] Rejects escape (absolute yaml_path, `..` traversal, post-symlink escape)
-    - [ ] Raises `ValidationError` with `file_path=Path(yaml_path)`, descriptive message, `detail={"base_dir": ..., "resolved": ...}`
-- [ ] Update `builder/src/quizazz_builder/__init__.py`
-  - [ ] `from .validator import ValidationError`
-  - [ ] `from .api import compile_assessment, validate_assessment`
-  - [ ] `__all__ = ["compile_assessment", "validate_assessment", "ValidationError", "MANIFEST_SCHEMA_VERSION", "__version__"]`
-- [ ] Create `builder/tests/test_api.py`
-  - [ ] `compile_assessment` happy path: valid YAML → dict with `schemaVersion`, `quizName`, `tree`, `questions`
-  - [ ] `compile_assessment` raises `ValidationError` for: empty `menu_name`, empty `question`, <5 answers total, missing category, empty answer text, empty explanation, tag normalization violation — each with populated `.file_path`, `.message`, `.detail`
-  - [ ] `compile_assessment` rejects malformed YAML with `ValidationError` (YAML parser error surfaced)
-  - [ ] `compile_assessment` path-escape: rejects `../escape.yaml`, absolute paths outside base_dir, symlink-through escape
-  - [ ] `compile_assessment` does not write to disk (assert via tmpdir watcher)
-  - [ ] `compile_assessment` is synchronous (no coroutines anywhere in the call chain)
-  - [ ] `validate_assessment` returns `[]` for valid YAML
-  - [ ] `validate_assessment` returns a single-element list for each of the violations above
-  - [ ] `validate_assessment` never raises
-  - [ ] Both functions accept `str` or `Path` arguments interchangeably
-- [ ] Update the main README: add a "Library API (UC-3)" section with usage examples
-- [ ] Verify: all builder tests pass; no existing test regressions
+- [x] Create `builder/src/quizazz_builder/api.py`
+  - [x] `compile_assessment(yaml_path: Path | str, base_dir: Path | str) -> dict`
+    - [x] Accepts `str` or `Path` for both args; coerce to `Path` internally
+    - [x] Calls `_resolve_under_base`, then `validate_file`, then `compile_quiz_to_dict`
+    - [x] Raises `ValidationError` on any violation
+  - [x] `validate_assessment(yaml_path: Path | str, base_dir: Path | str) -> list[str]`
+    - [x] Returns `[]` on success
+    - [x] Returns list of error strings (one per violation) on failure
+    - [x] Never raises (swallows `ValidationError` into the list)
+  - [x] `_resolve_under_base(yaml_path, base_dir) -> Path`
+    - [x] `base = Path(base_dir).resolve()`, `full = (base / yaml_path).resolve()`
+    - [x] Rejects escape (absolute yaml_path, `..` traversal, post-symlink escape)
+    - [x] Raises `ValidationError` with `file_path=Path(yaml_path)`, descriptive message, `detail={"base_dir": ..., "resolved": ...}`
+- [x] Update `builder/src/quizazz_builder/__init__.py`
+  - [x] `from .validator import ValidationError`
+  - [x] `from .api import compile_assessment, validate_assessment`
+  - [x] `__all__ = ["compile_assessment", "validate_assessment", "ValidationError", "MANIFEST_SCHEMA_VERSION", "__version__"]`
+- [x] Create `builder/tests/test_api.py`
+  - [x] `compile_assessment` happy path: valid YAML → dict with `schemaVersion`, `quizName`, `tree`, `questions`
+  - [x] `compile_assessment` raises `ValidationError` for: empty `menu_name`, empty `question`, <5 answers total, missing category, empty answer text, empty explanation, tag normalization violation — each with populated `.file_path`, `.message`, `.detail`
+  - [x] `compile_assessment` rejects malformed YAML with `ValidationError` (YAML parser error surfaced)
+  - [x] `compile_assessment` path-escape: rejects `../escape.yaml`, absolute paths outside base_dir, symlink-through escape
+  - [x] `compile_assessment` does not write to disk (assert via tmpdir watcher)
+  - [x] `compile_assessment` is synchronous (no coroutines anywhere in the call chain)
+  - [x] `validate_assessment` returns `[]` for valid YAML
+  - [x] `validate_assessment` returns a single-element list for each of the violations above
+  - [x] `validate_assessment` never raises
+  - [x] Both functions accept `str` or `Path` arguments interchangeably
+- [x] Update the main README: add a "Library API (UC-3)" section with usage examples
+- [x] Verify: all builder tests pass; no existing test regressions
 
 ### Story K.d: v0.42.0 PyPI Release — `quizazz-builder` 1.0.0 [Planned]
 

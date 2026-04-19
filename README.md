@@ -203,13 +203,35 @@ Scores accumulate per question across sessions. The selection algorithm uses the
 
 All commands support `--help` for full option details. The legacy `quizazz-builder` command still works but prints a deprecation notice.
 
+## Library API (UC-3)
+
+Host frameworks can compile assessment YAML directly into a manifest dict at their own build time, without shelling out to the CLI or writing intermediate files. Three symbols are re-exported from the package root:
+
+```python
+from pathlib import Path
+from quizazz_builder import compile_assessment, validate_assessment, ValidationError
+
+try:
+    manifest = compile_assessment("module-4-pre.yaml", base_dir=Path("content"))
+    # manifest → dict with schemaVersion, quizName, tree, questions
+except ValidationError as exc:
+    print(exc.file_path, exc.message, exc.detail)
+
+errors = validate_assessment("bad.yaml", base_dir=Path("content"))
+# errors → [] on success, or one human-readable string per violation
+```
+
+Both functions accept `str` or `Path` for their arguments. `yaml_path` is joined under `base_dir` and must resolve strictly inside it; traversal attempts (`..`, absolute paths outside the base, symlinks that escape) raise `ValidationError` with `detail={"base_dir": ..., "resolved": ...}`. Neither function writes to disk, spawns subprocesses, or issues network calls. Both are synchronous.
+
+`validate_assessment` never raises — it swallows `ValidationError` and surfaces one error string per violation in the returned list.
+
 ## Testing
 
 ```bash
-# App tests (115 tests)
+# App tests
 pnpm --dir app vitest run
 
-# Builder tests (99 tests)
+# Builder tests
 python -m pytest builder/
 ```
 
