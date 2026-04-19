@@ -33,26 +33,26 @@ Rename `QuizValidationError` to `ValidationError` and give it structured attribu
   - [x] Assert `ValidationError.detail` populated for violations that have structured context (e.g., question index)
 - [x] Verify: all builder tests pass; CLI validation error messages are unchanged for end users
 
-### Story K.b: v0.40.0 Shared Compile Core and `schemaVersion` [Planned]
+### Story K.b: v0.40.0 Shared Compile Core and `schemaVersion` [Done]
 
 Extract `compile_quiz_to_dict` as the shared compilation core used by both the CLI (wraps it with a disk write) and the future library API (calls it directly). Introduce a `MANIFEST_SCHEMA_VERSION` constant and inject `schemaVersion: "1.0"` as a top-level field in every emitted manifest. Add the matching optional field to the TypeScript `QuizManifest` type — reserved for Phase L consumption, no runtime use yet.
 
-- [ ] Update `builder/src/quizazz_builder/__init__.py`
-  - [ ] Define `MANIFEST_SCHEMA_VERSION = "1.0"` (or place in dedicated `schema.py`; justify choice in the PR)
-- [ ] Update `builder/src/quizazz_builder/compiler.py`
-  - [ ] Extract `compile_quiz_to_dict(validated: list[tuple[Path, QuizFile]], quiz_name: str) -> dict` containing current in-memory compile logic
-  - [ ] Include `"schemaVersion": MANIFEST_SCHEMA_VERSION` as the first key in the returned dict
-  - [ ] Refactor existing `compile_quiz(validated, quiz_name, output_dir) -> None` to call `compile_quiz_to_dict` and serialize to disk
-  - [ ] Ensure JSON output is stable (key ordering, indent unchanged from current CLI behavior)
-- [ ] Update `app/src/lib/types/index.ts`
-  - [ ] Add optional `schemaVersion?: string` to `QuizManifest` interface
-  - [ ] No runtime reading yet — Phase L will consume it
-- [ ] Update `builder/tests/test_compiler.py`
-  - [ ] Add test: `compile_quiz_to_dict` returns a dict with `schemaVersion == "1.0"`
-  - [ ] Add test: `compile_quiz_to_dict` produces the same shape CLI-written JSON would, minus disk I/O
-  - [ ] Existing `compile_quiz` tests still pass (regression)
-- [ ] Regenerate any checked-in sample manifest JSON files under `app/src/lib/data/` so the `schemaVersion` field appears
-- [ ] Verify: all builder tests pass; `pnpm check` — 0 errors; existing app tests still pass (optional new field doesn't break anything)
+- [x] Update `builder/src/quizazz_builder/__init__.py`
+  - [x] Define `MANIFEST_SCHEMA_VERSION = "1.0"` (or place in dedicated `schema.py`; justify choice in the PR)
+- [x] Update `builder/src/quizazz_builder/compiler.py`
+  - [x] Extract `compile_quiz_to_dict(validated: list[tuple[Path, QuizFile]], quiz_name: str) -> dict` containing current in-memory compile logic
+  - [x] Include `"schemaVersion": MANIFEST_SCHEMA_VERSION` as the first key in the returned dict
+  - [x] Refactor existing `compile_quiz(validated, quiz_name, output_dir) -> None` to call `compile_quiz_to_dict` and serialize to disk
+  - [x] Ensure JSON output is stable (key ordering, indent unchanged from current CLI behavior)
+- [x] Update `app/src/lib/types/index.ts`
+  - [x] Add optional `schemaVersion?: string` to `QuizManifest` interface
+  - [x] No runtime reading yet — Phase L will consume it
+- [x] Update `builder/tests/test_compiler.py`
+  - [x] Add test: `compile_quiz_to_dict` returns a dict with `schemaVersion == "1.0"`
+  - [x] Add test: `compile_quiz_to_dict` produces the same shape CLI-written JSON would, minus disk I/O
+  - [x] Existing `compile_quiz` tests still pass (regression)
+- [x] Regenerate any checked-in sample manifest JSON files under `app/src/lib/data/` so the `schemaVersion` field appears
+- [x] Verify: all builder tests pass; `pnpm check` — 0 errors; existing app tests still pass (optional new field doesn't break anything)
 
 ### Story K.c: v0.41.0 Public Library API [Planned]
 

@@ -41,6 +41,7 @@ export interface NavNode {
 }
 
 export interface QuizManifest {
+	schemaVersion?: string;
 	quizName: string;
 	tree: NavNode[];
 	questions: Question[];

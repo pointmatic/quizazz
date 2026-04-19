@@ -17,7 +17,13 @@
 import json
 from pathlib import Path
 
-from quizazz_builder.compiler import compile_questions, compile_quiz, question_id
+from quizazz_builder import MANIFEST_SCHEMA_VERSION
+from quizazz_builder.compiler import (
+    compile_questions,
+    compile_quiz,
+    compile_quiz_to_dict,
+    question_id,
+)
 from quizazz_builder.models import Answer, AnswerSet, Question, QuizFile, SubtopicGroup
 
 
@@ -226,3 +232,69 @@ class TestCompileQuiz:
         assert len(questions) == 2
         assert questions[0]["subtopic"] is None
         assert questions[1]["subtopic"] == "Grouped"
+
+    def test_manifest_includes_schema_version(self, tmp_path):
+        qf = _make_quiz_file()
+        compile_quiz([(Path("t.yaml"), qf)], "quiz", tmp_path)
+        data = json.loads((tmp_path / "quiz.json").read_text())
+        assert data["schemaVersion"] == MANIFEST_SCHEMA_VERSION
+
+    def test_schema_version_is_first_key(self, tmp_path):
+        qf = _make_quiz_file()
+        compile_quiz([(Path("t.yaml"), qf)], "quiz", tmp_path)
+        raw = (tmp_path / "quiz.json").read_text()
+        data = json.loads(raw)
+        assert list(data.keys())[0] == "schemaVersion"
+
+
+class TestCompileQuizToDict:
+    """In-memory compile core — returns a manifest dict, does no disk I/O."""
+
+    def test_returns_dict_with_schema_version(self):
+        qf = _make_quiz_file()
+        manifest = compile_quiz_to_dict([(Path("t.yaml"), qf)], "quiz")
+        assert manifest["schemaVersion"] == "1.0"
+        assert manifest["schemaVersion"] == MANIFEST_SCHEMA_VERSION
+
+    def test_schema_version_is_first_key(self):
+        qf = _make_quiz_file()
+        manifest = compile_quiz_to_dict([(Path("t.yaml"), qf)], "quiz")
+        assert list(manifest.keys())[0] == "schemaVersion"
+
+    def test_manifest_shape(self):
+        qf = _make_quiz_file()
+        manifest = compile_quiz_to_dict([(Path("t.yaml"), qf)], "myquiz")
+        assert manifest["quizName"] == "myquiz"
+        assert isinstance(manifest["tree"], list)
+        assert isinstance(manifest["questions"], list)
+
+    def test_matches_cli_written_json_shape(self, tmp_path):
+        """In-memory dict and disk-written JSON are byte-identical except for I/O."""
+        qf = _make_quiz_file()
+        validated = [(Path("t.yaml"), qf)]
+        compile_quiz(validated, "quiz", tmp_path)
+        from_disk = json.loads((tmp_path / "quiz.json").read_text())
+        in_memory = compile_quiz_to_dict(validated, "quiz")
+        assert from_disk == in_memory
+
+    def test_does_not_write_to_disk(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        qf = _make_quiz_file()
+        compile_quiz_to_dict([(Path("t.yaml"), qf)], "quiz")
+        assert list(tmp_path.iterdir()) == []
+
+    def test_subtopic_and_topic_id_populated(self):
+        sg = SubtopicGroup(
+            subtopic="Group A",
+            questions=[_make_question("Sub Q?")],
+        )
+        qf = _make_quiz_file(questions=[sg])
+        manifest = compile_quiz_to_dict([(Path("advanced.yaml"), qf)], "quiz")
+        q = manifest["questions"][0]
+        assert q["topicId"] == "advanced"
+        assert q["subtopic"] == "Group A"
+
+
+class TestManifestSchemaVersion:
+    def test_constant_value(self):
+        assert MANIFEST_SCHEMA_VERSION == "1.0"

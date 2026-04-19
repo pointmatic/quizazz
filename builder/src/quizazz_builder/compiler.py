@@ -24,6 +24,7 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 
+from quizazz_builder import MANIFEST_SCHEMA_VERSION
 from quizazz_builder.models import Question, QuizFile, SubtopicGroup
 
 
@@ -73,19 +74,22 @@ def _topic_id_from_path(relative_path: Path) -> str:
     return str(PurePosixPath(relative_path.with_suffix("")))
 
 
-def compile_quiz(
+def compile_quiz_to_dict(
     validated_files: list[tuple[Path, QuizFile]],
     quiz_name: str,
-    output_dir: Path,
-) -> None:
-    """Compile validated quiz files into a manifest.json.
+) -> dict:
+    """Compile validated quiz files into an in-memory manifest dict.
+
+    Shared core used by both the CLI (via :func:`compile_quiz`, which
+    wraps this with a disk write) and the library API
+    (:func:`quizazz_builder.api.compile_assessment`, which returns the
+    dict directly). Performs no disk I/O.
 
     The manifest contains:
+    - ``schemaVersion``: manifest schema version (first key)
     - ``quizName``: the quiz identifier
     - ``tree``: navigation tree (from :func:`build_navigation_tree`)
     - ``questions``: flat list of all questions with ``topicId`` and ``subtopic``
-
-    Creates parent directories if they don't exist.
     """
     from quizazz_builder.manifest import build_navigation_tree
 
@@ -103,11 +107,25 @@ def compile_quiz(
             else:
                 questions.append(_flatten_quiz_question(item, tid, None))
 
-    manifest = {
+    return {
+        "schemaVersion": MANIFEST_SCHEMA_VERSION,
         "quizName": quiz_name,
         "tree": tree,
         "questions": questions,
     }
+
+
+def compile_quiz(
+    validated_files: list[tuple[Path, QuizFile]],
+    quiz_name: str,
+    output_dir: Path,
+) -> None:
+    """Compile validated quiz files and write the manifest to disk.
+
+    Thin CLI wrapper around :func:`compile_quiz_to_dict`. Creates parent
+    directories if they don't exist.
+    """
+    manifest = compile_quiz_to_dict(validated_files, quiz_name)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"{quiz_name}.json"
