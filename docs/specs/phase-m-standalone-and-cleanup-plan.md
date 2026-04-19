@@ -27,24 +27,9 @@ Phase M has no learningfoundry dependency. It is pure project-internal: finish t
 - `+page.svelte` reads `import.meta.env.VITE_QUIZAZZ_STANDALONE`; when set, hides `ManifestUpload`, auto-selects the single manifest, bypasses the chooser even if runtime upload had added other manifests (defensive: standalone means one quiz, period).
 - Robust cleanup on success, failure, or interruption — the source tree must not end up with manifests stashed in a temp directory after a failed build.
 
-### Legacy CLI script removal
+### Legacy CLI script removal — *absorbed into Phase K*
 
-**What exists:** `builder/pyproject.toml` still lists two legacy console scripts alongside the canonical one:
-
-```toml
-[project.scripts]
-quizazz = "quizazz_builder.cli:main"
-quizazz-builder = "quizazz_builder.__main__:main"
-quizazz_builder = "quizazz_builder.__main__:main"
-```
-
-These were carried as backward-compat shims that print a deprecation notice. The user's Phase-K-era decision was to nuke them; the tech-spec has already been updated to reflect a single `quizazz` entry point. Phase M makes the code match.
-
-**What's needed:**
-- Drop the `quizazz-builder` and `quizazz_builder` entries from `[project.scripts]`.
-- Simplify `__main__.py` to a thin delegator to `cli.main` (retain `python -m quizazz_builder` as a standard Python invocation path).
-- Remove any deprecation-notice code in `__main__.py`.
-- Note: this is a breaking change at the shell level for anyone who invoked `quizazz-builder` or `quizazz_builder` directly. Shipped in the next PyPI patch release of `quizazz-builder` (1.0.1 or similar) — document in the release notes.
+Completed during the K.d PyPI-package rename (`quizazz-builder` → `quizazz`). Shipping 1.0.0 with the legacy aliases only to delete them in 1.0.1 made no sense, so the cleanup landed in the same change that renamed the dist. `[project.scripts]` now contains only `quizazz = "quizazz.cli:main"`; `__main__.py` is a thin `from quizazz.cli import main` delegator with the SPDX-only header. See story M.b for the (short) record.
 
 ### SPDX header retrofit
 
@@ -59,7 +44,7 @@ These were carried as backward-compat shims that print a deprecation notice. The
 
 (With appropriate comment syntax per file type.)
 
-Scope covers: every `.py` in `builder/src/` and `builder/tests/`, every `.ts` / `.svelte` / `.css` in `app/src/`, `install.sh`, and any other source file that currently carries the full boilerplate. Excluded: generated artifacts (`app/src/lib/data/*.json`, `app/static/sql-wasm.wasm`), third-party-vendored files (none currently), the `LICENSE` file itself, and config files that don't normally carry license headers (`pyproject.toml`, `svelte.config.js`, etc.) if they don't already have them.
+Scope covers: every `.py` in `python/src/` and `python/tests/`, every `.ts` / `.svelte` / `.css` in `app/src/`, `install.sh`, and any other source file that currently carries the full boilerplate. Excluded: generated artifacts (`app/src/lib/data/*.json`, `app/static/sql-wasm.wasm`), third-party-vendored files (none currently), the `LICENSE` file itself, and config files that don't normally carry license headers (`pyproject.toml`, `svelte.config.js`, etc.) if they don't already have them.
 
 ---
 
@@ -90,29 +75,9 @@ Extends `cli.cmd_build`:
   - Do not enter the `chooser` view. Auto-advance directly to `nav`.
   - Even if `uploadedManifests` somehow gains entries (defensive), ignore them.
 
-### FM-3: Legacy CLI console scripts removed
+### FM-3: Legacy CLI console scripts removed *(absorbed into K.d)*
 
-`builder/pyproject.toml`:
-
-```toml
-[project.scripts]
-quizazz = "quizazz_builder.cli:main"
-```
-
-`builder/src/quizazz_builder/__main__.py`:
-
-```python
-# Copyright (c) 2026 Pointmatic
-# SPDX-License-Identifier: Apache-2.0
-
-"""Module entry point for `python -m quizazz_builder`."""
-from quizazz_builder.cli import main
-
-if __name__ == "__main__":
-    main()
-```
-
-Any deprecation-notice code is removed. After this change, `quizazz-builder` and `quizazz_builder` shell commands no longer exist; users must use `quizazz` or `python -m quizazz_builder`.
+Shipped with the `quizazz-builder` → `quizazz` PyPI rename. `[project.scripts]` is now just `quizazz = "quizazz.cli:main"`; `__main__.py` is the SPDX-only thin delegator. The pre-1.0 `quizazz-builder` and `quizazz_builder` shell commands were never published to PyPI, so no deprecation period was needed.
 
 ### FM-4: SPDX-only headers across the repo
 
@@ -135,26 +100,22 @@ No behavior change. Pure mechanical refactor verifiable by diff: every changed f
 
 | File | Change |
 |------|--------|
-| `builder/src/quizazz_builder/cli.py` | Add `--standalone <quiz-name>` to the `build` subparser. Implement the staging logic (move out → set env → run pnpm → restore in `finally`). Handle SIGINT via `signal.signal(SIGINT, …)` to ensure restore runs on Ctrl+C. |
+| `python/src/quizazz/cli.py` | Add `--standalone <quiz-name>` to the `build` subparser. Implement the staging logic (move out → set env → run pnpm → restore in `finally`). Handle SIGINT via `signal.signal(SIGINT, …)` to ensure restore runs on Ctrl+C. |
 | `app/src/routes/+page.svelte` | Read `import.meta.env.VITE_QUIZAZZ_STANDALONE`. When set: filter `manifests` to the named one, refuse to render `ManifestUpload`, skip the chooser, render a build-misconfiguration error if the named manifest is absent. |
-| `builder/tests/test_cli.py` | Add tests for standalone staging: named manifest exists → stages + runs; named manifest missing → fails with message; multi-manifest scenario → others moved out + restored; interrupt simulation → restore happens. |
+| `python/tests/test_cli.py` | Add tests for standalone staging: named manifest exists → stages + runs; named manifest missing → fails with message; multi-manifest scenario → others moved out + restored; interrupt simulation → restore happens. |
 | `app/tests/integration/` (new test file or existing) | Test `+page.svelte` standalone-mode branches via env-var mocking. |
 
 ### Modified modules (FM-3)
 
-| File | Change |
-|------|--------|
-| `builder/pyproject.toml` | Remove `quizazz-builder` and `quizazz_builder` from `[project.scripts]`. |
-| `builder/src/quizazz_builder/__main__.py` | Simplify to delegator. Drop deprecation-notice code. |
-| Any test that invoked the legacy commands | Update to `quizazz` or `python -m quizazz_builder`. |
+*Work landed in K.d; no changes remain for Phase M.*
 
 ### Modified modules (FM-4)
 
 Repo-wide header substitution. No logic change. Automatable via a sed/ruff script (the substitution is deterministic: replace the full boilerplate block with the SPDX two-liner, preserving the copyright year and owner).
 
 Files touched (non-exhaustive, to be verified during the story):
-- `builder/src/quizazz_builder/**/*.py`
-- `builder/tests/**/*.py`
+- `python/src/quizazz/**/*.py`
+- `python/tests/**/*.py`
 - `app/src/**/*.ts`
 - `app/src/**/*.svelte`
 - `app/src/app.css`
@@ -165,7 +126,7 @@ Config files without existing headers (`pyproject.toml`, `svelte.config.js`, `vi
 ### Staging implementation sketch (FM-1)
 
 ```python
-# builder/src/quizazz_builder/cli.py (sketch)
+# python/src/quizazz/cli.py (sketch)
 import signal
 import tempfile
 from contextlib import contextmanager
@@ -230,6 +191,6 @@ None.
 
 - **Phase L must be landed first.** FM-2 and Phase L share `+page.svelte` edits; resolving them serially avoids a merge headache.
 - **No UC-2 regression.** Builds without `--standalone` must behave exactly as they do today.
-- **No legacy-CLI silent break.** The removal of `quizazz-builder` and `quizazz_builder` should be flagged in the PyPI release notes; users who had been relying on them get a clean "command not found" rather than a surprise behavior change.
+- ~~No legacy-CLI silent break.~~ *(Obviated: the `quizazz-builder` / `quizazz_builder` shell aliases were removed as part of the K.d rename, before any public PyPI release. No migration guidance needed.)*
 - **SPDX retrofit is verify-only.** No file's semantic content may change in the retrofit PR; the diff is purely header replacement. If a diff shows anything else, reject and redo.
 - **Test suite stays green.** All existing tests pass; new staging/standalone tests add to the count.

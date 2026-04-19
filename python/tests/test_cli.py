@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 import pytest
 
-from quizazz_builder.cli import cmd_build, cmd_generate, cmd_run, main
+from quizazz.cli import cmd_build, cmd_generate, cmd_run, main
 
 # Minimal valid YAML for a quiz file
 MINIMAL_YAML = """\

@@ -23,8 +23,8 @@ A browser-based study tool that quizzes you on your understanding of a topic. Qu
 
 | Directory | Purpose |
 |-----------|---------|
-| `app/` | SvelteKit quiz UI and runtime (TypeScript, Tailwind CSS) |
-| `builder/` | Python YAML validation and JSON compilation |
+| `app/` | SvelteKit quiz UI; also publishes `@pointmatic/quizazz` npm package (Phase L) |
+| `python/` | `quizazz` Python package (published to PyPI): validator, compiler, CLI, library API |
 | `data/` | YAML question banks organized by quiz |
 | `docs/` | Specifications, tech spec, and stories |
 
@@ -36,6 +36,14 @@ A browser-based study tool that quizzes you on your understanding of a topic. Qu
 ## Setup
 
 ### 1. Python Builder
+
+The builder is published to PyPI and can be installed into any Python 3.12+ environment:
+
+```bash
+pip install quizazz
+```
+
+For development against a local checkout:
 
 > **Tip:** Consider installing the Homebrew package [Pyve](https://pointmatic.github.io/pyve) to automatically handle virtual environment setup and activation.
 
@@ -201,7 +209,7 @@ Scores accumulate per question across sessions. The selection algorithm uses the
 | `quizazz build` | Build the Svelte application for production |
 | `quizazz run` | Launch a local web server and open the app |
 
-All commands support `--help` for full option details. The legacy `quizazz-builder` command still works but prints a deprecation notice.
+All commands support `--help` for full option details.
 
 ## Library API (UC-3)
 
@@ -209,7 +217,7 @@ Host frameworks can compile assessment YAML directly into a manifest dict at the
 
 ```python
 from pathlib import Path
-from quizazz_builder import compile_assessment, validate_assessment, ValidationError
+from quizazz import compile_assessment, validate_assessment, ValidationError
 
 try:
     manifest = compile_assessment("module-4-pre.yaml", base_dir=Path("content"))
@@ -232,7 +240,7 @@ Both functions accept `str` or `Path` for their arguments. `yaml_path` is joined
 pnpm --dir app vitest run
 
 # Builder tests
-python -m pytest builder/
+python -m pytest python/
 ```
 
 ## Building for Production

@@ -25,7 +25,7 @@ from pathlib import Path
 import yaml
 from pydantic import ValidationError as _PydanticValidationError
 
-from quizazz_builder.models import Question, QuizFile, SubtopicGroup
+from quizazz.models import Question, QuizFile, SubtopicGroup
 
 
 class ValidationError(Exception):

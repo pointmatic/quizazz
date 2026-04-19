@@ -24,8 +24,8 @@ import hashlib
 import json
 from pathlib import Path, PurePosixPath
 
-from quizazz_builder import MANIFEST_SCHEMA_VERSION
-from quizazz_builder.models import Question, QuizFile, SubtopicGroup
+from quizazz import MANIFEST_SCHEMA_VERSION
+from quizazz.models import Question, QuizFile, SubtopicGroup
 
 
 def question_id(question_text: str) -> str:
@@ -82,7 +82,7 @@ def compile_quiz_to_dict(
 
     Shared core used by both the CLI (via :func:`compile_quiz`, which
     wraps this with a disk write) and the library API
-    (:func:`quizazz_builder.api.compile_assessment`, which returns the
+    (:func:`quizazz.api.compile_assessment`, which returns the
     dict directly). Performs no disk I/O.
 
     The manifest contains:
@@ -91,7 +91,7 @@ def compile_quiz_to_dict(
     - ``tree``: navigation tree (from :func:`build_navigation_tree`)
     - ``questions``: flat list of all questions with ``topicId`` and ``subtopic``
     """
-    from quizazz_builder.manifest import build_navigation_tree
+    from quizazz.manifest import build_navigation_tree
 
     tree = build_navigation_tree(validated_files)
 

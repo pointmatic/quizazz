@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for quizazz_builder.validator."""
+"""Tests for quizazz.validator."""
 
 from pathlib import Path
 
 import pytest
 
-from quizazz_builder.models import QuizFile, SubtopicGroup
-from quizazz_builder.validator import (
+from quizazz.models import QuizFile, SubtopicGroup
+from quizazz.validator import (
     ValidationError,
     validate_directory,
     validate_file,

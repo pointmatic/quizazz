@@ -55,7 +55,7 @@ def compile_assessment(yaml_path: Path, base_dir: Path) -> dict:
 4. Return the manifest dict. learningfoundry serializes it to JSON and embeds it in the SvelteKit app as a data file.
 
 **Constraints:**
-- The function must be importable from the `quizazz_builder` package (e.g., `from quizazz_builder import compile_assessment`).
+- The function must be importable from the `quizazz` package (e.g., `from quizazz import compile_assessment`).
 - The function must be synchronous (no async).
 - The function must not perform any I/O beyond reading the specified YAML file and any files it references.
 - The function must not write to disk, start servers, or have side effects.
@@ -146,7 +146,7 @@ The embedded quiz component must support keyboard-first interaction (letter keys
 Build time (Python):
   curriculum.yml
     → content resolution encounters `type: quiz, source: quizazz, ref: ...`
-    → learningfoundry calls quizazz_builder.compile_assessment(ref, base_dir)
+    → learningfoundry calls quizazz.compile_assessment(ref, base_dir)
     → receives manifest dict
     → serializes to JSON in generated SvelteKit project
 
@@ -165,16 +165,16 @@ Runtime (SvelteKit):
 
 | Concern | Value |
 |---------|-------|
-| **Python package** | `quizazz-builder` on PyPI |
+| **Python package** | `quizazz` on PyPI |
 | **SvelteKit component** | Published as an npm package (e.g., `@pointmatic/quizazz`) or bundled in learningfoundry's SvelteKit template |
-| **learningfoundry dependency** | Optional: `pip install learningfoundry[quizazz]` installs `quizazz-builder` |
+| **learningfoundry dependency** | Optional: `pip install learningfoundry[quizazz]` installs `quizazz` |
 
 ---
 
 ## Versioning and Compatibility
 
-- learningfoundry pins `quizazz-builder>=0.1` as an optional dependency.
-- The manifest dict schema is the versioning boundary. Breaking changes to the manifest structure require a major version bump in `quizazz-builder` and a corresponding update in learningfoundry's `QuizazzProvider`.
+- learningfoundry pins `quizazz>=0.1` as an optional dependency.
+- The manifest dict schema is the versioning boundary. Breaking changes to the manifest structure require a major version bump in `quizazz` and a corresponding update in learningfoundry's `QuizazzProvider`.
 - The SvelteKit component and the Python builder must agree on the manifest schema. learningfoundry does not interpret the manifest contents — it passes the dict through opaquely.
 
 ---
@@ -185,7 +185,7 @@ Runtime (SvelteKit):
 |------|-------|----------------|
 | `compile_assessment` returns valid manifest for well-formed YAML | quizazz | Unit test in quizazz repo |
 | `compile_assessment` raises `ValidationError` for malformed YAML | quizazz | Unit test in quizazz repo |
-| learningfoundry's `QuizazzProvider` delegates correctly to `compile_assessment` | learningfoundry | Unit test with mocked `quizazz_builder` |
+| learningfoundry's `QuizazzProvider` delegates correctly to `compile_assessment` | learningfoundry | Unit test with mocked `quizazz` |
 | learningfoundry wraps `ValidationError` in `IntegrationError` with block location | learningfoundry | Unit test |
 | `QuizBlock` component renders manifest and fires `complete` event | quizazz | Component test in quizazz repo |
 | learningfoundry's `QuizBlock` integration writes score to `quiz_scores` table | learningfoundry | Integration test |

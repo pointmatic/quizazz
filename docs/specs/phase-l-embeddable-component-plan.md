@@ -113,7 +113,7 @@ From [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md) 
   - `dependencies`: `sql.js ^1` (bundled transitively or required of host? See FL-6.)
 - Package emits to `app/dist/` and is published from there.
 - Excluded from the package: `routes/`, `QuizChooser`, `ManifestUpload`, standalone-build machinery, sample data, `+page.svelte`, app-level CSS.
-- First release: **1.0.0**, keyed to `MANIFEST_SCHEMA_VERSION = "1.0"` (matches the PyPI `quizazz-builder 1.0.0` released in Phase K).
+- First release: matches the then-current project version (both published packages bump in lockstep with the single project-version stream — see `project-essentials.md § One project version`).
 - CI automation is out of scope; manual release is sufficient for v1.
 
 ### FL-7: Single-instance defensive guard
@@ -218,7 +218,7 @@ Explicitly **not** published:
 ## Out of Scope (deferred to later phases)
 
 - **UC-1 `quizazz build --standalone <name>`** — Phase M.
-- **Legacy CLI script removal** (`quizazz-builder`, `quizazz_builder` console entries) — Phase M.
+- **Legacy CLI script removal** (`quizazz`, `quizazz` console entries) — Phase M.
 - **SPDX header retrofit** — Phase M.
 - **CI-based npm publication** — manual is sufficient for 1.0.0.
 - **Multi-instance `<QuizBlock>` on the same page** — document as a single-instance limitation in v1; refactor deferred.
@@ -231,7 +231,7 @@ Explicitly **not** published:
 
 ## Constraints
 
-- **Phase K must be landed first.** Phase L depends on `schemaVersion` being present in the manifest and `quizazz-builder 1.0.0` being published (so the versioning lockstep is real).
+- **Phase K must be landed first.** Phase L depends on `schemaVersion` being present in the manifest and `quizazz 1.0.0` being published (so the versioning lockstep is real).
 - **No UC-1 / UC-2 regression.** All existing app behaviors (chooser, upload, nav, config, quiz flow, review) must continue to work unchanged. The refactor to extract `<QuizBlock>` must not alter `+page.svelte`'s user-visible behavior.
 - **`<QuizBlock>` must be pure-static-renderable.** No SSR dependencies, no network requests, no dynamic imports of anything a host can't ship.
 - **Tailwind 4 classes in the published bundle must compose cleanly with host Tailwind.** Use a documented layer order; avoid `@layer base` overrides that would stomp host styles.

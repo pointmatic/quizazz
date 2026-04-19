@@ -12,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for quizazz_builder.compiler."""
+"""Tests for quizazz.compiler."""
 
 import json
 from pathlib import Path
 
-from quizazz_builder import MANIFEST_SCHEMA_VERSION
-from quizazz_builder.compiler import (
+from quizazz import MANIFEST_SCHEMA_VERSION
+from quizazz.compiler import (
     compile_questions,
     compile_quiz,
     compile_quiz_to_dict,
     question_id,
 )
-from quizazz_builder.models import Answer, AnswerSet, Question, QuizFile, SubtopicGroup
+from quizazz.models import Answer, AnswerSet, Question, QuizFile, SubtopicGroup
 
 
 def _make_question(text: str = "What is 2+2?") -> Question:

@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for quizazz_builder.models."""
+"""Tests for quizazz.models."""
 
 import pytest
 from pydantic import ValidationError
 
-from quizazz_builder.models import (
+from quizazz.models import (
     Answer,
     AnswerSet,
     Question,

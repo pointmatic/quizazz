@@ -10,7 +10,7 @@ For a high-level concept (why), see `concept.md`. For requirements and behavior 
 
 ## Phase K: LearningFoundry Integration — Library API
 
-Expose `quizazz_builder` as a public Python library so host frameworks (starting with `learningfoundry`) can compile assessment YAML into manifest dicts at their own build time, without shelling out to the CLI or writing intermediate files. Adds a structured exception type, a `schemaVersion` field to the compiled manifest (the cross-package versioning boundary), and culminates in the first PyPI release of `quizazz-builder`.
+Expose `quizazz` as a public Python library so host frameworks (starting with `learningfoundry`) can compile assessment YAML into manifest dicts at their own build time, without shelling out to the CLI or writing intermediate files. Adds a structured exception type, a `schemaVersion` field to the compiled manifest (the cross-package versioning boundary), and culminates in the first PyPI release of `quizazz`.
 
 Phase K is the Python side of the UC-3 host-integration contract defined in [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md). The SvelteKit `<QuizBlock>` component and its npm package are deferred to Phase L.
 
@@ -18,16 +18,16 @@ Phase K is the Python side of the UC-3 host-integration contract defined in [`le
 
 Rename `QuizValidationError` to `ValidationError` and give it structured attributes so host frameworks can catch it, inspect the offending file path, read a human-readable message, and optionally drill into per-violation detail. Internal-only refactor — no change to CLI output format or existing tests' assertions on `str(exc)`.
 
-- [x] Update `builder/src/quizazz_builder/validator.py`
+- [x] Update `python/src/quizazz/validator.py`
   - [x] Rename class `QuizValidationError` → `ValidationError`
   - [x] Add constructor `__init__(self, file_path: Path, message: str, detail: dict | None = None)`
   - [x] Store attributes: `file_path`, `message`, `detail`
   - [x] `__str__` returns a concatenated human-readable form: `"<file_path>: <message>"` plus detail summary if present
   - [x] Update every `raise QuizValidationError(...)` site to pass `file_path` + `message` (+ `detail` where applicable)
-- [x] Update `builder/src/quizazz_builder/cli.py`
+- [x] Update `python/src/quizazz/cli.py`
   - [x] Import `ValidationError` (was `QuizValidationError`)
   - [x] Error-handling branch still prints `Validation error: {exc}` to stderr
-- [x] Update `builder/tests/test_validator.py`
+- [x] Update `python/tests/test_validator.py`
   - [x] Assert `ValidationError.file_path` populated for every violation scenario
   - [x] Assert `ValidationError.message` populated
   - [x] Assert `ValidationError.detail` populated for violations that have structured context (e.g., question index)
@@ -37,9 +37,9 @@ Rename `QuizValidationError` to `ValidationError` and give it structured attribu
 
 Extract `compile_quiz_to_dict` as the shared compilation core used by both the CLI (wraps it with a disk write) and the future library API (calls it directly). Introduce a `MANIFEST_SCHEMA_VERSION` constant and inject `schemaVersion: "1.0"` as a top-level field in every emitted manifest. Add the matching optional field to the TypeScript `QuizManifest` type — reserved for Phase L consumption, no runtime use yet.
 
-- [x] Update `builder/src/quizazz_builder/__init__.py`
+- [x] Update `python/src/quizazz/__init__.py`
   - [x] Define `MANIFEST_SCHEMA_VERSION = "1.0"` (or place in dedicated `schema.py`; justify choice in the PR)
-- [x] Update `builder/src/quizazz_builder/compiler.py`
+- [x] Update `python/src/quizazz/compiler.py`
   - [x] Extract `compile_quiz_to_dict(validated: list[tuple[Path, QuizFile]], quiz_name: str) -> dict` containing current in-memory compile logic
   - [x] Include `"schemaVersion": MANIFEST_SCHEMA_VERSION` as the first key in the returned dict
   - [x] Refactor existing `compile_quiz(validated, quiz_name, output_dir) -> None` to call `compile_quiz_to_dict` and serialize to disk
@@ -47,7 +47,7 @@ Extract `compile_quiz_to_dict` as the shared compilation core used by both the C
 - [x] Update `app/src/lib/types/index.ts`
   - [x] Add optional `schemaVersion?: string` to `QuizManifest` interface
   - [x] No runtime reading yet — Phase L will consume it
-- [x] Update `builder/tests/test_compiler.py`
+- [x] Update `python/tests/test_compiler.py`
   - [x] Add test: `compile_quiz_to_dict` returns a dict with `schemaVersion == "1.0"`
   - [x] Add test: `compile_quiz_to_dict` produces the same shape CLI-written JSON would, minus disk I/O
   - [x] Existing `compile_quiz` tests still pass (regression)
@@ -56,11 +56,11 @@ Extract `compile_quiz_to_dict` as the shared compilation core used by both the C
 
 ### Story K.c: v0.41.0 Public Library API [Done]
 
-Create `quizazz_builder/api.py` with `compile_assessment(yaml_path, base_dir) -> dict`, `validate_assessment(yaml_path, base_dir) -> list[str]`, and a path-escape guard. Export the public surface from the package's `__init__.py`. This is the first release where `from quizazz_builder import compile_assessment, validate_assessment, ValidationError` is a stable, documented contract.
+Create `quizazz/api.py` with `compile_assessment(yaml_path, base_dir) -> dict`, `validate_assessment(yaml_path, base_dir) -> list[str]`, and a path-escape guard. Export the public surface from the package's `__init__.py`. This is the first release where `from quizazz import compile_assessment, validate_assessment, ValidationError` is a stable, documented contract.
 
 ```python
 from pathlib import Path
-from quizazz_builder import compile_assessment, validate_assessment, ValidationError
+from quizazz import compile_assessment, validate_assessment, ValidationError
 
 manifest = compile_assessment("module-4-pre.yaml", base_dir=Path("content"))
 # → dict with schemaVersion, quizName, tree, questions
@@ -69,7 +69,7 @@ errors = validate_assessment("bad.yaml", base_dir=Path("content"))
 # → ["content/bad.yaml: Must have at least 1 correct answer", ...]
 ```
 
-- [x] Create `builder/src/quizazz_builder/api.py`
+- [x] Create `python/src/quizazz/api.py`
   - [x] `compile_assessment(yaml_path: Path | str, base_dir: Path | str) -> dict`
     - [x] Accepts `str` or `Path` for both args; coerce to `Path` internally
     - [x] Calls `_resolve_under_base`, then `validate_file`, then `compile_quiz_to_dict`
@@ -82,11 +82,11 @@ errors = validate_assessment("bad.yaml", base_dir=Path("content"))
     - [x] `base = Path(base_dir).resolve()`, `full = (base / yaml_path).resolve()`
     - [x] Rejects escape (absolute yaml_path, `..` traversal, post-symlink escape)
     - [x] Raises `ValidationError` with `file_path=Path(yaml_path)`, descriptive message, `detail={"base_dir": ..., "resolved": ...}`
-- [x] Update `builder/src/quizazz_builder/__init__.py`
+- [x] Update `python/src/quizazz/__init__.py`
   - [x] `from .validator import ValidationError`
   - [x] `from .api import compile_assessment, validate_assessment`
   - [x] `__all__ = ["compile_assessment", "validate_assessment", "ValidationError", "MANIFEST_SCHEMA_VERSION", "__version__"]`
-- [x] Create `builder/tests/test_api.py`
+- [x] Create `python/tests/test_api.py`
   - [x] `compile_assessment` happy path: valid YAML → dict with `schemaVersion`, `quizName`, `tree`, `questions`
   - [x] `compile_assessment` raises `ValidationError` for: empty `menu_name`, empty `question`, <5 answers total, missing category, empty answer text, empty explanation, tag normalization violation — each with populated `.file_path`, `.message`, `.detail`
   - [x] `compile_assessment` rejects malformed YAML with `ValidationError` (YAML parser error surfaced)
@@ -100,27 +100,36 @@ errors = validate_assessment("bad.yaml", base_dir=Path("content"))
 - [x] Update the main README: add a "Library API (UC-3)" section with usage examples
 - [x] Verify: all builder tests pass; no existing test regressions
 
-### Story K.d: v0.42.0 PyPI Release — `quizazz-builder` 1.0.0 [Planned]
+### Story K.d: v1.0.0 PyPI Release [In Review]
 
-Polish `pyproject.toml` metadata for a public PyPI release, bump the builder package version independently to `1.0.0` (marking the first stable public API, keyed to `MANIFEST_SCHEMA_VERSION = "1.0"`), and publish to PyPI. CI automation is out of scope — release is manual this first time and documented for reproducibility.
+First public release of `quizazz` to PyPI. Polish `pyproject.toml` metadata, bump the project version to `1.0.0` (first stable public API is the big-thing X-bump under the project's loose-semver rule), and publish via a tag-driven GitHub Actions workflow with PyPI trusted publishing (OIDC — no long-lived tokens).
 
-- [ ] Enrich `builder/pyproject.toml` `[project]` metadata
-  - [ ] `description`: "YAML question bank validator, compiler, and CLI for Quizazz quizzes."
-  - [ ] `readme = "README.md"` (or a builder-specific README if we add one)
-  - [ ] `keywords = ["quiz", "assessment", "education", "yaml", "sveltekit"]`
-  - [ ] Classifiers: Development Status 5, OSI Approved Apache Software License, Python 3.12, Topic :: Education, Topic :: Education :: Testing
-  - [ ] `[project.urls]`: Homepage, Repository (confirm exact slugs)
-- [ ] Bump `builder/pyproject.toml` `version = "1.0.0"`
-- [ ] Update `builder/src/quizazz_builder/__init__.py` `__version__ = "1.0.0"`
-- [ ] Ensure the README renders correctly on PyPI (check markdown rendering, image links resolve)
-- [ ] Add a release-process note (e.g., in `builder/README.md` or a `RELEASE.md`) covering:
-  - [ ] `python -m build` to produce the sdist and wheel
-  - [ ] `twine check dist/*`
-  - [ ] `twine upload dist/*` (manual credential handling; no CI)
-- [ ] Dry-run the publish pipeline locally (build → check → upload to TestPyPI first)
-- [ ] Publish `quizazz-builder 1.0.0` to PyPI
-- [ ] Verify: `pip install quizazz-builder` in a fresh venv works; `quizazz --version` prints `1.0.0`; `from quizazz_builder import compile_assessment` succeeds
-- [ ] Update the main README to reference `pip install quizazz-builder` as an install option (alongside source-install)
+> **Renames folded in.** Three in-place corrections landed with this story, before any PyPI publish:
+>
+> 1. **PyPI distribution name** `quizazz-builder` → `quizazz`. Historical artefact from when the Python tool was a sidecar "builder"; the CLI and brand have been `quizazz` since the command was unified. Free before first publish, squatter after.
+> 2. **Python import + source-directory name** `quizazz_builder` → `quizazz`. Matches the dist name and CLI; locks in the public import (`from quizazz import compile_assessment`) before any host framework writes the old path into durable code.
+> 3. **Top-level repo subdirectory** `builder/` → `python/`. Symmetric with `app/` (SvelteKit) and `data/` (YAML); "builder" was the same sidecar vestige.
+>
+> The console-script cleanup from story M.b was also folded in here (see M.b for the record). A Data Flow subsection was added to `tech-spec.md` so the `data/` → `python/` → `app/src/lib/data/` → `app/build/` pipeline is documented as one thought instead of scattered across four tables.
+
+- [x] Enrich `python/pyproject.toml` `[project]` metadata
+  - [x] `description`: "YAML question bank validator, compiler, and CLI for Quizazz quizzes."
+  - [x] `readme = "README.md"` (builder-specific README added under `python/README.md`)
+  - [x] `keywords = ["quiz", "assessment", "education", "yaml", "sveltekit"]`
+  - [x] Classifiers: Development Status 5, Python 3.12, Topic :: Education, Topic :: Education :: Testing (the legacy `License :: OSI Approved :: Apache Software License` classifier is dropped — setuptools rejects it alongside the PEP 639 SPDX `license = "Apache-2.0"` expression already present)
+  - [x] `[project.urls]`: Homepage, Repository, Issues → `github.com/pointmatic/quizazz`
+- [x] Bump `python/pyproject.toml` `version = "1.0.0"`
+- [x] Update `python/src/quizazz/__init__.py` `__version__ = "1.0.0"`
+- [x] Ensure the README renders correctly on PyPI (verified via `twine check` — both sdist and wheel PASSED)
+- [x] Add a release-process note (`python/RELEASE.md`) covering version bumps, the CI tag-push flow, the `pypi` GitHub environment + PyPI trusted-publisher one-time setup, and the manual `twine` fallback
+- [x] Add GitHub Actions workflow `.github/workflows/publish-pypi.yml` — triggers on bare `v*` tags; runs pytest + ruff; builds sdist + wheel; `twine check`; publishes via `pypa/gh-action-pypi-publish` with OIDC trusted publishing (no stored token)
+- [x] Dry-run the pipeline locally — `python -m build python/` produced wheel + sdist; `twine check` PASSED; fresh-venv install of the local wheel confirmed `quizazz --version` → `1.0.0` and `from quizazz import compile_assessment` succeeds
+- [x] One-time GitHub + PyPI config *(developer, before the first tag push)*
+  - [x] Create GitHub environment `pypi` on the repo (optional reviewers / branch filter recommended)
+  - [x] On PyPI: add a pending trusted publisher for `quizazz` with owner `pointmatic`, repo `quizazz`, workflow `publish-pypi.yml`, environment `pypi`
+- [ ] Publish `quizazz 1.0.0` to PyPI *(pending — `git tag -a v1.0.0 -m 'quizazz 1.0.0' && git push origin v1.0.0` once the one-time config above is done; workflow takes it from there)*
+- [ ] Verify: `pip install quizazz` in a fresh venv works; `quizazz --version` prints `1.0.0`; `from quizazz import compile_assessment` succeeds *(pending — post-publish check)*
+- [x] Update the main README to reference `pip install quizazz` as an install option (alongside source-install)
 
 ---
 
@@ -225,7 +234,7 @@ Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/emb
   - [ ] Include: `embed/`, `engine/`, `db/`, `stores/`, `types/`, `utils/format.ts`, `utils/random.ts`, and the internal views the component reuses (`QuizView`, `AnsweredQuestionsView`, `ReviewView`, `SummaryView`, `ProgressBar`)
 - [ ] Update `app/package.json` for public distribution
   - [ ] `name = "@pointmatic/quizazz"`
-  - [ ] `version = "1.0.0"` (independent of the project-level story version; matches `MANIFEST_SCHEMA_VERSION = "1.0"`)
+  - [ ] `version = "1.0.0"` (matches the project version; `MANIFEST_SCHEMA_VERSION = "1.0"` aligns since the manifest shape hasn't broken)
   - [ ] `description`: "Embeddable SvelteKit quiz component for Quizazz assessments."
   - [ ] `keywords`: `["quiz", "assessment", "education", "svelte", "sveltekit", "quizazz"]`
   - [ ] `license = "Apache-2.0"`
@@ -269,7 +278,7 @@ quizazz build --standalone my-quiz
 # → app/build/ contains a one-quiz SPA bundled with only my-quiz.json
 ```
 
-- [ ] Update `builder/src/quizazz_builder/cli.py`
+- [ ] Update `python/src/quizazz/cli.py`
   - [ ] Add `--standalone <quiz-name>` flag to the `build` subparser
   - [ ] Implement `_stage_standalone(data_dir, target_name)` as a `contextmanager`:
     - [ ] Validate `<target_name>.json` exists under `data_dir`; fail with clear stderr + exit 1 if not
@@ -291,7 +300,7 @@ quizazz build --standalone my-quiz
     - [ ] Skip the `chooser` view entirely; initial `viewMode` goes directly to `nav`
     - [ ] Defensive: ignore any `uploadedManifests` that somehow appear
   - [ ] When unset: existing UC-2 behavior unchanged
-- [ ] Update `builder/tests/test_cli.py`
+- [ ] Update `python/tests/test_cli.py`
   - [ ] Standalone with valid target manifest: stages others to temp, sets env, runs pnpm, restores others
   - [ ] Standalone with missing target manifest: exits 1 with clear message; no files moved
   - [ ] Standalone with only the target already present: no staging work done (no temp dir created); env set; pnpm run
@@ -305,41 +314,22 @@ quizazz build --standalone my-quiz
 - [ ] Update main README with a "Standalone single-quiz SPA" section covering the flag and intended use case
 - [ ] Verify: all builder + app tests pass; `pnpm check` — 0 errors
 
-### Story M.b: v0.48.0 Remove Legacy CLI Console Scripts [Planned]
+### Story M.b: Remove Legacy CLI Console Scripts [Done]
 
-Drop the `quizazz-builder` and `quizazz_builder` console-script aliases from `pyproject.toml` and simplify `__main__.py` to a thin delegator. After this story, only `quizazz` and `python -m quizazz_builder` are valid invocation paths. Ships as `quizazz-builder 1.0.1` on PyPI (breaking change at the shell level, flagged in release notes).
+> Absorbed into K.d as part of the PyPI package rename (`quizazz-builder` → `quizazz`). Shipping 1.0.0 with legacy console scripts only to delete them in 1.0.1 would have been silly, so the cleanup landed in the same change that renamed the dist.
 
-- [ ] Update `builder/pyproject.toml`
-  - [ ] In `[project.scripts]`, keep only `quizazz = "quizazz_builder.cli:main"`
-  - [ ] Remove the two legacy lines (`quizazz-builder = ...`, `quizazz_builder = ...`)
-  - [ ] Bump `version = "1.0.1"` (PyPI-only patch bump)
-- [ ] Simplify `builder/src/quizazz_builder/__main__.py`
-  - [ ] Strip any deprecation-notice code
-  - [ ] Delegate straight to `cli.main`:
-    ```python
-    """Module entry point for `python -m quizazz_builder`."""
-    from quizazz_builder.cli import main
-    if __name__ == "__main__":
-        main()
-    ```
-  - [ ] Keep the existing SPDX / license header (updated by M.c, not this story)
-- [ ] Update `quizazz_builder.__version__` to `"1.0.1"`
-- [ ] Grep the repo for any stale references to `quizazz-builder` or `quizazz_builder` as shell commands (READMEs, docs, test fixtures, install.sh, etc.); replace with `quizazz` or `python -m quizazz_builder`
-  - [ ] Note: `quizazz_builder` as a Python import name stays — only the shell-command references are being removed
-- [ ] Update tests if any invoked the legacy commands
-- [ ] Write a PyPI release note covering:
-  - [ ] Breaking change: `quizazz-builder` / `quizazz_builder` shell commands removed
-  - [ ] Migration: use `quizazz ...` (recommended) or `python -m quizazz_builder ...`
-- [ ] Publish `quizazz-builder 1.0.1` to PyPI
-- [ ] Verify: fresh install of `quizazz-builder 1.0.1` exposes `quizazz` but not `quizazz-builder`; `quizazz --version` prints `1.0.1`; all builder tests pass
+- [x] Dropped `quizazz-builder = "quizazz_builder.__main__:main"` and `quizazz_builder = "quizazz_builder.__main__:main"` from `[project.scripts]`. Only `quizazz = "quizazz.cli:main"` remains.
+- [x] Simplified `python/src/quizazz/__main__.py` to the thin `from quizazz.cli import main` delegator with the SPDX-only header.
+- [x] Repo-wide grep for `quizazz-builder` / `quizazz_builder` shell-command references cleaned up during the rename sweep (READMEs, docs, release notes, GHA workflow).
+- [x] No separate PyPI release note needed — `quizazz 1.0.0` is the first public release, so nothing to deprecate.
 
 ### Story M.c: v0.49.0 SPDX-Only Header Retrofit [Planned]
 
 Replace the full 14-line Apache-2.0 boilerplate on every existing source file with the 2-line SPDX variant defined in project-essentials. Mechanical, verify-only diff — no semantic content changes. New files created between Phase K and now already use SPDX-only; this story closes the gap for pre-K files.
 
 - [ ] Identify the full set of files carrying the Apache-2.0 boilerplate
-  - [ ] `builder/src/quizazz_builder/**/*.py`
-  - [ ] `builder/tests/**/*.py`
+  - [ ] `python/src/quizazz/**/*.py`
+  - [ ] `python/tests/**/*.py`
   - [ ] `app/src/**/*.ts`
   - [ ] `app/src/**/*.svelte`
   - [ ] `app/src/app.css`

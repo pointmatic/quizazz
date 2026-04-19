@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for quizazz_builder.manifest."""
+"""Tests for quizazz.manifest."""
 
 from pathlib import Path
 
-from quizazz_builder.compiler import question_id
-from quizazz_builder.manifest import build_navigation_tree
-from quizazz_builder.models import (
+from quizazz.compiler import question_id
+from quizazz.manifest import build_navigation_tree
+from quizazz.models import (
     Answer,
     AnswerSet,
     Question,

@@ -136,7 +136,7 @@ right path, not a quiet text change.
 
 There is one CLI entry point: the `quizazz` console script
 (`quizazz generate` / `quizazz build` / `quizazz run`).
-`python -m quizazz_builder` also works and delegates to the same dispatch.
+`python -m quizazz` also works and delegates to the same dispatch.
 
 No other console scripts exist. If you see references to `quizazz-builder`
 or `quizazz_builder` as bin scripts in old docs or examples, those were
@@ -178,7 +178,7 @@ the `VITE_` prefix missing — check both are being set.
 The compiled JSON manifest shape is the public contract between two
 independently released packages:
 
-- `quizazz-builder` on PyPI (emits the manifest)
+- `quizazz` on PyPI (emits the manifest)
 - `@pointmatic/quizazz` on npm (consumes the manifest via `<QuizBlock>`)
 
 Breaking changes to the manifest structure (renaming a field, changing a
@@ -188,7 +188,7 @@ producer and should remain a no-op in the consumer until it actually uses
 them.
 
 When editing:
-- `builder/src/quizazz_builder/compiler.py` / `manifest.py` — producer side
+- `python/src/quizazz/compiler.py` / `manifest.py` — producer side
 - `app/src/lib/types/index.ts` (`QuizManifest`, `Question`, `NavNode`) — consumer side
 - `app/src/lib/utils/validate-manifest.ts` — runtime upload shape check
 
@@ -212,15 +212,15 @@ current work without checking against the live specs first.
 
 The cross-package versioning-boundary rule above has a concrete enforcement
 point after Phase K: the `MANIFEST_SCHEMA_VERSION` constant in
-`builder/src/quizazz_builder/__init__.py`.
+`python/src/quizazz/__init__.py`.
 
 Any change to the compiled manifest shape — renaming a field, changing a
 type, adding or dropping a key — requires updating **all** of the
 following in the same change:
 
-1. Bump `MANIFEST_SCHEMA_VERSION` in `quizazz_builder/__init__.py` (major
+1. Bump `MANIFEST_SCHEMA_VERSION` in `quizazz/__init__.py` (major
    if breaking, minor if additive).
-2. Bump `builder/pyproject.toml` `[project].version` to the matching
+2. Bump `python/pyproject.toml` `[project].version` to the matching
    major/minor.
 3. Update the TypeScript `QuizManifest` interface in
    `app/src/lib/types/index.ts` to match the new shape.
@@ -230,40 +230,34 @@ following in the same change:
    `app/src/lib/data/` so they carry the new `schemaVersion` value.
 
 Forgetting any of the above silently ships a mismatched producer /
-consumer. If you're editing anything in `builder/compiler.py`,
-`builder/manifest.py`, or `app/src/lib/types/index.ts` that touches the
+consumer. If you're editing anything in `python/compiler.py`,
+`python/manifest.py`, or `app/src/lib/types/index.ts` that touches the
 emitted structure, treat this as a checklist item — not an afterthought.
 
 ---
 
-### Two version streams: project stories vs. `quizazz-builder` PyPI
+### One project version
 
-After Phase K's first PyPI release (story v0.42.0 / builder `1.0.0`), the
-project has **two independent version streams**:
+The project has a single version. Canonical source:
+`python/pyproject.toml` `[project].version`, mirrored in
+`python/src/quizazz/__init__.py.__version__`. Both published packages
+(`quizazz` on PyPI, `@pointmatic/quizazz` on npm from Phase L) bump to
+match in lockstep. `app/package.json` is a private workspace root and
+carries no `version` field.
 
-- **Project-level story version** — lives in `stories.md` headings
-  (`v0.42.0`, `v0.43.0`, ...) and in `app/package.json`. Bumps once per
-  code-shipping story. This is what the repo has always used.
-- **`quizazz-builder` PyPI version** — lives in `builder/pyproject.toml`
-  and `quizazz_builder.__version__`. Keyed to
-  `MANIFEST_SCHEMA_VERSION`. Bumps on PyPI releases (independent cadence
-  from project stories).
+Loose semver `vX.Y.Z`:
 
-The two streams do **not** track each other. A story may bump the project
-version without touching the PyPI package, and a PyPI patch release may
-ship without a new story version.
+- **X** — breaking changes or a big amazing new thing (e.g., first public
+  release, manifest-schema break).
+- **Y** — features (typically one story) or a bundle of stories once
+  production is stable.
+- **Z** — bug fixes and trivial changes.
 
-When editing either version field, check whether the other needs a bump:
-
-- Changed `compile_assessment` API shape, `ValidationError` attributes, or
-  the manifest schema → bump the PyPI version. Project-level story
-  version bumps independently at story land time.
-- Added a new CLI subcommand or app feature that doesn't touch the library
-  API or manifest → bump project-level version only. PyPI stays put
-  unless the CLI surface itself changes in a user-visible way.
-
-If in doubt, state what changed in the PR description and verify both
-version fields explicitly — don't let one drift silently.
+`MANIFEST_SCHEMA_VERSION` (in `quizazz/__init__.py`) is a **separate
+protocol marker** embedded in every compiled manifest so consumers can
+detect breakage. It aligns with the project's major.minor by convention
+but only bumps on actual manifest-shape changes — not every project bump
+touches it.
 
 ---
 

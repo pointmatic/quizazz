@@ -1,7 +1,7 @@
 # Copyright (c) 2026 Pointmatic
 # SPDX-License-Identifier: Apache-2.0
 
-"""Tests for the public library API in quizazz_builder.api."""
+"""Tests for the public library API in quizazz.api."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from quizazz_builder import (
+from quizazz import (
     MANIFEST_SCHEMA_VERSION,
     ValidationError,
     compile_assessment,
@@ -308,8 +308,8 @@ class TestRoundTripWithCompileQuiz:
         api_manifest = compile_assessment("q.yaml", base_dir=source)
 
         # Replicate what the CLI does: validate the directory and write JSON.
-        from quizazz_builder.compiler import compile_quiz
-        from quizazz_builder.validator import validate_quiz_directory
+        from quizazz.compiler import compile_quiz
+        from quizazz.validator import validate_quiz_directory
 
         out = tmp_path / "out"
         validated = validate_quiz_directory(source)

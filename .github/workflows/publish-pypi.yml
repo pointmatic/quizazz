@@ -1,0 +1,48 @@
+name: Publish quizazz to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write    # PyPI trusted publishing (OIDC)
+      contents: read
+
+    defaults:
+      run:
+        working-directory: python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install package with dev + release extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,release]"
+
+      - name: Run tests
+        run: pytest
+
+      - name: Run lint
+        run: ruff check src/ tests/
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Check package
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: python/dist/

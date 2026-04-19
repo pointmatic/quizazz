@@ -20,11 +20,49 @@ For requirements and behavior, see [`features.md`](features.md). For the phased 
 | **Node package manager** | pnpm 10+ | Workspace-aware, fast |
 | **Linter / formatter (JS/TS)** | ESLint + Prettier | SvelteKit defaults; `prettier-plugin-svelte` |
 | **Test runner (JS/TS)** | Vitest 4 | Vite-native; `@testing-library/svelte` for component tests |
-| **Python runtime** | Python 3.12+ | Used only in `builder/` for YAML validation and manifest compilation |
+| **Python runtime** | Python 3.12+ | Used only in `python/` for YAML validation and manifest compilation |
 | **Python packaging backend** | `setuptools >= 75` | `pyproject.toml`-driven; editable install via `pip install -e ./builder` |
 | **Python package manager** | pip inside a venv | Venv managed by Pyve (see project-essentials for the canonical invocation form) |
 | **Linter / formatter (Python)** | Ruff | Replaces flake8/isort/black |
 | **Test runner (Python)** | pytest 8 | Standard |
+
+---
+
+## Data Flow
+
+Two code trees, one content pipeline. `python/` contains the `quizazz` Python package (validator + compiler + CLI + library API). `app/` contains the SvelteKit SPA. They don't share a runtime — they chain at build time via compiled JSON manifests.
+
+**UC-1 / UC-2 (disk-based, CLI-driven):**
+
+```
+data/<quiz>/*.yaml
+  → [quizazz generate]          (python/ — validate + compile)
+  → app/src/lib/data/*.json     (checked-in; glob-imported by Vite)
+  → [quizazz build → pnpm --dir app build]
+  → app/build/                  (deployable static site)
+  → [quizazz run]               (local http.server, optional)
+```
+
+The `quizazz` CLI orchestrates every step; each step can also be run standalone (`pnpm --dir app build` directly, `vitest`, etc.).
+
+**UC-3 (in-memory, library API):**
+
+```
+host YAML
+  → compile_assessment(path, base_dir)   (python/ — no disk writes)
+  → dict                                  (host owns JSON emission / bundling)
+```
+
+The host framework calls `compile_assessment` at *its own* build time. No subprocess, no temp files, no SvelteKit involvement on the Python side. The SvelteKit artefact for UC-3 is the separate `@pointmatic/quizazz` npm package (Phase L).
+
+**Directory roles at a glance:**
+
+| Directory | Role | Produces |
+|-----------|------|----------|
+| [data/](data/) | YAML content source of truth | — |
+| [python/](python/) | Python package (`quizazz`): validator, compiler, CLI, library API | Compiled manifests → `app/src/lib/data/*.json`; dicts → host callers (UC-3) |
+| [app/](app/) | SvelteKit SPA + `@pointmatic/quizazz` component library | `app/build/` static site (UC-1/UC-2); `app/dist/` npm package (UC-3, Phase L) |
+| [docs/](docs/) | Specs, plans, project-guide templates | — |
 
 ---
 
@@ -55,14 +93,14 @@ For requirements and behavior, see [`features.md`](features.md). For the phased 
 | `eslint` ^10, `prettier` ^3, `prettier-plugin-svelte` ^3 | Linting / formatting |
 | `@sveltejs/package` | (enabled via SvelteKit) component-library emit for npm |
 
-### Builder runtime (`builder/pyproject.toml`)
+### Builder runtime (`python/pyproject.toml`)
 
 | Package | Purpose |
 |---------|---------|
 | `pyyaml >= 6` | YAML parsing |
 | `pydantic >= 2` | Schema validation and models |
 
-### Builder dev (`builder/pyproject.toml` `[project.optional-dependencies].dev`)
+### Builder dev (`python/pyproject.toml` `[project.optional-dependencies].dev`)
 
 | Package | Purpose |
 |---------|---------|
@@ -146,12 +184,12 @@ quizazz/
 │       ├── utils/
 │       ├── integration/
 │       └── embed/                             # QuizBlock component tests
-├── builder/
-│   ├── pyproject.toml                         # Publishes quizazz-builder to PyPI
+├── python/
+│   ├── pyproject.toml                         # Publishes quizazz to PyPI
 │   ├── src/
-│   │   └── quizazz_builder/
+│   │   └── quizazz/
 │   │       ├── __init__.py                    # Public API: compile_assessment, validate_assessment, ValidationError
-│   │       ├── __main__.py                    # Thin entry for `python -m quizazz_builder` (delegates to cli.main)
+│   │       ├── __main__.py                    # Thin entry for `python -m quizazz` (delegates to cli.main)
 │   │       ├── cli.py                         # Unified CLI: generate / build / run / build --standalone
 │   │       ├── models.py                      # Pydantic models (Answer, AnswerSet, Question, SubtopicGroup, QuizFile)
 │   │       ├── validator.py                   # File + directory validation; ValidationError
@@ -186,7 +224,7 @@ quizazz/
 |-----------|------------|----------|
 | **Markdown docs** | Hyphens, lowercase | `tech-spec.md`, `learningfoundry-dependency-spec.md` |
 | **YAML content** | Hyphens, lowercase | `domain1-data-engineering.yaml`, `topic-a.yaml` |
-| **Python modules / packages** | Underscores (PEP 8) | `quizazz_builder/`, `validate_manifest.py` |
+| **Python modules / packages** | Underscores (PEP 8) | `quizazz/`, `validate_manifest.py` |
 | **Svelte components** | PascalCase | `QuizBlock.svelte`, `NavigationTree.svelte` |
 | **TypeScript modules** | kebab-case for files; camelCase for exports | `validate-manifest.ts`, `activeManifest` |
 | **Config files** | Dotted / lowercase | `pyproject.toml`, `svelte.config.js`, `.gitignore` |
@@ -197,7 +235,7 @@ quizazz/
 
 ## Key Component Design
 
-### Builder — `quizazz_builder.models`
+### Builder — `quizazz.models`
 
 Pydantic v2 models define and validate the YAML schema. All models are frozen to the shape described in [`features.md`](features.md) Inputs section.
 
@@ -231,7 +269,7 @@ class QuizFile(BaseModel):
 
 `QuestionBank(RootModel[list[Question]])` is retained as a deprecated legacy type for transitional code paths.
 
-### Builder — `quizazz_builder.validator`
+### Builder — `quizazz.validator`
 
 ```python
 class ValidationError(Exception):
@@ -251,7 +289,7 @@ def validate_quiz_directory(quiz_dir: Path) -> list[tuple[Path, QuizFile]]:
     Returns a list of (relative_path, QuizFile) tuples preserving hierarchy."""
 ```
 
-### Builder — `quizazz_builder.compiler`
+### Builder — `quizazz.compiler`
 
 ```python
 def compile_quiz(
@@ -271,7 +309,7 @@ def compile_quiz_to_dict(
 
 Stable question IDs are derived via SHA-256 of the question text (short-hashed for readability).
 
-### Builder — `quizazz_builder.manifest`
+### Builder — `quizazz.manifest`
 
 ```python
 def build_navigation_tree(
@@ -283,7 +321,7 @@ def build_navigation_tree(
     per-node mastery aggregation."""
 ```
 
-### Builder — `quizazz_builder.cli`
+### Builder — `quizazz.cli`
 
 Unified CLI dispatch. Subcommands:
 
@@ -298,10 +336,10 @@ quizazz run [--port N] [--output <dir>]
   - In `--standalone <name>` mode, before invoking pnpm the CLI copies only `<output>/<name>.json` into `app/src/lib/data/`, temporarily relocating other manifests, and sets an env var `QUIZAZZ_STANDALONE=<name>` that the app uses to hide chooser / upload UI.
 - `run` ensures the app is built, then serves `app/build/` via `http.server` and opens `http://localhost:<port>`.
 
-### Builder — `quizazz_builder.__init__` (public library API, UC-3)
+### Builder — `quizazz.__init__` (public library API, UC-3)
 
 ```python
-# quizazz_builder/__init__.py
+# quizazz/__init__.py
 
 from .validator import ValidationError
 from .api import compile_assessment, validate_assessment
@@ -655,7 +693,7 @@ Honors a `QUIZAZZ_STANDALONE` build-time env var (exposed via Vite `import.meta.
 }
 ```
 
-The manifest shape is identical regardless of how it is produced (CLI or `compile_assessment`) and consumed (SPA bundle or `<QuizBlock>` prop). **This shape is the versioned contract** between `quizazz-builder` and `@pointmatic/quizazz` — breaking changes require a major bump in both.
+The manifest shape is identical regardless of how it is produced (CLI or `compile_assessment`) and consumed (SPA bundle or `<QuizBlock>` prop). **This shape is the versioned contract** between `quizazz` and `@pointmatic/quizazz` — breaking changes require a major bump in both.
 
 ### SQLite schema (per-quiz IndexedDB)
 
@@ -706,7 +744,7 @@ Runtime precedence is trivial (there is effectively only one source in each mode
 
 ## CLI Design
 
-Console script `quizazz` is installed by `quizazz-builder` (PyPI), registered in `[project.scripts]` as `quizazz = "quizazz_builder.cli:main"`.
+Console script `quizazz` is installed by `quizazz` (PyPI), registered in `[project.scripts]` as `quizazz = "quizazz.cli:main"`.
 
 ### Subcommands
 
@@ -716,7 +754,7 @@ Console script `quizazz` is installed by `quizazz-builder` (PyPI), registered in
 | `build` | `pnpm --dir app build`, with optional standalone staging | `--output`, `--standalone <quiz-name>` |
 | `run` | Ensure build, serve `app/build/`, open browser | `--port`, `--output` |
 
-Only `quizazz` is registered as a console script. `python -m quizazz_builder` also works via a thin `__main__.py` that delegates to `cli.main`.
+Only `quizazz` is registered as a console script. `python -m quizazz` also works via a thin `__main__.py` that delegates to `cli.main`.
 
 ### Shared behavior
 
@@ -819,7 +857,7 @@ Only `quizazz` is registered as a console script. `python -m quizazz_builder` al
 
 ## Testing Strategy
 
-### Python (`builder/tests/`)
+### Python (`python/tests/`)
 
 | Test file | Covers |
 |-----------|--------|
@@ -852,21 +890,21 @@ Only `quizazz` is registered as a console script. `python -m quizazz_builder` al
 
 ## Packaging and Distribution
 
-### Python — `quizazz-builder` on PyPI
+### Python — `quizazz` on PyPI
 
-- **Package name**: `quizazz-builder`
-- **Importable as**: `quizazz_builder`
+- **Package name**: `quizazz`
+- **Importable as**: `quizazz`
 - **License**: Apache-2.0 (set in `pyproject.toml` `[project].license`)
 - **Build backend**: `setuptools >= 75` via `pyproject.toml`
 - **Console scripts**:
-  - `quizazz = "quizazz_builder.cli:main"` (sole entry point; `python -m quizazz_builder` also works via `__main__.py`)
+  - `quizazz = "quizazz.cli:main"` (sole entry point; `python -m quizazz` also works via `__main__.py`)
 - **Public API** (importable):
   ```python
-  from quizazz_builder import compile_assessment, validate_assessment, ValidationError
+  from quizazz import compile_assessment, validate_assessment, ValidationError
   ```
 - **Optional extras**: `[dev]` → pytest, ruff.
 - **Python classifiers**: 3.12+, OS Independent, Topic :: Education :: Testing.
-- **Release**: `python -m build` → `twine upload`. Host frameworks pin with `quizazz-builder >= <manifest-schema-version>`.
+- **Release**: `python -m build` → `twine upload`. Host frameworks pin with `quizazz >= <manifest-schema-version>`.
 
 ### npm — `@pointmatic/quizazz`
 
@@ -877,7 +915,7 @@ Only `quizazz` is registered as a console script. `python -m quizazz_builder` al
   ```json
   {
     "name": "@pointmatic/quizazz",
-    "version": "<matches manifest schema version>",
+    "version": "<matches the single project version>",
     "license": "Apache-2.0",
     "exports": {
       ".": {
@@ -906,12 +944,13 @@ Only `quizazz` is registered as a console script. `python -m quizazz_builder` al
 | Audience | Install |
 |----------|---------|
 | Repo dev (all workspaces) | `pip install -e ./builder[dev]` + `pnpm --dir app install` |
-| CLI user (UC-1/UC-2) | `pip install quizazz-builder` → `quizazz …` |
-| Host-framework author (UC-3, Python side) | `pip install quizazz-builder` (optional extra in host's own `pyproject.toml`) |
+| CLI user (UC-1/UC-2) | `pip install quizazz` → `quizazz …` |
+| Host-framework author (UC-3, Python side) | `pip install quizazz` (optional extra in host's own `pyproject.toml`) |
 | Host-framework author (UC-3, SvelteKit side) | `pnpm add @pointmatic/quizazz` |
 
 ### Versioning policy
 
-- `quizazz-builder` and `@pointmatic/quizazz` track the **compiled manifest schema version** in lockstep. Breaking schema changes bump the major version of both.
-- Within a major version, either package can release patches or minors independently (e.g., new CLI flag in `quizazz-builder` without touching the manifest, or new `<QuizBlock>` prop that is additive).
-- The `quizazz_builder` Python package embeds the manifest schema version in `compile_assessment` output under a top-level `schemaVersion` field (to be added alongside this work).
+- **Single project version**, loose semver `vX.Y.Z`. Canonical source: [`python/pyproject.toml`](../../python/pyproject.toml) `[project].version`, mirrored in `__version__`.
+- **X** bumps on breaking changes or a big new thing (first public release, manifest-schema break). **Y** bumps on a feature (one story) or a bundle once stable. **Z** on bug fixes and trivial changes.
+- Both published packages — `quizazz` on PyPI and `@pointmatic/quizazz` on npm — release at the same project version, in lockstep. If only one package has meaningful changes, the other re-releases at the new version anyway; the cost is trivial and the user-visible consistency is worth it.
+- `MANIFEST_SCHEMA_VERSION` is a **separate protocol marker** embedded in every compiled manifest under the top-level `schemaVersion` field. Bumps only on actual manifest-shape changes — not every project-version bump.

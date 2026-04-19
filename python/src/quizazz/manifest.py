@@ -18,8 +18,8 @@ from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
 
-from quizazz_builder.compiler import question_id
-from quizazz_builder.models import Question, QuizFile, SubtopicGroup
+from quizazz.compiler import question_id
+from quizazz.models import Question, QuizFile, SubtopicGroup
 
 
 def _slugify(text: str) -> str:

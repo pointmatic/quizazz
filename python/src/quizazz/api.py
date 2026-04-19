@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from quizazz_builder.compiler import compile_quiz_to_dict
-from quizazz_builder.validator import ValidationError, validate_file
+from quizazz.compiler import compile_quiz_to_dict
+from quizazz.validator import ValidationError, validate_file
 
 
 def compile_assessment(

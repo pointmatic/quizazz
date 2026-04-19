@@ -24,10 +24,10 @@ import threading
 import webbrowser
 from pathlib import Path
 
-from quizazz_builder import __version__
-from quizazz_builder.compiler import compile_quiz
-from quizazz_builder.models import SubtopicGroup
-from quizazz_builder.validator import ValidationError, validate_quiz_directory
+from quizazz import __version__
+from quizazz.compiler import compile_quiz
+from quizazz.models import SubtopicGroup
+from quizazz.validator import ValidationError, validate_quiz_directory
 
 DEFAULT_INPUT = "data/quiz/"
 DEFAULT_GENERATE_OUTPUT = "app/src/lib/data/"

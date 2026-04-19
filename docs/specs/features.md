@@ -19,16 +19,16 @@ Quizazz is designed to serve four distinct use cases from the same core engine, 
 | UC-1 | **Standalone single-quiz SPA** | Self-directed learners, authors shipping a one-off quiz | One quiz → one independent static SPA, deployable anywhere |
 | UC-2 | **Multi-quiz hub SPA** | Authors managing several quiz banks in one place | Single SPA with a quiz chooser and runtime upload of externally-compiled quizzes |
 | UC-3 | **Embeddable assessment component** | Host curriculum / learning frameworks (e.g., [`learningfoundry`](learningfoundry-dependency-spec.md), which in turn powers curricula such as the D802 deep-learning course — see [`d802-curriculum-idea-statement.md`](d802-curriculum-idea-statement.md)) | Quizazz ships a **Python library** for build-time YAML compilation and a **SvelteKit `<QuizBlock>` component** for in-page runtime delivery; the host invokes the library during its own build and embeds the component in its own pages |
-| UC-4 | **LLM-assisted question generation pipeline** *(future)* | Authors generating questions at scale from source material | `builder/` toolchain that drives LLMs to produce validated YAML |
+| UC-4 | **LLM-assisted question generation pipeline** *(future)* | Authors generating questions at scale from source material | `python/` toolchain that drives LLMs to produce validated YAML |
 
-UC-1, UC-2, and UC-3 are in scope for v1. UC-4 is deferred; the `builder/` workspace exists today partly to hold this future pipeline.
+UC-1, UC-2, and UC-3 are in scope for v1. UC-4 is deferred; the `python/` workspace exists today partly to hold this future pipeline.
 
 The repository is organized as a monorepo:
 
 | Directory | Purpose |
 |-----------|---------|
 | `app/` | SvelteKit quiz UI, runtime engine, embeddable `<QuizBlock>` component, and build tooling (TypeScript, Tailwind CSS) |
-| `builder/` | Python YAML validation, manifest compilation, and public library API (Pydantic) |
+| `python/` | Python YAML validation, manifest compilation, and public library API (Pydantic) |
 | `data/` | Quiz source directories — each subdirectory is an independent quiz package |
 | `docs/` | Concept, features, tech spec, stories, integration spec, and project-guide |
 
@@ -59,7 +59,7 @@ The repository is organized as a monorepo:
 18. **Database initialization** — On first load (or if the database is missing/corrupt), the app creates the schema, seeds per-question scores to zero, and persists to IndexedDB. Subsequent loads restore from IndexedDB.
 19. **Zero network at runtime** — After initial page load, the SPA (or embedded component) makes no network requests. The sql.js WASM binary is bundled with the app.
 20. **Unified CLI** — A single `quizazz` command covers the full authoring/build/run workflow for UC-1 and UC-2: `quizazz generate` (YAML → manifest), `quizazz build` (SvelteKit production build), `quizazz run` (local server + browser launch). Each subcommand supports `--help` and has sensible defaults.
-21. **Package distribution** — The Python builder is distributed as `quizazz-builder` on PyPI (importable library + `quizazz` CLI). The embeddable SvelteKit component is distributed as `@pointmatic/quizazz` on npm (or bundled into the host's SvelteKit template). Semantic versioning applies; the **compiled manifest schema is the versioning boundary** between the Python library and the SvelteKit component — breaking changes to the manifest structure require a major version bump in both.
+21. **Package distribution** — The Python builder is distributed as `quizazz` on PyPI (importable library + `quizazz` CLI). The embeddable SvelteKit component is distributed as `@pointmatic/quizazz` on npm (or bundled into the host's SvelteKit template). Semantic versioning applies; the **compiled manifest schema is the versioning boundary** between the Python library and the SvelteKit component — breaking changes to the manifest structure require a major version bump in both.
 
 ## Quality Requirements
 
@@ -230,7 +230,7 @@ Uploaded quizzes are **session-only in v1**; they are lost on page reload. Cross
 
 ### Build-Time Python Library API (UC-3)
 
-Host frameworks integrate with Quizazz at build time via a Python library API importable from `quizazz_builder`:
+Host frameworks integrate with Quizazz at build time via a Python library API importable from `quizazz`:
 
 | Function | Inputs | Description |
 |----------|--------|-------------|
@@ -288,7 +288,7 @@ In UC-3 the component renders the same results summary and drill-down inline in 
 
 - `compile_assessment(...)` returns a manifest **dict** ready for JSON serialization by the host.
 - `validate_assessment(...)` returns an empty list on success, or a list of human-readable error strings identifying each failure.
-- On validation failure, `compile_assessment(...)` raises a specific exception type (`quizazz_builder.ValidationError` or equivalent) carrying the offending file path, a human-readable message, and optional structured detail (question index, field name).
+- On validation failure, `compile_assessment(...)` raises a specific exception type (`quizazz.ValidationError` or equivalent) carrying the offending file path, a human-readable message, and optional structured detail (question index, field name).
 
 ### Embedded Component Completion Event (UC-3)
 
@@ -426,13 +426,13 @@ The app supports a standalone build mode where the bundled output contains exact
 
 ### FR-18: Python Library API for Build-Time Assessment Compilation (UC-3)
 
-Quizazz exposes a public Python library API under the `quizazz_builder` package:
+Quizazz exposes a public Python library API under the `quizazz` package:
 
 - `compile_assessment(yaml_path, base_dir) -> dict` — reads the given YAML file, validates it against the question schema, compiles it into a manifest dict, and returns the dict.
 - `validate_assessment(yaml_path, base_dir) -> list[str]` — validation without compilation; returns an empty list on success or a list of human-readable error strings.
 - `ValidationError` — a specific exception raised by `compile_assessment` on validation failure, carrying the offending file path, a human-readable message, and optional structured detail (question index, field name).
 
-The API is synchronous, performs no disk writes or server startup, does no I/O beyond reading the specified YAML and files it references, and is importable as `from quizazz_builder import compile_assessment, validate_assessment, ValidationError`. The host is responsible for serializing the returned dict (typically to JSON inside its own generated output).
+The API is synchronous, performs no disk writes or server startup, does no I/O beyond reading the specified YAML and files it references, and is importable as `from quizazz import compile_assessment, validate_assessment, ValidationError`. The host is responsible for serializing the returned dict (typically to JSON inside its own generated output).
 
 ### FR-19: Embeddable `<QuizBlock>` SvelteKit Component (UC-3)
 
@@ -527,9 +527,9 @@ The project is complete for v1 when:
 13. Retake, Start, and Quit post-quiz actions work as specified in UC-1 / UC-2.
 14. Tag filtering correctly restricts the question pool and the question-count slider adjusts to the filtered pool size.
 15. Mid-quiz review is reachable via `Escape`, lets the user inspect answered questions, and returns without altering progress.
-16. A host framework can `from quizazz_builder import compile_assessment, validate_assessment, ValidationError`, call `compile_assessment(yaml_path, base_dir)` to produce a manifest dict for well-formed YAML, and catch `ValidationError` with file path and structured detail for malformed YAML (UC-3).
+16. A host framework can `from quizazz import compile_assessment, validate_assessment, ValidationError`, call `compile_assessment(yaml_path, base_dir)` to produce a manifest dict for well-formed YAML, and catch `ValidationError` with file path and structured detail for malformed YAML (UC-3).
 17. A host SvelteKit application can import `<QuizBlock>` from `@pointmatic/quizazz`, pass `manifest` and `quizRef` props, render a quiz end-to-end inline in its own layout, and receive a `complete` event with `{quizRef, score, maxScore, questionCount}` on finish (UC-3).
-18. `quizazz-builder` is installable from PyPI and `@pointmatic/quizazz` is installable from npm (or bundled into the host's SvelteKit template), both following semantic versioning keyed to the compiled manifest schema.
+18. `quizazz` is installable from PyPI and `@pointmatic/quizazz` is installable from npm (or bundled into the host's SvelteKit template), both following semantic versioning keyed to the compiled manifest schema.
 19. The UI is minimalist, modern, responsive, and keyboard-navigable end-to-end.
 
 ---
@@ -538,7 +538,7 @@ The project is complete for v1 when:
 
 Directional items not in v1. These inform architectural decisions but do not block shipping.
 
-- **LLM-assisted question generation pipeline (UC-4)** — A `builder/` Python toolchain that takes source material and uses LLM APIs to generate validated YAML question banks. Manual prompt recipes (see [`llm_question_generation_manual.md`](llm_question_generation_manual.md)) exist today; a codified, repeatable pipeline is future.
+- **LLM-assisted question generation pipeline (UC-4)** — A `python/` Python toolchain that takes source material and uses LLM APIs to generate validated YAML question banks. Manual prompt recipes (see [`llm_question_generation_manual.md`](llm_question_generation_manual.md)) exist today; a codified, repeatable pipeline is future.
 - **Answer-length normalization** — Require short and long variants per answer and present a uniform length profile (all short, all long, or random) per question to eliminate the length-based guessing signal.
 - **Post-quiz quality feedback loop** — Per-quiz star ratings and per-question complaint signals feeding back into question revision workflows.
 - **Persisted runtime uploads** — Cross-session persistence of user-uploaded quizzes (currently session-only in v1).
