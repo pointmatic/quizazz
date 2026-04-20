@@ -16,6 +16,7 @@
 
 <script lang="ts">
 	import { ArrowLeft, ChevronLeft, ChevronRight, Clock } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 	import type { QuizQuestion } from '$lib/types';
 	import { formatTime } from '$lib/utils/format';
 
@@ -32,6 +33,9 @@
 
 	let isFirst = $derived(currentIndex === 0);
 	let isLast = $derived(currentIndex === totalQuestions - 1);
+	let rootEl: HTMLDivElement | undefined = $state();
+
+	onMount(() => rootEl?.focus());
 
 	const categoryLabels: Record<string, string> = {
 		correct: 'Correct',
@@ -58,9 +62,15 @@
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
-
-<div class="flex min-h-screen items-center justify-center bg-gray-950 px-4">
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="flex min-h-screen items-center justify-center bg-gray-950 px-4 focus:outline-none"
+	tabindex="-1"
+	bind:this={rootEl}
+	onkeydown={handleKeydown}
+	data-quizazz-view="review"
+>
 	<div class="w-full max-w-2xl">
 		<button
 			type="button"

@@ -49,12 +49,38 @@
 		oncomplete?: (event: QuizCompleteEvent) => void;
 	}
 
-	const { manifest, quizRef, class: className = '', oncomplete: _oncomplete }: Props = $props();
+	const { manifest, quizRef, class: className = '', oncomplete }: Props = $props();
 
 	let blocked = $state(false);
 	let blockedBy = $state('');
 	let schemaStatus = $state<'ok' | 'mismatch'>('ok');
 	let db = $state<Database | null>(null);
+	let rootEl = $state<HTMLElement | undefined>();
+	let hasFiredComplete = $state(false);
+
+	$effect(() => {
+		const mode = $viewMode;
+		const session = $quizSession;
+		if (blocked) return;
+		if (mode === 'summary' && session && !hasFiredComplete) {
+			const correct = session.questions.filter((q) => {
+				const submitted = q.presentedAnswers.find((a) => a.label === q.submittedLabel);
+				return submitted?.category === 'correct';
+			}).length;
+			const total = manifest.questions.length;
+			const payload: QuizCompleteEvent = {
+				quizRef,
+				score: correct,
+				maxScore: total,
+				questionCount: total
+			};
+			oncomplete?.(payload);
+			rootEl?.dispatchEvent(new CustomEvent('complete', { detail: payload, bubbles: true }));
+			hasFiredComplete = true;
+		} else if (mode === 'quiz' && hasFiredComplete) {
+			hasFiredComplete = false;
+		}
+	});
 
 	onMount(async () => {
 		if (mountCount >= 1) {
@@ -112,7 +138,7 @@
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-<section tabindex="0" class={className}>
+<section tabindex="0" class={className} bind:this={rootEl}>
 	{#if blocked}
 		<aside data-quizazz-error>
 			<p>

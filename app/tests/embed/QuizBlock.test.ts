@@ -351,6 +351,165 @@ describe('QuizBlock quiz flow wiring', () => {
 		expect(get(quizSession)!.questions[2].submittedLabel).toBeNull();
 	});
 
+	it('oncomplete callback fires exactly once on last-question submit with the expected payload', async () => {
+		const manifest = makeManifest('done', '1.0', 2);
+		const oncomplete = vi.fn();
+		render(QuizBlock, { props: { manifest, quizRef: 'ref-x', oncomplete } });
+		await vi.waitFor(() => expect(get(viewMode)).toBe('quiz'));
+		await completeAllWith('correct', 2);
+		await vi.waitFor(() => expect(get(viewMode)).toBe('summary'));
+		await tick();
+		expect(oncomplete).toHaveBeenCalledTimes(1);
+		expect(oncomplete).toHaveBeenCalledWith({
+			quizRef: 'ref-x',
+			score: 2,
+			maxScore: 2,
+			questionCount: 2
+		});
+	});
+
+	it('fires a bubbling CustomEvent("complete") on the root section with matching detail', async () => {
+		const manifest = makeManifest('evt', '1.0', 1);
+		const handler = vi.fn();
+		const { container } = render(QuizBlock, { props: { manifest, quizRef: 'ref-y' } });
+		const section = container.querySelector('section')!;
+		section.addEventListener('complete', handler);
+		await vi.waitFor(() => expect(get(viewMode)).toBe('quiz'));
+		await completeAllWith('correct', 1);
+		await vi.waitFor(() => expect(get(viewMode)).toBe('summary'));
+		await tick();
+		expect(handler).toHaveBeenCalledTimes(1);
+		const event = handler.mock.calls[0][0] as CustomEvent;
+		expect(event.detail).toEqual({
+			quizRef: 'ref-y',
+			score: 1,
+			maxScore: 1,
+			questionCount: 1
+		});
+		expect(event.bubbles).toBe(true);
+	});
+
+	it('complete does not re-fire on retake until the retake itself completes', async () => {
+		const manifest = makeManifest('re', '1.0', 1);
+		const oncomplete = vi.fn();
+		const { container } = render(QuizBlock, { props: { manifest, quizRef: 'ref-z', oncomplete } });
+		await vi.waitFor(() => expect(get(viewMode)).toBe('quiz'));
+		await completeAllWith('correct', 1);
+		await vi.waitFor(() => expect(get(viewMode)).toBe('summary'));
+		await tick();
+		expect(oncomplete).toHaveBeenCalledTimes(1);
+
+		const retakeBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+			b.textContent?.includes('Retake')
+		)!;
+		retakeBtn.click();
+		await tick();
+		expect(get(viewMode)).toBe('quiz');
+		expect(oncomplete).toHaveBeenCalledTimes(1);
+
+		await completeAllWith('correct', 1);
+		await vi.waitFor(() => expect(get(viewMode)).toBe('summary'));
+		await tick();
+		expect(oncomplete).toHaveBeenCalledTimes(2);
+	});
+
+	it('keyboard: dispatching keys outside the component does not advance the quiz', async () => {
+		const manifest = makeManifest('kb-out', '1.0', 1);
+		render(QuizBlock, { props: { manifest, quizRef: 'k-out' } });
+		await vi.waitFor(() => expect(get(viewMode)).toBe('quiz'));
+		await tick();
+
+		const outsider = document.createElement('div');
+		outsider.tabIndex = 0;
+		document.body.appendChild(outsider);
+		outsider.focus();
+
+		const correctLabel = get(quizSession)!.questions[0].presentedAnswers.find(
+			(a) => a.category === 'correct'
+		)!.label;
+		outsider.dispatchEvent(new KeyboardEvent('keydown', { key: correctLabel, bubbles: true }));
+		outsider.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+		await tick();
+
+		expect(get(viewMode)).toBe('quiz');
+		expect(get(quizSession)!.questions[0].submittedLabel).toBeNull();
+
+		outsider.remove();
+	});
+
+	it('keyboard: pressing the correct label + Enter inside the component submits the answer', async () => {
+		const manifest = makeManifest('kb-in', '1.0', 1);
+		const { container } = render(QuizBlock, { props: { manifest, quizRef: 'k-in' } });
+		await vi.waitFor(() => expect(get(viewMode)).toBe('quiz'));
+		await tick();
+
+		const section = container.querySelector('section') as HTMLElement;
+		const firstAnswerButton = section.querySelector('button') as HTMLElement;
+		firstAnswerButton.focus();
+
+		const correctLabel = get(quizSession)!.questions[0].presentedAnswers.find(
+			(a) => a.category === 'correct'
+		)!.label;
+		firstAnswerButton.dispatchEvent(
+			new KeyboardEvent('keydown', { key: correctLabel, bubbles: true })
+		);
+		await tick();
+		firstAnswerButton.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+		await vi.waitFor(() => expect(get(viewMode)).toBe('summary'));
+	});
+
+	it('theming: --quizazz-color-correct cascades into the correct-indicator element', async () => {
+		const manifest = makeManifest('theme', '1.0', 1);
+		const { container } = render(QuizBlock, { props: { manifest, quizRef: 't' } });
+		const section = container.querySelector('section') as HTMLElement;
+		section.style.setProperty('--quizazz-color-correct', 'rgb(255, 0, 0)');
+		await vi.waitFor(() => expect(get(viewMode)).toBe('quiz'));
+		await completeAllWith('correct', 1);
+		await vi.waitFor(() => expect(get(viewMode)).toBe('summary'));
+		await tick();
+
+		const indicator = container.querySelector(
+			'[data-quizazz-correct-indicator]'
+		) as HTMLElement | null;
+		expect(indicator).not.toBeNull();
+		// The indicator declares `color: var(--quizazz-color-correct, ...)` inline.
+		expect(indicator!.style.color).toContain('var(--quizazz-color-correct');
+		// The custom property cascades from the section root to the indicator.
+		const inheritedVar = getComputedStyle(indicator!)
+			.getPropertyValue('--quizazz-color-correct')
+			.trim();
+		expect(inheritedVar).toBe('rgb(255, 0, 0)');
+	});
+
+	it('no source file reachable from <QuizBlock> attaches a window-level listener', async () => {
+		const { readFile } = await import('node:fs/promises');
+		const paths = [
+			'src/lib/embed/QuizBlock.svelte',
+			'src/lib/components/QuizView.svelte',
+			'src/lib/components/ReviewView.svelte',
+			'src/lib/components/AnsweredQuestionsView.svelte',
+			'src/lib/components/SummaryView.svelte',
+			'src/lib/components/ProgressBar.svelte',
+			'src/lib/engine/lifecycle.ts',
+			'src/lib/engine/selection.ts',
+			'src/lib/engine/presentation.ts',
+			'src/lib/engine/scoring.ts',
+			'src/lib/db/database.ts',
+			'src/lib/db/scores.ts',
+			'src/lib/stores/quiz.ts',
+			'src/lib/stores/manifest.ts',
+			'src/lib/utils/format.ts',
+			'src/lib/utils/random.ts'
+		];
+		for (const p of paths) {
+			const content = await readFile(p, 'utf-8');
+			expect(content, `${p} contains <svelte:window>`).not.toMatch(/svelte:window/);
+			expect(content, `${p} contains window.addEventListener`).not.toMatch(
+				/window\.addEventListener/
+			);
+		}
+	});
+
 	it('post-quiz drill-down: carousel navigates between answered questions', async () => {
 		const manifest = makeManifest('drill', '1.0', 3);
 		render(QuizBlock, { props: { manifest, quizRef: 'ref-1' } });

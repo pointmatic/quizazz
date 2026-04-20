@@ -85,9 +85,21 @@
 				>
 					<span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full {isCorrect(q) ? 'bg-emerald-500/20' : 'bg-red-500/20'}">
 						{#if isCorrect(q)}
-							<Check class="h-4 w-4 text-emerald-400" />
+							<span
+								class="flex h-4 w-4 items-center justify-center"
+								style="color: var(--quizazz-color-correct, #34d399)"
+								data-quizazz-correct-indicator
+							>
+								<Check class="h-4 w-4" />
+							</span>
 						{:else}
-							<X class="h-4 w-4 text-red-400" />
+							<span
+								class="flex h-4 w-4 items-center justify-center"
+								style="color: var(--quizazz-color-incorrect, #f87171)"
+								data-quizazz-incorrect-indicator
+							>
+								<X class="h-4 w-4" />
+							</span>
 						{/if}
 					</span>
 					<span class="flex-1 truncate text-sm text-gray-300">{q.question.question}</span>

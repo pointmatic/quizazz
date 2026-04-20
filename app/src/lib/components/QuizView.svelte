@@ -16,7 +16,7 @@
 
 <script lang="ts">
 	import { ArrowLeft, Clock } from 'lucide-svelte';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import type { QuizQuestion } from '$lib/types';
 	import { formatTime } from '$lib/utils/format';
 	import ProgressBar from './ProgressBar.svelte';
@@ -36,9 +36,11 @@
 
 	let selectedLabel = $state<string | null>(null);
 	let now = $state(Date.now());
+	let rootEl: HTMLDivElement | undefined = $state();
 
 	const timer = setInterval(() => { now = Date.now(); }, 1000);
 	onDestroy(() => clearInterval(timer));
+	onMount(() => rootEl?.focus());
 
 	let displayMs = $derived(question.elapsedMs + (now - startedAt));
 
@@ -70,9 +72,15 @@
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
-
-<div class="flex min-h-screen items-center justify-center bg-gray-950 px-4">
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="flex min-h-screen items-center justify-center bg-gray-950 px-4 focus:outline-none"
+	tabindex="-1"
+	bind:this={rootEl}
+	onkeydown={handleKeydown}
+	data-quizazz-view="quiz"
+>
 	<div class="w-full max-w-2xl">
 		{#if hasAnswered}
 			<button

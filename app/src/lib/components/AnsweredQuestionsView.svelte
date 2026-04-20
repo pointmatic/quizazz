@@ -16,6 +16,7 @@
 
 <script lang="ts">
 	import { ArrowLeft } from 'lucide-svelte';
+	import { onMount } from 'svelte';
 	import type { QuizQuestion } from '$lib/types';
 
 	interface Props {
@@ -29,6 +30,9 @@
 	let { answeredQuestions, currentQuestionNumber, totalQuestions, onSelect, onBack }: Props =
 		$props();
 
+	let rootEl: HTMLDivElement | undefined = $state();
+	onMount(() => rootEl?.focus());
+
 	function handleKeydown(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
 			onBack();
@@ -36,9 +40,15 @@
 	}
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
-
-<div class="flex min-h-screen items-center justify-center bg-gray-950 px-4">
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+	class="flex min-h-screen items-center justify-center bg-gray-950 px-4 focus:outline-none"
+	tabindex="-1"
+	bind:this={rootEl}
+	onkeydown={handleKeydown}
+	data-quizazz-view="quiz-answered"
+>
 	<div class="w-full max-w-2xl">
 		<button
 			type="button"

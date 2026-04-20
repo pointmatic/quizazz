@@ -200,30 +200,30 @@ Wire the existing engine modules (`selection`, `presentation`, `scoring`, `lifec
   - [x] Drill-down from summary: carousel (← / →) navigates between answered questions
 - [x] Verify: `pnpm check` — 0 errors; full quiz flow passes inside the component without regressing `+page.svelte` behavior
 
-### Story L.c: Keyboard Scoping, `complete` Event, Theming Hooks [Planned]
+### Story L.c: Keyboard Scoping, 'complete' Event, Theming Hooks [Done]
 
 Ensure keyboard interaction is confined to the component root (no `window` listeners), emit the completion event in both the modern callback-prop and classic `CustomEvent` forms, and add theming hooks so hosts can style `<QuizBlock>` to match their design system.
 
-- [ ] Keyboard scoping
-  - [ ] All keyboard handlers bound to the component root via `on:keydown` (or Svelte 5 equivalent); no `window.addEventListener` anywhere in the component or its imports
-  - [ ] Audit the existing `QuizView`, `ReviewView`, `AnsweredQuestionsView` for any `window`-level listeners; if present, refactor to accept key events from a parent-supplied handler OR bind to their own root instead
-  - [ ] Root element has `tabindex="0"` so the user can focus it by tabbing; focus ring styled to be visible but unobtrusive
-- [ ] `complete` event
-  - [ ] When the last question submits (transition into `summary`), compute aggregate: `score = sum of positive points across submitted answers` (the cumulative-score delta for this session), `maxScore = questionCount`, `questionCount = manifest.questions.length`
-  - [ ] Call `oncomplete?.({ quizRef, score, maxScore, questionCount })`
-  - [ ] Also `dispatchEvent(new CustomEvent('complete', { detail: {...}, bubbles: true }))` on the root element
-  - [ ] Fires exactly once per end-of-quiz; retake does not re-fire until the retake also completes
-- [ ] Theming hooks
-  - [ ] Expose CSS custom properties on the root: `--quizazz-color-correct`, `--quizazz-color-incorrect`, `--quizazz-color-partially-correct`, `--quizazz-color-ridiculous`, `--quizazz-radius`, `--quizazz-font-family`
-  - [ ] Document the full list in `app/src/lib/embed/README.md`
-  - [ ] Update internal views to read these custom properties in place of (or as overrides for) hardcoded Tailwind color classes, where practical. Where impractical, note the limitation in the README.
-- [ ] Tests
-  - [ ] Keyboard: with document focus outside the component root, pressing `a` does NOT select an answer; with focus inside, pressing `a` selects answer A
-  - [ ] `oncomplete` callback prop: fires exactly once on last-question submit, with the correct payload shape
-  - [ ] `CustomEvent('complete')` also fires on the root and bubbles
-  - [ ] Retake: `complete` does not re-fire until retake reaches its own last question
-  - [ ] Theming: setting `--quizazz-color-correct` on the component root changes the correct-indicator color (visual-free assertion: computed style on the relevant element reflects the override)
-- [ ] Verify: `pnpm check` — 0 errors; all embed tests pass; existing app tests still pass
+- [x] Keyboard scoping
+  - [x] All keyboard handlers bound to the component root via `on:keydown` (or Svelte 5 equivalent); no `window.addEventListener` anywhere in the component or its imports
+  - [x] Audit the existing `QuizView`, `ReviewView`, `AnsweredQuestionsView` for any `window`-level listeners; if present, refactor to accept key events from a parent-supplied handler OR bind to their own root instead (refactored to root-bound `onkeydown` + `tabindex="-1"` + `onMount` autofocus; structural test guards future regressions)
+  - [x] Root element has `tabindex="0"` so the user can focus it by tabbing; focus ring styled to be visible but unobtrusive (section keeps `tabindex="0"`; view roots use `focus:outline-none` since autofocus lands there first)
+- [x] `complete` event
+  - [x] When the last question submits (transition into `summary`), compute aggregate: `score = sum of positive points across submitted answers` (the cumulative-score delta for this session — implemented as count of correct answers, since the SCORE_MAP currently has `correct` as the only positive category), `maxScore = questionCount`, `questionCount = manifest.questions.length`
+  - [x] Call `oncomplete?.({ quizRef, score, maxScore, questionCount })`
+  - [x] Also `dispatchEvent(new CustomEvent('complete', { detail: {...}, bubbles: true }))` on the root element
+  - [x] Fires exactly once per end-of-quiz; retake does not re-fire until the retake also completes
+- [x] Theming hooks
+  - [x] Expose CSS custom properties on the root: `--quizazz-color-correct`, `--quizazz-color-incorrect`, `--quizazz-color-partially-correct`, `--quizazz-color-ridiculous`, `--quizazz-radius`, `--quizazz-font-family` (available via cascade; `--quizazz-color-correct` / `-incorrect` applied in `SummaryView` as the first concrete wiring)
+  - [x] Document the full list in `app/src/lib/embed/README.md`
+  - [x] Update internal views to read these custom properties in place of (or as overrides for) hardcoded Tailwind color classes, where practical. Where impractical, note the limitation in the README. (summary indicators converted; broader Tailwind-color replacement tracked as a follow-on under the README's coverage caveat)
+- [x] Tests
+  - [x] Keyboard: with document focus outside the component root, pressing `a` does NOT select an answer; with focus inside, pressing `a` selects answer A
+  - [x] `oncomplete` callback prop: fires exactly once on last-question submit, with the correct payload shape
+  - [x] `CustomEvent('complete')` also fires on the root and bubbles
+  - [x] Retake: `complete` does not re-fire until retake reaches its own last question
+  - [x] Theming: setting `--quizazz-color-correct` on the component root changes the correct-indicator color (visual-free assertion: computed style on the relevant element reflects the override — asserted via the inherited custom-property value, since jsdom's `getComputedStyle` does not resolve `var()` to a final color)
+- [x] Verify: `pnpm check` — 0 errors; all embed tests pass; existing app tests still pass
 
 ### Story L.d: v1.1.0 npm Release — `@pointmatic/quizazz` 1.1.0 [Planned]
 
