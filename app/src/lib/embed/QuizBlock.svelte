@@ -8,11 +8,32 @@
 
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
+	import type { Database } from 'sql.js';
 	import type { QuizManifest } from '$lib/types';
-	import { initDatabase, seedScores } from '$lib/db';
+	import { initDatabase, seedScores, getScores } from '$lib/db';
 	import { activeManifest } from '$lib/stores/manifest';
-	import { setNavNodes } from '$lib/engine/lifecycle';
+	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
+	import {
+		setNavNodes,
+		startQuiz,
+		submitAnswer,
+		retakeQuiz,
+		showAnsweredQuestions,
+		backToQuiz,
+		backToSummary,
+		reviewPrev,
+		reviewNext,
+		reviewQuestion,
+		reviewAnsweredMidQuiz,
+		exitMidQuizReview,
+		getFrontierIndex,
+		getQuestionStartTime
+	} from '$lib/engine/lifecycle';
 	import { isCompatible } from './schema-version';
+	import QuizView from '$lib/components/QuizView.svelte';
+	import AnsweredQuestionsView from '$lib/components/AnsweredQuestionsView.svelte';
+	import ReviewView from '$lib/components/ReviewView.svelte';
+	import SummaryView from '$lib/components/SummaryView.svelte';
 
 	export interface QuizCompleteEvent {
 		quizRef: string;
@@ -33,6 +54,7 @@
 	let blocked = $state(false);
 	let blockedBy = $state('');
 	let schemaStatus = $state<'ok' | 'mismatch'>('ok');
+	let db = $state<Database | null>(null);
 
 	onMount(async () => {
 		if (mountCount >= 1) {
@@ -50,10 +72,23 @@
 
 		schemaStatus = isCompatible(manifest.schemaVersion);
 
-		const db = await initDatabase(manifest.quizName);
+		db = await initDatabase(manifest.quizName);
 		seedScores(db, manifest.questions.map((q) => q.id));
 		activeManifest.set(manifest);
 		setNavNodes(manifest.tree);
+
+		startQuiz(
+			{
+				questionCount: manifest.questions.length,
+				answerCount: 4,
+				selectedTags: [],
+				selectedNodeIds: []
+			},
+			manifest.questions,
+			getScores(db),
+			db,
+			manifest.quizName
+		);
 	});
 
 	onDestroy(() => {
@@ -62,6 +97,18 @@
 			activeQuizRef = '';
 		}
 	});
+
+	async function handleSubmit(label: string) {
+		if (!db) return;
+		await submitAnswer(label, db);
+	}
+
+	function handleRetake() {
+		if (!db) return;
+		retakeQuiz(db, manifest.questions, []);
+	}
+
+	function noop() {}
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -73,13 +120,75 @@
 				<code>{blockedBy}</code> mounted; <code>{quizRef}</code> was not started.
 			</p>
 		</aside>
-	{:else if schemaStatus === 'mismatch'}
-		<aside data-quizazz-warning>
-			<p>
-				This manifest declares <code>schemaVersion={manifest.schemaVersion ?? 'unknown'}</code>,
-				which is a different major version than this component supports. The quiz will still
-				render, but some fields may not be interpreted correctly.
-			</p>
-		</aside>
+	{:else}
+		{#if schemaStatus === 'mismatch'}
+			<aside data-quizazz-warning>
+				<p>
+					This manifest declares <code>schemaVersion={manifest.schemaVersion ?? 'unknown'}</code>,
+					which is a different major version than this component supports. The quiz will still
+					render, but some fields may not be interpreted correctly.
+				</p>
+			</aside>
+		{/if}
+
+		{#if $viewMode === 'quiz' && $quizSession}
+			{@const current = $quizSession.questions[$quizSession.currentIndex]}
+			{@const frontier = getFrontierIndex()}
+			{@const answered = $quizSession.questions.filter((q) => q.submittedLabel !== null).length}
+			{#if current}
+				<QuizView
+					question={current}
+					progressCurrent={answered}
+					progressTotal={$quizSession.questions.length}
+					progressPercent={Math.round((answered / $quizSession.questions.length) * 100)}
+					hasAnswered={frontier > 0}
+					startedAt={getQuestionStartTime()}
+					onSubmit={handleSubmit}
+					onShowAnswered={showAnsweredQuestions}
+				/>
+			{/if}
+		{:else if $viewMode === 'quiz-answered' && $quizSession}
+			{@const frontier = getFrontierIndex()}
+			<AnsweredQuestionsView
+				answeredQuestions={$quizSession.questions.slice(0, frontier)}
+				currentQuestionNumber={frontier + 1}
+				totalQuestions={$quizSession.questions.length}
+				onSelect={reviewAnsweredMidQuiz}
+				onBack={backToQuiz}
+			/>
+		{:else if $viewMode === 'quiz-review' && $quizSession && $reviewIndex !== null}
+			{@const q = $quizSession.questions[$reviewIndex]}
+			{#if q}
+				<ReviewView
+					question={q}
+					currentIndex={$reviewIndex}
+					totalQuestions={$quizSession.questions.length}
+					onBack={exitMidQuizReview}
+					onPrev={reviewPrev}
+					onNext={reviewNext}
+				/>
+			{/if}
+		{:else if $viewMode === 'summary' && $quizSession}
+			<SummaryView
+				questions={$quizSession.questions}
+				onRetake={handleRetake}
+				onNewQuiz={noop}
+				onQuit={noop}
+				onReview={reviewQuestion}
+				showStartQuit={false}
+			/>
+		{:else if $viewMode === 'review' && $quizSession && $reviewIndex !== null}
+			{@const q = $quizSession.questions[$reviewIndex]}
+			{#if q}
+				<ReviewView
+					question={q}
+					currentIndex={$reviewIndex}
+					totalQuestions={$quizSession.questions.length}
+					onBack={backToSummary}
+					onPrev={reviewPrev}
+					onNext={reviewNext}
+				/>
+			{/if}
+		{/if}
 	{/if}
 </section>

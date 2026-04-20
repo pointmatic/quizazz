@@ -265,6 +265,26 @@ export function backToQuiz(): void {
 	viewMode.set('quiz');
 }
 
+export function reviewAnsweredMidQuiz(index: number): void {
+	const session = get(quizSession);
+	if (!session || index < 0 || index >= frontierIndex) return;
+
+	const updatedQuestions = snapshotElapsed(session);
+	quizSession.set({
+		...session,
+		questions: updatedQuestions
+	});
+
+	reviewIndex.set(index);
+	viewMode.set('quiz-review');
+}
+
+export function exitMidQuizReview(): void {
+	questionStartTime = Date.now();
+	reviewIndex.set(null);
+	viewMode.set('quiz');
+}
+
 export function reviewPrev(): void {
 	const idx = get(reviewIndex);
 	if (idx !== null && idx > 0) {

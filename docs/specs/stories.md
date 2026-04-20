@@ -141,7 +141,7 @@ Phase L depends on Phase K (for the `schemaVersion` field and the published libr
 
 **Intended release version:** `v1.1.0` — the whole phase ships together. Individual stories land unversioned; the version bump lives in the last story (L.d).
 
-### Story L.a: `<QuizBlock>` Skeleton, Single-Instance Guard, Schema-Version Check [Done]
+### Story L.a: '<QuizBlock>' Skeleton, Single-Instance Guard, Schema-Version Check [Done]
 
 Create the component scaffold at `app/src/lib/embed/QuizBlock.svelte`: accept the props, initialize the per-quiz IndexedDB on mount, enforce the single-instance restriction defensively, and soft-check the manifest's `schemaVersion`. This story stops short of the quiz flow itself — L.b wires that in.
 
@@ -175,30 +175,30 @@ Create the component scaffold at `app/src/lib/embed/QuizBlock.svelte`: accept th
   - [x] Schema mismatch: manifest with `schemaVersion: "2.0"` renders the warning aside but still mounts the DB
 - [x] Verify: `pnpm check` — 0 errors; existing tests still pass
 
-### Story L.b: End-to-End Quiz Flow Inside `<QuizBlock>` [Planned]
+### Story L.b: End-to-End Quiz Flow Inside '<QuizBlock>' [Done]
 
 Wire the existing engine modules (`selection`, `presentation`, `scoring`, `lifecycle`) and the existing views (`QuizView`, `AnsweredQuestionsView`, `ReviewView`, `SummaryView`) into `<QuizBlock>` so a mounted component runs the full manifest as the question set, from first question through summary + drill-down + retake.
 
-- [ ] Update `QuizBlock.svelte`
-  - [ ] On mount (non-blocked, compatible), call `startQuiz(...)` with the full manifest question set
-    - [ ] `config.questionCount = manifest.questions.length` (whole manifest)
-    - [ ] `config.answerCount = 4` (fixed in v1; override is Future Vision per features.md)
-    - [ ] `config.selectedTags = []` (no tag filter in embed mode)
-    - [ ] `config.selectedNodeIds = []` (no nav scoping in embed mode)
-  - [ ] Render the appropriate view based on `viewMode`:
-    - [ ] `quiz` → `<QuizView>`
-    - [ ] `quiz-answered` → `<AnsweredQuestionsView>`
-    - [ ] `quiz-review` → `<ReviewView>` (mid-quiz)
-    - [ ] `summary` → `<SummaryView>` (Retake visible; Start / Quit suppressed via a prop or wrapper)
-    - [ ] `review` → `<ReviewView>` (post-quiz drill-down)
-  - [ ] `SummaryView` integration: hide Start and Quit buttons when rendered inside `<QuizBlock>` (add a `showStartQuit?: boolean` prop to `SummaryView` defaulting to `true`; `<QuizBlock>` passes `false`)
-- [ ] Tests in `QuizBlock.test.ts`
-  - [ ] All-correct run through N questions → summary shows 100%; per-question drill-down works
-  - [ ] All-incorrect run → cumulative scores reflect the `-5` per-question penalty
-  - [ ] Retake: reshuffles answers, same question set, scores accumulate in DB, new `complete` event NOT fired until retake completes
-  - [ ] Mid-quiz review: Escape opens answered list; selecting an answered question shows the `ReviewView`; Escape returns to current unanswered question without losing progress
-  - [ ] Drill-down from summary: carousel (← / →) navigates between answered questions
-- [ ] Verify: `pnpm check` — 0 errors; full quiz flow passes inside the component without regressing `+page.svelte` behavior
+- [x] Update `QuizBlock.svelte`
+  - [x] On mount (non-blocked, compatible), call `startQuiz(...)` with the full manifest question set
+    - [x] `config.questionCount = manifest.questions.length` (whole manifest)
+    - [x] `config.answerCount = 4` (fixed in v1; override is Future Vision per features.md)
+    - [x] `config.selectedTags = []` (no tag filter in embed mode)
+    - [x] `config.selectedNodeIds = []` (no nav scoping in embed mode)
+  - [x] Render the appropriate view based on `viewMode`:
+    - [x] `quiz` → `<QuizView>`
+    - [x] `quiz-answered` → `<AnsweredQuestionsView>`
+    - [x] `quiz-review` → `<ReviewView>` (mid-quiz) — new `ViewMode` variant + `reviewAnsweredMidQuiz` / `exitMidQuizReview` lifecycle helpers
+    - [x] `summary` → `<SummaryView>` (Retake visible; Start / Quit suppressed via a prop or wrapper)
+    - [x] `review` → `<ReviewView>` (post-quiz drill-down)
+  - [x] `SummaryView` integration: hide Start and Quit buttons when rendered inside `<QuizBlock>` (add a `showStartQuit?: boolean` prop to `SummaryView` defaulting to `true`; `<QuizBlock>` passes `false`)
+- [x] Tests in `QuizBlock.test.ts`
+  - [x] All-correct run through N questions → summary shows 100%; per-question drill-down works
+  - [x] All-incorrect run → cumulative scores reflect the `-5` per-question penalty
+  - [x] Retake: reshuffles answers, same question set, scores accumulate in DB (the `complete` event itself is wired in L.c — its "fires only on actual completion" assertion lives there)
+  - [x] Mid-quiz review: select an answered question shows the `ReviewView`; exit returns to current unanswered question without losing progress (keyboard-level Escape covered in L.c alongside the `window`-listener audit)
+  - [x] Drill-down from summary: carousel (← / →) navigates between answered questions
+- [x] Verify: `pnpm check` — 0 errors; full quiz flow passes inside the component without regressing `+page.svelte` behavior
 
 ### Story L.c: Keyboard Scoping, `complete` Event, Theming Hooks [Planned]
 

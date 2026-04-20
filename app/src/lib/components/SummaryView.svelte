@@ -25,9 +25,17 @@
 		onNewQuiz: () => void;
 		onQuit: () => void;
 		onReview: (index: number) => void;
+		showStartQuit?: boolean;
 	}
 
-	let { questions, onRetake, onNewQuiz, onQuit, onReview }: Props = $props();
+	let {
+		questions,
+		onRetake,
+		onNewQuiz,
+		onQuit,
+		onReview,
+		showStartQuit = true
+	}: Props = $props();
 
 	let totalQuestions = $derived(questions.length);
 	let correctCount = $derived(
@@ -98,22 +106,24 @@
 				<RotateCcw class="h-4 w-4" />
 				Retake
 			</button>
-			<button
-				type="button"
-				class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
-				onclick={onNewQuiz}
-			>
-				<Play class="h-4 w-4" />
-				Start New
-			</button>
-			<button
-				type="button"
-				class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
-				onclick={onQuit}
-			>
-				<LogOut class="h-4 w-4" />
-				Quit
-			</button>
+			{#if showStartQuit}
+				<button
+					type="button"
+					class="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-500"
+					onclick={onNewQuiz}
+				>
+					<Play class="h-4 w-4" />
+					Start New
+				</button>
+				<button
+					type="button"
+					class="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+					onclick={onQuit}
+				>
+					<LogOut class="h-4 w-4" />
+					Quit
+				</button>
+			{/if}
 		</div>
 	</div>
 </div>
