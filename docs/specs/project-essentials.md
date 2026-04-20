@@ -210,6 +210,20 @@ Loose semver `vX.Y.Z`:
   production is stable.
 - **Z** — bug fixes and trivial changes.
 
+**Post-1.0.0 phase-based versioning (convention).** Once `1.0.0` shipped,
+stories that are planned as part of a multi-story phase release land
+**unversioned**. The phase's intended release version is declared in the
+phase intro, and the actual version bump (both `pyproject.toml` and
+`__init__.py`) happens in the **last story of the phase**. Rationale:
+phases ship together, and bumping the version mid-phase would publish
+partial implementations under a stable version number. One-off stories
+outside a phase still carry a version in their header and bump at
+completion. Examples:
+
+- Phase L (Embeddable Component) → `v1.1.0`; bump lands in Story L.d.
+- Phase M (Standalone SPA + housekeeping) → `v1.2.0`; bump lands in
+  Story M.c.
+
 `MANIFEST_SCHEMA_VERSION` (in `quizazz/__init__.py`) is a **separate
 protocol marker** embedded in every compiled manifest so consumers can
 detect breakage. It aligns with the project's major.minor by convention

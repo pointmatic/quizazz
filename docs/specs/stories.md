@@ -100,7 +100,7 @@ errors = validate_assessment("bad.yaml", base_dir=Path("content"))
 - [x] Update the main README: add a "Library API (UC-3)" section with usage examples
 - [x] Verify: all builder tests pass; no existing test regressions
 
-### Story K.d: v1.0.0 PyPI Release [In Review]
+### Story K.d: v1.0.0 PyPI Release [Done]
 
 First public release of `quizazz` to PyPI. Polish `pyproject.toml` metadata, bump the project version to `1.0.0` (first stable public API is the big-thing X-bump under the project's loose-semver rule), and publish via a tag-driven GitHub Actions workflow with PyPI trusted publishing (OIDC — no long-lived tokens).
 
@@ -127,8 +127,8 @@ First public release of `quizazz` to PyPI. Polish `pyproject.toml` metadata, bum
 - [x] One-time GitHub + PyPI config *(developer, before the first tag push)*
   - [x] Create GitHub environment `pypi` on the repo (optional reviewers / branch filter recommended)
   - [x] On PyPI: add a pending trusted publisher for `quizazz` with owner `pointmatic`, repo `quizazz`, workflow `publish-pypi.yml`, environment `pypi`
-- [ ] Publish `quizazz 1.0.0` to PyPI *(pending — `git tag -a v1.0.0 -m 'quizazz 1.0.0' && git push origin v1.0.0` once the one-time config above is done; workflow takes it from there)*
-- [ ] Verify: `pip install quizazz` in a fresh venv works; `quizazz --version` prints `1.0.0`; `from quizazz import compile_assessment` succeeds *(pending — post-publish check)*
+- [x] Publish `quizazz 1.0.0` to PyPI *(pending — `git tag -a v1.0.0 -m 'quizazz 1.0.0' && git push origin v1.0.0` once the one-time config above is done; workflow takes it from there)*
+- [x] Verify: `pip install quizazz` in a fresh venv works; `quizazz --version` prints `1.0.0`; `from quizazz import compile_assessment` succeeds *(pending — post-publish check)*
 - [x] Update the main README to reference `pip install quizazz` as an install option (alongside source-install)
 
 ---
@@ -139,41 +139,43 @@ Ship the SvelteKit half of the UC-3 host-integration contract: a `<QuizBlock>` c
 
 Phase L depends on Phase K (for the `schemaVersion` field and the published library API). No changes to the quiz engine, scoring, selection, presentation, or per-quiz IndexedDB — the component is a self-contained wrapper around existing engine modules. The one v1 restriction is single-instance-per-page; a mount-counter guard enforces this defensively.
 
-### Story L.a: v0.43.0 `<QuizBlock>` Skeleton, Single-Instance Guard, Schema-Version Check [Planned]
+**Intended release version:** `v1.1.0` — the whole phase ships together. Individual stories land unversioned; the version bump lives in the last story (L.d).
+
+### Story L.a: `<QuizBlock>` Skeleton, Single-Instance Guard, Schema-Version Check [Done]
 
 Create the component scaffold at `app/src/lib/embed/QuizBlock.svelte`: accept the props, initialize the per-quiz IndexedDB on mount, enforce the single-instance restriction defensively, and soft-check the manifest's `schemaVersion`. This story stops short of the quiz flow itself — L.b wires that in.
 
-- [ ] Create `app/src/lib/embed/QuizBlock.svelte`
-  - [ ] Props: `manifest: QuizManifest` (required), `quizRef: string` (required), optional `class?: string`, optional `oncomplete?: (e: QuizCompleteEvent) => void`
-  - [ ] Root is a focusable element: `<section tabindex="0">` with an optional host-supplied `class`
-  - [ ] Svelte 5 runes throughout (`$props`, `$state`, `$derived`, `$effect`)
-- [ ] Create `app/src/lib/embed/schema-version.ts`
-  - [ ] Export `MANIFEST_SCHEMA_VERSION_MAJOR: number = 1`
-  - [ ] Export `isCompatible(manifestVersion: string | undefined): "ok" | "mismatch"` — treats `undefined` as `"1.0"` (pre-Phase-K manifests)
-- [ ] Single-instance guard
-  - [ ] Module-scoped counter `mountCount`
-  - [ ] `onMount`: increment; if previous value > 0, set component-local `blocked` state with reason text; do NOT init DB or start quiz
-  - [ ] `onDestroy`: decrement (only when the instance actually initialized — blocked instances don't affect the count)
-  - [ ] When `blocked`, render an error `<aside>` inside the root explaining the single-instance restriction, the colliding `quizRef`, and a pointer to the README
-  - [ ] `console.error` the same info
-- [ ] Schema-version handling
-  - [ ] On mount (non-blocked), call `isCompatible(manifest.schemaVersion)`
-  - [ ] On `"mismatch"`, render a warning `<aside>` with a human-readable message; continue rendering the quiz normally
-- [ ] Per-quiz DB init
-  - [ ] On mount (non-blocked), call `initDatabase(manifest.quizName)` and `seedScores(db, manifest.questions.map(q => q.id))` — reusing `$lib/db`
-  - [ ] Set `activeManifest` store with the prop value; `setNavNodes(manifest.tree)` so lifecycle helpers see it
-- [ ] Create `app/src/lib/embed/index.ts` barrel exporting `QuizBlock` (default) and types
-- [ ] Create `app/tests/embed/QuizBlock.test.ts`
-  - [ ] Renders root element with supplied `class`
-  - [ ] Mounts with a valid manifest: root exists, no error aside, no warning aside
-  - [ ] Per-quiz DB is initialized under `quizazz-<quizName>`
-  - [ ] Manifest prop not mutated after mount (deep-clone compare)
-  - [ ] Single-instance guard: mounting a second `<QuizBlock>` while a first is mounted renders the error aside, does not init a second DB, emits `console.error` referencing both `quizRef` values
-  - [ ] Unmount first → mount second: works normally
-  - [ ] Schema mismatch: manifest with `schemaVersion: "2.0"` renders the warning aside but still mounts the DB
-- [ ] Verify: `pnpm check` — 0 errors; existing tests still pass
+- [x] Create `app/src/lib/embed/QuizBlock.svelte`
+  - [x] Props: `manifest: QuizManifest` (required), `quizRef: string` (required), optional `class?: string`, optional `oncomplete?: (e: QuizCompleteEvent) => void`
+  - [x] Root is a focusable element: `<section tabindex="0">` with an optional host-supplied `class`
+  - [x] Svelte 5 runes throughout (`$props`, `$state`, `$derived`, `$effect`)
+- [x] Create `app/src/lib/embed/schema-version.ts`
+  - [x] Export `MANIFEST_SCHEMA_VERSION_MAJOR: number = 1`
+  - [x] Export `isCompatible(manifestVersion: string | undefined): "ok" | "mismatch"` — treats `undefined` as `"1.0"` (pre-Phase-K manifests)
+- [x] Single-instance guard
+  - [x] Module-scoped counter `mountCount`
+  - [x] `onMount`: increment; if previous value > 0, set component-local `blocked` state with reason text; do NOT init DB or start quiz
+  - [x] `onDestroy`: decrement (only when the instance actually initialized — blocked instances don't affect the count)
+  - [x] When `blocked`, render an error `<aside>` inside the root explaining the single-instance restriction, the colliding `quizRef`, and a pointer to the README
+  - [x] `console.error` the same info
+- [x] Schema-version handling
+  - [x] On mount (non-blocked), call `isCompatible(manifest.schemaVersion)`
+  - [x] On `"mismatch"`, render a warning `<aside>` with a human-readable message; continue rendering the quiz normally
+- [x] Per-quiz DB init
+  - [x] On mount (non-blocked), call `initDatabase(manifest.quizName)` and `seedScores(db, manifest.questions.map(q => q.id))` — reusing `$lib/db`
+  - [x] Set `activeManifest` store with the prop value; `setNavNodes(manifest.tree)` so lifecycle helpers see it
+- [x] Create `app/src/lib/embed/index.ts` barrel exporting `QuizBlock` (default) and types
+- [x] Create `app/tests/embed/QuizBlock.test.ts`
+  - [x] Renders root element with supplied `class`
+  - [x] Mounts with a valid manifest: root exists, no error aside, no warning aside
+  - [x] Per-quiz DB is initialized under `quizazz-<quizName>`
+  - [x] Manifest prop not mutated after mount (deep-clone compare)
+  - [x] Single-instance guard: mounting a second `<QuizBlock>` while a first is mounted renders the error aside, does not init a second DB, emits `console.error` referencing both `quizRef` values
+  - [x] Unmount first → mount second: works normally
+  - [x] Schema mismatch: manifest with `schemaVersion: "2.0"` renders the warning aside but still mounts the DB
+- [x] Verify: `pnpm check` — 0 errors; existing tests still pass
 
-### Story L.b: v0.44.0 End-to-End Quiz Flow Inside `<QuizBlock>` [Planned]
+### Story L.b: End-to-End Quiz Flow Inside `<QuizBlock>` [Planned]
 
 Wire the existing engine modules (`selection`, `presentation`, `scoring`, `lifecycle`) and the existing views (`QuizView`, `AnsweredQuestionsView`, `ReviewView`, `SummaryView`) into `<QuizBlock>` so a mounted component runs the full manifest as the question set, from first question through summary + drill-down + retake.
 
@@ -198,7 +200,7 @@ Wire the existing engine modules (`selection`, `presentation`, `scoring`, `lifec
   - [ ] Drill-down from summary: carousel (← / →) navigates between answered questions
 - [ ] Verify: `pnpm check` — 0 errors; full quiz flow passes inside the component without regressing `+page.svelte` behavior
 
-### Story L.c: v0.45.0 Keyboard Scoping, `complete` Event, Theming Hooks [Planned]
+### Story L.c: Keyboard Scoping, `complete` Event, Theming Hooks [Planned]
 
 Ensure keyboard interaction is confined to the component root (no `window` listeners), emit the completion event in both the modern callback-prop and classic `CustomEvent` forms, and add theming hooks so hosts can style `<QuizBlock>` to match their design system.
 
@@ -223,9 +225,9 @@ Ensure keyboard interaction is confined to the component root (no `window` liste
   - [ ] Theming: setting `--quizazz-color-correct` on the component root changes the correct-indicator color (visual-free assertion: computed style on the relevant element reflects the override)
 - [ ] Verify: `pnpm check` — 0 errors; all embed tests pass; existing app tests still pass
 
-### Story L.d: v0.46.0 npm Release — `@pointmatic/quizazz` 1.0.0 [Planned]
+### Story L.d: v1.1.0 npm Release — `@pointmatic/quizazz` 1.1.0 [Planned]
 
-Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/embed/`, polish `app/package.json` for public distribution, write the package README, and publish `@pointmatic/quizazz 1.0.0` to npm. CI automation is out of scope.
+Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/embed/`, polish `app/package.json` for public distribution, write the package README, and publish `@pointmatic/quizazz 1.1.0` to npm. This is the Phase L version-bump story: lockstep `python/pyproject.toml` and `python/src/quizazz/__init__.py` to `1.1.0` as well (even though the Python package doesn't change in L, the project carries one version). CI automation is out of scope.
 
 - [ ] Configure `app/svelte.config.js` `package` section
   - [ ] Output directory: `dist/`
@@ -234,7 +236,7 @@ Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/emb
   - [ ] Include: `embed/`, `engine/`, `db/`, `stores/`, `types/`, `utils/format.ts`, `utils/random.ts`, and the internal views the component reuses (`QuizView`, `AnsweredQuestionsView`, `ReviewView`, `SummaryView`, `ProgressBar`)
 - [ ] Update `app/package.json` for public distribution
   - [ ] `name = "@pointmatic/quizazz"`
-  - [ ] `version = "1.0.0"` (matches the project version; `MANIFEST_SCHEMA_VERSION = "1.0"` aligns since the manifest shape hasn't broken)
+  - [ ] `version = "1.1.0"` (matches the project version; `MANIFEST_SCHEMA_VERSION = "1.0"` is unchanged — Phase L doesn't alter the manifest shape)
   - [ ] `description`: "Embeddable SvelteKit quiz component for Quizazz assessments."
   - [ ] `keywords`: `["quiz", "assessment", "education", "svelte", "sveltekit", "quizazz"]`
   - [ ] `license = "Apache-2.0"`
@@ -257,7 +259,8 @@ Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/emb
   - [ ] `pnpm --dir app publint` (or equivalent) to sanity-check the package layout
   - [ ] `pnpm --dir app publish --access public` (manual credential handling; no CI)
   - [ ] Dry-run on npm's `--dry-run` first; consider `npm publish --dry-run --tag next` or similar staging step before hitting `latest`
-- [ ] Publish `@pointmatic/quizazz 1.0.0` to npm
+- [ ] Bump `python/pyproject.toml` `[project].version` and `python/src/quizazz/__init__.py` `__version__` to `1.1.0` (project carries one version even though the Python package is unchanged in Phase L)
+- [ ] Publish `@pointmatic/quizazz 1.1.0` to npm
 - [ ] Verify: fresh SvelteKit scratch app → `pnpm add @pointmatic/quizazz` + host-supplied WASM → `<QuizBlock>` renders and completes a quiz end-to-end; `complete` event observable from the host
 - [ ] Update the main repo README with an "Embed in your own SvelteKit app" section referencing `@pointmatic/quizazz`
 
@@ -269,7 +272,9 @@ Close out the UC-1 surface promised in features.md (a `quizazz build --standalon
 
 Phase M has no learningfoundry dependency. It is pure project-internal. Phase L must be landed before Phase M because FM-2 and Phase L both touch `+page.svelte`.
 
-### Story M.a: v0.47.0 UC-1 `quizazz build --standalone <name>` [Planned]
+**Intended release version:** `v1.2.0` — the whole phase ships together. Individual stories land unversioned; the version bump lives in the last story (M.c).
+
+### Story M.a: UC-1 `quizazz build --standalone <name>` [Planned]
 
 Add the `--standalone <quiz-name>` flag to `quizazz build`. In standalone mode the CLI moves every non-target manifest to a `TemporaryDirectory`, sets `QUIZAZZ_STANDALONE` and `VITE_QUIZAZZ_STANDALONE` in the subprocess environment, runs the pnpm build, and unconditionally restores the moved files in a `finally` block. The app reads the Vite-prefixed env var and behaves accordingly: hides `ManifestUpload`, skips the chooser, auto-advances to nav.
 
@@ -323,7 +328,7 @@ quizazz build --standalone my-quiz
 - [x] Repo-wide grep for `quizazz-builder` / `quizazz_builder` shell-command references cleaned up during the rename sweep (READMEs, docs, release notes, GHA workflow).
 - [x] No separate PyPI release note needed — `quizazz 1.0.0` is the first public release, so nothing to deprecate.
 
-### Story M.c: v0.49.0 SPDX-Only Header Retrofit [Planned]
+### Story M.c: v1.2.0 SPDX-Only Header Retrofit [Planned]
 
 Replace the full 14-line Apache-2.0 boilerplate on every existing source file with the 2-line SPDX variant defined in project-essentials. Mechanical, verify-only diff — no semantic content changes. New files created between Phase K and now already use SPDX-only; this story closes the gap for pre-K files.
 
@@ -345,6 +350,7 @@ Replace the full 14-line Apache-2.0 boilerplate on every existing source file wi
   - [ ] If any file's diff contains other changes, back out and investigate before landing
 - [ ] Config files (`pyproject.toml`, `svelte.config.js`, `vite.config.ts`, `vitest.config.ts`, `tsconfig.json`, `.gitignore`, `pnpm-workspace.yaml`) are left untouched — these do not conventionally carry per-file license headers
 - [ ] Generated artifacts are left untouched (`app/src/lib/data/*.json`, `app/static/sql-wasm.wasm`)
+- [ ] Bump `python/pyproject.toml` `[project].version` and `python/src/quizazz/__init__.py` `__version__` to `1.2.0` (Phase M version-bump story; landed after Phase L's `1.1.0`)
 - [ ] Verify: all builder + app tests pass; `pnpm check` — 0 errors; manual spot-check of 3–5 files confirms the SPDX two-liner is correct for the file type
 
 ---
