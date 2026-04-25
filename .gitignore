@@ -20,7 +20,6 @@ build/
 *.ipynb_checkpoints
 
 # Pyve virtual environment
-.venv
 .pyve/envs
 .pyve/testenv
 .envrc

@@ -1,6 +1,4 @@
-pyve_version: "1.16.1"
-backend: venv
-venv:
-  directory: .venv
-python:
-  version: 3.12.13
+pyve_version: "2.3.1"
+backend: micromamba
+micromamba:
+  env_name: quizazz

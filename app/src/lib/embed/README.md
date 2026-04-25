@@ -1,8 +1,67 @@
-# `<QuizBlock>` — embedding reference
+# `@pointmatic/quizazz` — embeddable SvelteKit quiz component
 
-Host-facing documentation for `@pointmatic/quizazz`. This README lives next to
-the component source so it evolves in lockstep with the public API; the npm
-package README is derived from this file in Story L.d.
+`<QuizBlock>` renders a full Quizazz quiz inline in a host SvelteKit app from
+a manifest produced by the Python side of the pipeline. See the project
+[README](https://github.com/pointmatic/quizazz) for the YAML → manifest →
+browser data flow and the `compile_assessment` library API that produces
+manifests at host build time.
+
+## Install
+
+```bash
+pnpm add @pointmatic/quizazz
+```
+
+The package declares `svelte ^5` as a peer dependency; your app must have a
+Svelte 5 runtime installed (SvelteKit apps already do).
+
+## Usage
+
+```svelte
+<script lang="ts">
+  import { QuizBlock } from '@pointmatic/quizazz';
+  import type { QuizCompleteEvent } from '@pointmatic/quizazz';
+  import manifest from './content/module-4-pre.json';
+
+  function onComplete(e: QuizCompleteEvent) {
+    // record e.score / e.maxScore against e.quizRef in the host's LMS/DB
+  }
+</script>
+
+<QuizBlock
+  {manifest}
+  quizRef="module-4-pre"
+  class="my-theme"
+  oncomplete={onComplete}
+/>
+```
+
+Props:
+
+- `manifest: QuizManifest` (required) — the compiled manifest dict returned
+  by `quizazz.compile_assessment(...)` on the Python side.
+- `quizRef: string` (required) — host-supplied identifier echoed back in the
+  `complete` event so the host knows which quiz finished.
+- `class?: string` — optional class on the root `<section>` for theming.
+- `oncomplete?: (event: QuizCompleteEvent) => void` — optional callback
+  fired when the user submits the last question.
+
+## sql.js WASM setup
+
+`<QuizBlock>` uses [sql.js](https://sql.js.org/) for per-quiz score
+persistence in IndexedDB. sql.js loads its SQLite WebAssembly binary at
+runtime from a URL relative to the host origin. Copy the `.wasm` file into
+your app's static root:
+
+```bash
+# run once, during your host app's postinstall
+cp node_modules/sql.js/dist/sql-wasm.wasm static/sql-wasm.wasm
+```
+
+Hosts that need to serve the WASM from a non-root path can override the
+loader's `locateFile` — *Future Vision*: `<QuizBlock>` will expose a prop to
+pass this through directly. Until then, a host-level shim that patches
+`initSqlJs`'s default loader works.
 
 ## Keyboard scoping
 

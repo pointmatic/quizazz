@@ -14,7 +14,7 @@
 
 """Quizazz Builder — YAML question bank validator, compiler, and library API."""
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 # Version of the compiled manifest schema emitted by `compile_quiz_to_dict`.
 # Bumped in lockstep with breaking manifest-shape changes; see the

@@ -199,8 +199,16 @@ The project has a single version. Canonical source:
 [`python/pyproject.toml`](../../python/pyproject.toml) `[project].version`,
 mirrored in `python/src/quizazz/__init__.py.__version__`. Both published
 packages (`quizazz` on PyPI, `@pointmatic/quizazz` on npm from Phase L)
-bump to match in lockstep. [`app/package.json`](../../app/package.json) is
-a private workspace root and carries no `version` field.
+bump to match in lockstep.
+
+Since Phase L, [`app/package.json`](../../app/package.json) is **also a
+publishable npm manifest** — it carries `name = "@pointmatic/quizazz"`, a
+`version` field matched to `pyproject.toml`, `exports` / `files` / `svelte`
+fields, and `publishConfig.access = "public"`. The package is still a
+SvelteKit app at dev time (`pnpm dev` / `pnpm build` use the same
+`package.json`); `pnpm package` produces the library artifact under
+`dist/` via `@sveltejs/package`. Before Phase L it was a private workspace
+root with no `version` — lockstep bumps now include it.
 
 Loose semver `vX.Y.Z`:
 

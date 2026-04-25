@@ -233,6 +233,35 @@ Both functions accept `str` or `Path` for their arguments. `yaml_path` is joined
 
 `validate_assessment` never raises — it swallows `ValidationError` and surfaces one error string per violation in the returned list.
 
+## Embed in your own SvelteKit app
+
+Phase L ships the browser half of the host-integration contract as the
+`@pointmatic/quizazz` npm package. A host SvelteKit app imports a single
+`<QuizBlock>` component and renders a full quiz inline from a manifest
+produced by `compile_assessment` above.
+
+```bash
+pnpm add @pointmatic/quizazz
+```
+
+```svelte
+<script lang="ts">
+  import { QuizBlock } from '@pointmatic/quizazz';
+  import manifest from './module-4-pre-quiz.json';
+
+  function handleComplete(e) {
+    console.log(`Quiz ${e.quizRef}: scored ${e.score}/${e.maxScore}`);
+  }
+</script>
+
+<QuizBlock {manifest} quizRef="module-4-pre" oncomplete={handleComplete} />
+```
+
+The full embedding reference — theming custom properties, the `complete`
+event's DOM-event form, the single-instance-per-page guard, and the sql.js
+WASM setup step hosts must follow — lives alongside the source at
+[`app/src/lib/embed/README.md`](app/src/lib/embed/README.md).
+
 ## Testing
 
 ```bash

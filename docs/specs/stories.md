@@ -225,44 +225,44 @@ Ensure keyboard interaction is confined to the component root (no `window` liste
   - [x] Theming: setting `--quizazz-color-correct` on the component root changes the correct-indicator color (visual-free assertion: computed style on the relevant element reflects the override — asserted via the inherited custom-property value, since jsdom's `getComputedStyle` does not resolve `var()` to a final color)
 - [x] Verify: `pnpm check` — 0 errors; all embed tests pass; existing app tests still pass
 
-### Story L.d: v1.1.0 npm Release — `@pointmatic/quizazz` 1.1.0 [Planned]
+### Story L.d: v1.1.0 npm Release — '@pointmatic/quizazz' 1.1.0 [In Review]
 
 Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/embed/`, polish `app/package.json` for public distribution, write the package README, and publish `@pointmatic/quizazz 1.1.0` to npm. This is the Phase L version-bump story: lockstep `python/pyproject.toml` and `python/src/quizazz/__init__.py` to `1.1.0` as well (even though the Python package doesn't change in L, the project carries one version). CI automation is out of scope.
 
-- [ ] Configure `app/svelte.config.js` `package` section
-  - [ ] Output directory: `dist/`
-  - [ ] Entry: `src/lib/embed/index.ts`
-  - [ ] Exclude: `routes/`, sample data `lib/data/*.json`, `QuizChooser.svelte`, `ManifestUpload.svelte`, `NavigationTree.svelte`, `ConfigView.svelte`, `utils/validate-manifest.ts`, `static/sql-wasm.wasm`
-  - [ ] Include: `embed/`, `engine/`, `db/`, `stores/`, `types/`, `utils/format.ts`, `utils/random.ts`, and the internal views the component reuses (`QuizView`, `AnsweredQuestionsView`, `ReviewView`, `SummaryView`, `ProgressBar`)
-- [ ] Update `app/package.json` for public distribution
-  - [ ] `name = "@pointmatic/quizazz"`
-  - [ ] `version = "1.1.0"` (matches the project version; `MANIFEST_SCHEMA_VERSION = "1.0"` is unchanged — Phase L doesn't alter the manifest shape)
-  - [ ] `description`: "Embeddable SvelteKit quiz component for Quizazz assessments."
-  - [ ] `keywords`: `["quiz", "assessment", "education", "svelte", "sveltekit", "quizazz"]`
-  - [ ] `license = "Apache-2.0"`
-  - [ ] `repository.url`, `homepage`, `author` fields filled in
-  - [ ] `exports` pointing at `./dist/embed/index.js` with `types` and `svelte` condition entries
-  - [ ] `peerDependencies`: `svelte ^5`
-  - [ ] `dependencies`: `sql.js ^1` (host's install will pull this in)
-  - [ ] `files` whitelist: `["dist"]`
-  - [ ] `publishConfig.access = "public"`
-  - [ ] `type = "module"` (already set; confirm)
-- [ ] Package README (`app/src/lib/embed/README.md` or host-rendered in `app/package.json` via `"readme"` field)
-  - [ ] Install: `pnpm add @pointmatic/quizazz`
-  - [ ] Usage example: `<QuizBlock manifest={...} quizRef="..." oncomplete={...} />`
-  - [ ] sql.js WASM setup: copy `sql-wasm.wasm` to host's static root; configurable via `locateFile` override if needed (documented as Future Vision)
-  - [ ] Theming: list of CSS custom properties + an example of theming via `<QuizBlock class="my-theme" />` + a `.my-theme { --quizazz-color-correct: ... }` block
-  - [ ] Single-instance-per-page note with rationale and an explicit warning about the mount-counter guard
-  - [ ] Schema-version compatibility: soft-warn behavior, current major = 1
-- [ ] Release process documentation (in `app/src/lib/embed/README.md` or an adjacent `RELEASE.md`)
-  - [ ] `pnpm --dir app package` to emit `dist/`
-  - [ ] `pnpm --dir app publint` (or equivalent) to sanity-check the package layout
-  - [ ] `pnpm --dir app publish --access public` (manual credential handling; no CI)
-  - [ ] Dry-run on npm's `--dry-run` first; consider `npm publish --dry-run --tag next` or similar staging step before hitting `latest`
-- [ ] Bump `python/pyproject.toml` `[project].version` and `python/src/quizazz/__init__.py` `__version__` to `1.1.0` (project carries one version even though the Python package is unchanged in Phase L)
-- [ ] Publish `@pointmatic/quizazz 1.1.0` to npm
-- [ ] Verify: fresh SvelteKit scratch app → `pnpm add @pointmatic/quizazz` + host-supplied WASM → `<QuizBlock>` renders and completes a quiz end-to-end; `complete` event observable from the host
-- [ ] Update the main repo README with an "Embed in your own SvelteKit app" section referencing `@pointmatic/quizazz`
+- [x] Configure `app/svelte.config.js` `package` section
+  - [x] Output directory: `dist/` (via `svelte-package -i src/lib -o dist` in the `package` script — `@sveltejs/package` 2.5.7 uses CLI flags rather than a `svelte.config.js` key)
+  - [x] Entry: `src/lib/embed/index.ts` (surfaced via the `exports` map in `package.json`; `svelte-package` itself takes the whole `src/lib` input tree)
+  - [x] Exclude: `routes/` (outside `src/lib`, naturally excluded), sample data `lib/data/*.json`, `QuizChooser.svelte`, `ManifestUpload.svelte`, `NavigationTree.svelte`, `ConfigView.svelte`, `utils/validate-manifest.ts`, `static/sql-wasm.wasm` — the in-`src/lib` entries are removed post-build by `app/scripts/clean-dist.mjs`
+  - [x] Include: `embed/`, `engine/`, `db/`, `stores/`, `types/`, `utils/format.ts`, `utils/random.ts`, and the internal views the component reuses (`QuizView`, `AnsweredQuestionsView`, `ReviewView`, `SummaryView`, `ProgressBar`)
+- [x] Update `app/package.json` for public distribution
+  - [x] `name = "@pointmatic/quizazz"`
+  - [x] `version = "1.1.0"` (matches the project version; `MANIFEST_SCHEMA_VERSION = "1.0"` is unchanged — Phase L doesn't alter the manifest shape)
+  - [x] `description`: "Embeddable SvelteKit quiz component for Quizazz assessments."
+  - [x] `keywords`: `["quiz", "assessment", "education", "svelte", "sveltekit", "quizazz"]`
+  - [x] `license = "Apache-2.0"`
+  - [x] `repository.url`, `homepage`, `author` fields filled in (plus `bugs` for completeness)
+  - [x] `exports` pointing at `./dist/embed/index.js` with `types` and `svelte` condition entries
+  - [x] `peerDependencies`: `svelte ^5`
+  - [x] `dependencies`: `sql.js ^1` (plus `lucide-svelte` — the shipped views import icons from it; host install pulls both in)
+  - [x] `files` whitelist: `["dist"]`
+  - [x] `publishConfig.access = "public"`
+  - [x] `type = "module"` (already set; confirm)
+- [x] Package README (`app/src/lib/embed/README.md` or host-rendered in `app/package.json` via `"readme"` field)
+  - [x] Install: `pnpm add @pointmatic/quizazz`
+  - [x] Usage example: `<QuizBlock manifest={...} quizRef="..." oncomplete={...} />`
+  - [x] sql.js WASM setup: copy `sql-wasm.wasm` to host's static root; configurable via `locateFile` override if needed (documented as Future Vision)
+  - [x] Theming: list of CSS custom properties + an example of theming via `<QuizBlock class="my-theme" />` + a `.my-theme { --quizazz-color-correct: ... }` block
+  - [x] Single-instance-per-page note with rationale and an explicit warning about the mount-counter guard
+  - [x] Schema-version compatibility: soft-warn behavior, current major = 1
+- [x] Release process documentation (in `app/src/lib/embed/README.md` or an adjacent `RELEASE.md`)
+  - [x] `pnpm --dir app package` to emit `dist/`
+  - [x] `pnpm --dir app publint` (or equivalent) to sanity-check the package layout — passes "All good!"
+  - [x] `pnpm --dir app publish --access public` (manual credential handling; no CI)
+  - [x] Dry-run on npm's `--dry-run` first; consider `npm publish --dry-run --tag next` or similar staging step before hitting `latest`
+- [x] Bump `python/pyproject.toml` `[project].version` and `python/src/quizazz/__init__.py` `__version__` to `1.1.0` (project carries one version even though the Python package is unchanged in Phase L)
+- [ ] Publish `@pointmatic/quizazz 1.1.0` to npm *(pending — manual step. `pnpm --dir app publish --dry-run` first, then `pnpm --dir app publish --access public` from a maintainer's credentials; see `app/RELEASE.md`.)*
+- [ ] Verify: fresh SvelteKit scratch app → `pnpm add @pointmatic/quizazz` + host-supplied WASM → `<QuizBlock>` renders and completes a quiz end-to-end; `complete` event observable from the host *(pending — post-publish check)*
+- [x] Update the main repo README with an "Embed in your own SvelteKit app" section referencing `@pointmatic/quizazz`
 
 ---
 
