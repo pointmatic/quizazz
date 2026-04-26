@@ -189,10 +189,77 @@ Same for both flows:
    just published.
 2. (CI flow only) Confirm the package page on npmjs.com shows the
    "Built and signed on GitHub Actions" provenance attestation.
-3. In a fresh SvelteKit scratch app: `pnpm add @pointmatic/quizazz` should
-   resolve the published version, install `sql.js` as a dependency, and
-   make `import { QuizBlock } from '@pointmatic/quizazz'` work. Add the
+3. In a fresh SvelteKit scratch app (see [next section](#setting-up-a-sveltekit-scratch-app)):
+   `pnpm add @pointmatic/quizazz` should resolve the published version,
+   install `sql.js` as a dependency, and make
+   `import { QuizBlock } from '@pointmatic/quizazz'` work. Add the
    one-line styles import (`import '@pointmatic/quizazz/styles.css'`),
    copy the sql.js WASM into `static/`, disable SSR on the embedding
-   route, render `<QuizBlock>` with a test manifest, and observe that the
-   `complete` event fires end-to-end.
+   route, render `<QuizBlock>` with a test manifest, and observe that
+   the `complete` event fires end-to-end.
+
+### Setting up a SvelteKit scratch app
+
+A "scratch app" is a brand-new SvelteKit project — a few minutes of
+scaffold from the official template — created solely to verify that
+`@pointmatic/quizazz` installs and runs in the way a real host would
+consume it. Doing this in a clean project (rather than this repo's
+`app/`) is the point: it catches packaging mistakes (missing exports,
+wrong file paths, host-only dependencies sneaking into `dist/`) that
+the in-tree test suite cannot, because the in-tree tests resolve
+against the source rather than the published tarball.
+
+You can throw the scratch app away when you're done. Nothing about it
+needs to be checked in.
+
+```bash
+# 1. Scaffold a minimal SvelteKit app (pick "Skeleton project" + TypeScript
+#    when the prompts appear; everything else default).
+cd /tmp                                  # or anywhere outside this repo
+pnpm dlx sv create quizazz-scratch
+cd quizazz-scratch
+pnpm install
+
+# 2. Add the package under test (the just-published version).
+pnpm add @pointmatic/quizazz
+
+# 3. Copy a quiz manifest you've already compiled (or compile a fresh one
+#    via `quizazz generate`) into the scratch app's static/ or src/.
+cp /path/to/some-quiz.json src/lib/quiz.json
+
+# 4. Copy the sql.js WASM into the scratch app's static root. The wildcard
+#    form is bulletproof across sql.js versions — see embed README §
+#    "sql.js WASM setup" for why.
+find node_modules -name 'sql-wasm*.wasm' -exec cp {} static/ \;
+
+# 5. Disable SSR on the route that will mount <QuizBlock>. The simplest
+#    way is project-wide, in src/routes/+layout.ts:
+echo 'export const ssr = false;' > src/routes/+layout.ts
+
+# 6. Replace src/routes/+page.svelte with a minimal embed harness.
+cat > src/routes/+page.svelte <<'EOF'
+<script lang="ts">
+  import { QuizBlock } from '@pointmatic/quizazz';
+  import '@pointmatic/quizazz/styles.css';
+  import manifest from '$lib/quiz.json';
+
+  function onComplete(e: CustomEvent | { quizRef: string; score: number; maxScore: number; questionCount: number }) {
+    const detail = 'detail' in e ? e.detail : e;
+    console.log('Quiz complete:', detail);
+  }
+</script>
+
+<QuizBlock {manifest} quizRef="scratch-test" oncomplete={onComplete} />
+EOF
+
+# 7. Run the dev server and click through the quiz.
+pnpm dev
+# Visit the printed http://localhost:<port>/ URL; play the quiz to the
+# end; verify the console logs the `complete` event payload.
+```
+
+If anything in steps 2–7 fails — install error, missing module, blank
+page on first load, broken styles, runtime crash inside `<QuizBlock>` —
+that's a publish bug worth blocking the release on. The scratch app
+exists precisely to surface "the bundle on npm doesn't match what works
+in-tree" before any host hits it.
