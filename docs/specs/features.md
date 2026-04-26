@@ -68,7 +68,7 @@ The repository is organized as a monorepo:
 24. **Non-seeded shuffling** — Answer order is randomized independently per question presentation (not seeded), so repeat presentations feel fresh.
 25. **Minimal dependencies** — Runtime dependencies are limited to what the SPA strictly needs; no CDN loads, no telemetry, no analytics.
 26. **Cross-platform authoring** — The builder runs on Linux, macOS, and Windows (Python 3.12+); the SPA runs in any modern evergreen browser.
-27. **Host-friendly embedding (UC-3)** — The `<QuizBlock>` component must be self-contained (no external network or server dependency), must not leak keyboard events the host expects to handle globally, and must theme cleanly via Tailwind utility classes or CSS custom properties.
+27. **Host-friendly embedding (UC-3)** — The `<QuizBlock>` component must be self-contained (no external network or server dependency, polished default rendering without requiring the host to bring its own CSS framework), must not leak keyboard events the host expects to handle globally, and must expose CSS custom properties as the universal theming surface — with host Tailwind utilities layering additively when present.
 
 ## Usability Requirements
 
@@ -442,7 +442,7 @@ Quizazz ships a SvelteKit component that renders a compiled manifest inline with
 - **Behavior**: presents questions from the manifest one at a time with a configurable answer count (3–5), applies the core scoring, review, and summary flows (FR-7 through FR-14) within the host's layout, and manages its own per-quiz IndexedDB for per-question scores.
 - **Event**: emits `complete` on quiz finish with `{quizRef, score, maxScore, questionCount}`. The host consumes this aggregate to update its own progress tracking.
 - **Isolation**: self-contained — no external network dependency, no server dependency. The component's IndexedDB is fully isolated from any host database.
-- **Theming**: accepts Tailwind CSS utility classes or exposes CSS custom properties for theme integration with host styles.
+- **Theming**: ships self-contained styles for polished default rendering with no host CSS framework setup; exposes CSS custom properties as the universal theming surface; host Tailwind utilities layer additively on top when the host happens to use Tailwind.
 - **Keyboard**: FR-9 and FR-13 interactions continue to work when embedded; the component does not capture keys the host expects to handle globally.
 
 ---

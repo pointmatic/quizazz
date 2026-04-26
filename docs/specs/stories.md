@@ -110,7 +110,7 @@ First public release of `quizazz` to PyPI. Polish `pyproject.toml` metadata, bum
 > 2. **Python import + source-directory name** `quizazz_builder` → `quizazz`. Matches the dist name and CLI; locks in the public import (`from quizazz import compile_assessment`) before any host framework writes the old path into durable code.
 > 3. **Top-level repo subdirectory** `builder/` → `python/`. Symmetric with `app/` (SvelteKit) and `data/` (YAML); "builder" was the same sidecar vestige.
 >
-> The console-script cleanup from story M.b was also folded in here (see M.b for the record). A Data Flow subsection was added to `tech-spec.md` so the `data/` → `python/` → `app/src/lib/data/` → `app/build/` pipeline is documented as one thought instead of scattered across four tables.
+> The legacy console-script cleanup originally planned as a Phase M story was also folded in here (see the **"Remove Legacy CLI Console Scripts"** subsection below for the record). A Data Flow subsection was added to `tech-spec.md` so the `data/` → `python/` → `app/src/lib/data/` → `app/build/` pipeline is documented as one thought instead of scattered across four tables.
 
 - [x] Enrich `python/pyproject.toml` `[project]` metadata
   - [x] `description`: "YAML question bank validator, compiler, and CLI for Quizazz quizzes."
@@ -130,6 +130,16 @@ First public release of `quizazz` to PyPI. Polish `pyproject.toml` metadata, bum
 - [x] Publish `quizazz 1.0.0` to PyPI *(pending — `git tag -a v1.0.0 -m 'quizazz 1.0.0' && git push origin v1.0.0` once the one-time config above is done; workflow takes it from there)*
 - [x] Verify: `pip install quizazz` in a fresh venv works; `quizazz --version` prints `1.0.0`; `from quizazz import compile_assessment` succeeds *(pending — post-publish check)*
 - [x] Update the main README to reference `pip install quizazz` as an install option (alongside source-install)
+
+**Remove Legacy CLI Console Scripts** 
+(was in Phase M, noted here for reference)
+
+> Absorbed into K.d as part of the PyPI package rename (`quizazz-builder` → `quizazz`). Shipping 1.0.0 with legacy console scripts only to delete them in 1.0.1 would have been silly, so the cleanup landed in the same change that renamed the dist.
+
+- [x] Dropped `quizazz-builder = "quizazz_builder.__main__:main"` and `quizazz_builder = "quizazz_builder.__main__:main"` from `[project.scripts]`. Only `quizazz = "quizazz.cli:main"` remains.
+- [x] Simplified `python/src/quizazz/__main__.py` to the thin `from quizazz.cli import main` delegator with the SPDX-only header.
+- [x] Repo-wide grep for `quizazz-builder` / `quizazz_builder` shell-command references cleaned up during the rename sweep (READMEs, docs, release notes, GHA workflow).
+- [x] No separate PyPI release note needed — `quizazz 1.0.0` is the first public release, so nothing to deprecate.
 
 ---
 
@@ -225,7 +235,7 @@ Ensure keyboard interaction is confined to the component root (no `window` liste
   - [x] Theming: setting `--quizazz-color-correct` on the component root changes the correct-indicator color (visual-free assertion: computed style on the relevant element reflects the override — asserted via the inherited custom-property value, since jsdom's `getComputedStyle` does not resolve `var()` to a final color)
 - [x] Verify: `pnpm check` — 0 errors; all embed tests pass; existing app tests still pass
 
-### Story L.d: v1.1.0 npm Release — '@pointmatic/quizazz' 1.1.0 [In Review]
+### Story L.d: v1.1.0 npm Release — '@pointmatic/quizazz' 1.1.0 [Done]
 
 Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/embed/`, polish `app/package.json` for public distribution, write the package README, and publish `@pointmatic/quizazz 1.1.0` to npm. This is the Phase L version-bump story: lockstep `python/pyproject.toml` and `python/src/quizazz/__init__.py` to `1.1.0` as well (even though the Python package doesn't change in L, the project carries one version). CI automation is out of scope.
 
@@ -260,21 +270,123 @@ Configure `@sveltejs/package` to emit a publishable bundle from `app/src/lib/emb
   - [x] `pnpm --dir app publish --access public` (manual credential handling; no CI)
   - [x] Dry-run on npm's `--dry-run` first; consider `npm publish --dry-run --tag next` or similar staging step before hitting `latest`
 - [x] Bump `python/pyproject.toml` `[project].version` and `python/src/quizazz/__init__.py` `__version__` to `1.1.0` (project carries one version even though the Python package is unchanged in Phase L)
-- [ ] Publish `@pointmatic/quizazz 1.1.0` to npm *(pending — manual step. `pnpm --dir app publish --dry-run` first, then `pnpm --dir app publish --access public` from a maintainer's credentials; see `app/RELEASE.md`.)*
-- [ ] Verify: fresh SvelteKit scratch app → `pnpm add @pointmatic/quizazz` + host-supplied WASM → `<QuizBlock>` renders and completes a quiz end-to-end; `complete` event observable from the host *(pending — post-publish check)*
+- [x] Publish `@pointmatic/quizazz 1.1.0` to npm *(pending — manual step. `pnpm --dir app publish --dry-run` first, then `pnpm --dir app publish --access public` from a maintainer's credentials; see `app/RELEASE.md`.)*
+- [x] Verify: fresh SvelteKit scratch app → `pnpm add @pointmatic/quizazz` + host-supplied WASM → `<QuizBlock>` renders and completes a quiz end-to-end; `complete` event observable from the host *(pending — post-publish check)*
 - [x] Update the main repo README with an "Embed in your own SvelteKit app" section referencing `@pointmatic/quizazz`
 
 ---
 
-## Phase M: Standalone SPA Packaging and Housekeeping
+## Phase M: Hardening, Standalone Build, and Release Automation
 
-Close out the UC-1 surface promised in features.md (a `quizazz build --standalone <name>` CLI flag that produces a one-quiz SPA with chooser/upload UI elided), and clean up two items deliberately deferred from Phases K and L: the legacy CLI console scripts, and the full Apache-2.0 boilerplate headers on existing source files.
+Polish the v1.1.0 release with two host-onboarding fixes surfaced by the post-publish verification (embed README + a self-contained styles bundle), clear the lone Svelte 5 warning in `pnpm check`, close the long-deferred UC-1 surface (`quizazz build --standalone <name>`), retrofit the SPDX-only header style to pre-K source files, and add CI-based npm publishing to mirror the existing PyPI workflow. Lands the v1.2.0 release.
 
-Phase M has no learningfoundry dependency. It is pure project-internal. Phase L must be landed before Phase M because FM-2 and Phase L both touch `+page.svelte`.
+Phase M has no learningfoundry dependency. It is pure project-internal. Phase L must be landed before Phase M because M.e and Phase L both touch `+page.svelte`.
 
-**Intended release version:** `v1.2.0` — the whole phase ships together. Individual stories land unversioned; the version bump lives in the last story (M.c).
+**Intended release version:** `v1.2.0` — the whole phase ships together. Individual stories land unversioned; the version bump lives in the last story (M.f).
 
-### Story M.a: UC-1 `quizazz build --standalone <name>` [Planned]
+### Story M.a: Resolve 'ConfigView' Svelte 5 State-Reference Warning [Done]
+
+[`ConfigView.svelte:39`](../../app/src/lib/components/ConfigView.svelte#L39) triggers a Svelte 5 `state_referenced_locally` warning because `let questionCount = $state(Math.min(10, questions.length))` only captures `questions` at mount. Currently benign — the parent unmounts/remounts ConfigView when the scope changes, so `questions` doesn't actually mutate during a given ConfigView's lifetime — but it's the only warning in `pnpm check` output, and resolving it restores a zero-warning baseline that makes future regressions obvious.
+
+ConfigView is a UC-1/UC-2-only component, stripped from the published npm bundle by [`scripts/clean-dist.mjs`](../../app/scripts/clean-dist.mjs), so this fix has no impact on `@pointmatic/quizazz` consumers. Pure local hygiene.
+
+- [x] Refactor `ConfigView.svelte` to eliminate the warning
+  - [x] Replace `$state(Math.min(10, questions.length))` with a Svelte-5-idiomatic equivalent that doesn't capture-and-forget — wrapped the initial-value computation in `untrack(() => ...)` so the read of `questions` is explicitly non-reactive, preserving exact prior semantics (initial value computed once, parent already remounts on scope change) without the false-positive warning
+  - [x] Confirm UC-1/UC-2 ConfigView behavior unchanged: question count input respects the pool size, tag-filter narrowing clamps `questionCount` correctly (covered by new `app/tests/components/ConfigView.test.ts` — 5 tests pinning down slider initial-cap, pool-size fallback, tag-narrow clamping, no-match disabled state, and `onStart` argument shape)
+- [x] Verify: `pnpm check` reports 0 errors **and** 0 warnings; manual click-through confirms ConfigView still works for both UC-1 and UC-2 paths *(automated coverage via the new vitest suite stands in for manual click-through; the refactor is a one-line `untrack` wrapper and behavior is fully exercised by the tests)*
+
+### Story M.b: Embed README — Fix WASM Filename and Document SSR-Disable [Planned]
+
+Two host-onboarding bugs surfaced during the v1.1.0 post-publish verification ([story L.d](#story-ld-v110-npm-release--pointmaticquizazz-110-in-review)):
+
+1. The README's WASM-copy instruction names `sql-wasm.wasm`, but `sql.js` ≥ 1.13 in a Vite browser bundle requests `sql-wasm-browser.wasm`. Hosts who follow the README verbatim get `[404] GET /sql-wasm-browser.wasm` and the quiz fails to render.
+2. `<QuizBlock>` cannot SSR (sql.js needs WASM + IndexedDB). Hosts who don't disable SSR for the embedding route get a 500 on first request. The README does not mention this.
+
+Both are documentation-only fixes — no component code changes — but they're release-quality issues that block any new host integration. Could optionally ship as a `1.1.1` patch ahead of Phase M if the cadence gap is too long.
+
+- [ ] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md) "sql.js WASM setup" section
+  - [ ] Replace the single-file copy command with one that copies the browser variant: `cp node_modules/sql.js/dist/sql-wasm-browser.wasm static/sql-wasm-browser.wasm`
+  - [ ] Mention the alternate `cp node_modules/sql.js/dist/*.wasm static/` form for hosts who prefer not to track sql.js's exact filename
+  - [ ] Note the pnpm-strict-layout caveat: pnpm users may need to find the WASM under `node_modules/.pnpm/sql.js@<ver>/node_modules/sql.js/dist/` (transitive dep files aren't hoisted to top-level `node_modules/`); a `find node_modules -name "sql-wasm-browser.wasm"` one-liner is bulletproof
+- [ ] Add a "SvelteKit host setup" subsection to the same README
+  - [ ] Document that the embedding route must disable SSR
+  - [ ] Provide the canonical `+page.ts` snippet: `export const ssr = false;`
+  - [ ] Briefly explain why (sql.js + IndexedDB are browser-only)
+- [ ] Update the main repo README's "Embed in your own SvelteKit app" section to reference the same SSR-disable requirement (don't just link — repeat the one-line fix to save a click)
+- [ ] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) "WASM binary handling" subsection (currently around line 814–816)
+  - [ ] Replace the "host app must also serve `sql-wasm.wasm`" sentence with the correct filename for Vite browser bundles (`sql-wasm-browser.wasm` from sql.js ≥ 1.13)
+  - [ ] Add a one-line note about the SSR-disable requirement for routes that mount `<QuizBlock>`
+- [ ] Verify: re-run the post-publish host harness ([stories.md:264](stories.md#L264)) following the updated README verbatim from a fresh scratch app; quiz renders end-to-end without ad-hoc fixes
+
+### Story M.c: v1.2.0 SPDX-Only Header Retrofit [Planned]
+
+Replace the full 14-line Apache-2.0 boilerplate on every existing source file with the 2-line SPDX variant defined in project-essentials. Mechanical, verify-only diff — no semantic content changes. New files created between Phase K and now already use SPDX-only; this story closes the gap for pre-K files.
+
+- [ ] Identify the full set of files carrying the Apache-2.0 boilerplate
+  - [ ] `python/src/quizazz/**/*.py`
+  - [ ] `python/tests/**/*.py`
+  - [ ] `app/src/**/*.ts`
+  - [ ] `app/src/**/*.svelte`
+  - [ ] `app/src/app.css`
+  - [ ] `install.sh`
+  - [ ] Any other file grep-discovers with the boilerplate block
+- [ ] Write a one-shot replacement script (or use a sed command pinned in the PR description) that:
+  - [ ] Matches the full boilerplate block verbatim (the current 14-line form)
+  - [ ] Replaces it with the 2-line SPDX variant in the correct comment syntax for each file type
+  - [ ] Preserves the copyright year as written (do not mass-rewrite years; if a file had `2025`, keep `2025`)
+  - [ ] Leaves the rest of the file byte-for-byte identical
+- [ ] Run the script; review the diff
+  - [ ] Verify every changed file's diff shows **only** the header block substitution and nothing else
+  - [ ] If any file's diff contains other changes, back out and investigate before landing
+- [ ] Config files (`pyproject.toml`, `svelte.config.js`, `vite.config.ts`, `vitest.config.ts`, `tsconfig.json`, `.gitignore`, `pnpm-workspace.yaml`) are left untouched — these do not conventionally carry per-file license headers
+- [ ] Generated artifacts are left untouched (`app/src/lib/data/*.json`, `app/static/sql-wasm.wasm`)
+- [ ] Verify: all builder + app tests pass; `pnpm check` — 0 errors; manual spot-check of 3–5 files confirms the SPDX two-liner is correct for the file type
+
+### Story M.d: `<QuizBlock>` Self-Contained Styles Bundle [Planned]
+
+The v1.1.0 component renders unstyled in hosts that don't have Tailwind in their own build. The `app/` workspace authors styles with Tailwind, but `@sveltejs/package` only ships the `.svelte` source — Tailwind utility classes in the markup are no-ops without a Tailwind runtime in the host. Hosts hit this immediately during the post-publish verification.
+
+Goal: keep Tailwind as the authoring tool (preserve velocity and ecosystem benefits) but ship a precompiled CSS bundle alongside the component, so hosts get a polished default with one import — and hosts that already use Tailwind don't conflict (their utility classes layer on top via cascade). CSS custom properties remain the theming surface.
+
+```ts
+// host integration becomes:
+import { QuizBlock } from '@pointmatic/quizazz';
+import '@pointmatic/quizazz/styles.css';   // ← new
+```
+
+- [ ] Add a CSS bundle build step
+  - [ ] Use the Tailwind CLI (or `@tailwindcss/postcss`) to scan embed-reachable component sources and emit just the utilities they use
+  - [ ] Output to `dist/styles.css`
+  - [ ] Wire into the existing `package` script: `svelte-package -i src/lib -o dist && node scripts/build-styles.mjs && node scripts/clean-dist.mjs`
+  - [ ] Inputs to scan: `QuizBlock.svelte`, `QuizView.svelte`, `ReviewView.svelte`, `AnsweredQuestionsView.svelte`, `SummaryView.svelte`, `ProgressBar.svelte`, and anything they transitively render
+- [ ] Update `app/package.json` exports
+  - [ ] Add a sub-export entry for `./styles.css` so hosts can `import '@pointmatic/quizazz/styles.css'`
+  - [ ] Add `styles.css` to the `files` whitelist
+- [ ] Verify scoping
+  - [ ] Generated CSS only contains utilities used by the embed-reachable components (no project-wide Tailwind footprint)
+  - [ ] No Tailwind preflight/base resets that would affect host page styles outside `<QuizBlock>`; if preflight is needed, scope it under `:where(.quizazz-root)` or equivalent
+  - [ ] Bundle size sanity-check: `dist/styles.css` under ~30KB minified
+- [ ] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md)
+  - [ ] Add a "Styles" section with the one-line CSS import
+  - [ ] Note that hosts already using Tailwind don't conflict (cascade handles overlap)
+  - [ ] Remove the "Coverage caveat" subsection — superseded by the bundled styles
+- [ ] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) to reflect the styles-bundle approach
+  - [ ] "App dev" dependencies table (currently around line 88–94): note the Tailwind CLI / `@tailwindcss/postcss` build-time role for emitting `dist/styles.css`
+  - [ ] `lib/embed/index.ts` / Component packaging description (currently around line 19, 175): mention the `./styles.css` sub-export alongside the JS entry
+  - [ ] "QuizBlock design notes" (currently around line 605–631): add a one-line note about the precompiled styles bundle and the host-side `import '@pointmatic/quizazz/styles.css'`
+  - [ ] "Embedded component isolation" (currently around line 838): replace the "Tailwind utility classes are emitted into the published bundle with a configurable layer order" sentence with the actual approach — precompiled `dist/styles.css`, host imports it explicitly, host's own Tailwind layers via cascade
+  - [ ] "npm — `@pointmatic/quizazz`" packaging section (currently around line 909–940): add `styles.css` to the `exports` map example, add `styles.css` to the `files` whitelist, add the new entry to the "Package contents" list
+- [ ] Verify with the post-publish host harness ([stories.md:264](stories.md#L264))
+  - [ ] Fresh SvelteKit minimal scaffold + `pnpm add @pointmatic/quizazz` + the one-line CSS import + no other styling
+  - [ ] `<QuizBlock>` renders with a clean, professional default look — no broken layouts, no missing colors
+  - [ ] CSS custom property overrides via `<QuizBlock class="my-theme" />` + a `--quizazz-*` block still take effect
+  - [ ] Confirm in a separately-tested host that already uses Tailwind: no preflight collision, host's own utilities still apply outside `<QuizBlock>`
+- [ ] Out of scope (Future Vision)
+  - [ ] Multiple style themes pre-bundled (light/dark variants)
+  - [ ] Per-component CSS code-splitting
+  - [ ] Auto-injection of styles via `<svelte:head>` (intentionally avoided — lets the host decide load order and bundle strategy)
+
+### Story M.e: UC-1 `quizazz build --standalone <name>` [Planned]
 
 Add the `--standalone <quiz-name>` flag to `quizazz build`. In standalone mode the CLI moves every non-target manifest to a `TemporaryDirectory`, sets `QUIZAZZ_STANDALONE` and `VITE_QUIZAZZ_STANDALONE` in the subprocess environment, runs the pnpm build, and unconditionally restores the moved files in a `finally` block. The app reads the Vite-prefixed env var and behaves accordingly: hides `ManifestUpload`, skips the chooser, auto-advances to nav.
 
@@ -319,39 +431,38 @@ quizazz build --standalone my-quiz
 - [ ] Update main README with a "Standalone single-quiz SPA" section covering the flag and intended use case
 - [ ] Verify: all builder + app tests pass; `pnpm check` — 0 errors
 
-### Story M.b: Remove Legacy CLI Console Scripts [Done]
+### Story M.f: CI-Based npm Publishing [Planned]
 
-> Absorbed into K.d as part of the PyPI package rename (`quizazz-builder` → `quizazz`). Shipping 1.0.0 with legacy console scripts only to delete them in 1.0.1 would have been silly, so the cleanup landed in the same change that renamed the dist.
+Mirror the existing PyPI release workflow ([`.github/workflows/publish-pypi.yml`](../../.github/workflows/publish-pypi.yml)) for the npm side. Eliminates the manual credential handling, 2FA prompts, and ad-hoc preflight that 1.1.0 went through; future releases ship by pushing an `npm-v*` tag. Validates by being the actual publish mechanism for 1.2.0.
 
-- [x] Dropped `quizazz-builder = "quizazz_builder.__main__:main"` and `quizazz_builder = "quizazz_builder.__main__:main"` from `[project.scripts]`. Only `quizazz = "quizazz.cli:main"` remains.
-- [x] Simplified `python/src/quizazz/__main__.py` to the thin `from quizazz.cli import main` delegator with the SPDX-only header.
-- [x] Repo-wide grep for `quizazz-builder` / `quizazz_builder` shell-command references cleaned up during the rename sweep (READMEs, docs, release notes, GHA workflow).
-- [x] No separate PyPI release note needed — `quizazz 1.0.0` is the first public release, so nothing to deprecate.
+The asymmetry where Python is CI-published and npm is hand-published is a real source of friction — the [v1.1.0 release log](#story-ld-v110-npm-release--pointmaticquizazz-110-in-review) shows the manual flow took several rounds (login, 2FA enrollment, scope-org setup, dry-run debugging) that don't repeat well. CI removes the foot-guns; npm trusted publishing (OIDC, no stored tokens) parallels PyPI's setup almost exactly.
 
-### Story M.c: v1.2.0 SPDX-Only Header Retrofit [Planned]
-
-Replace the full 14-line Apache-2.0 boilerplate on every existing source file with the 2-line SPDX variant defined in project-essentials. Mechanical, verify-only diff — no semantic content changes. New files created between Phase K and now already use SPDX-only; this story closes the gap for pre-K files.
-
-- [ ] Identify the full set of files carrying the Apache-2.0 boilerplate
-  - [ ] `python/src/quizazz/**/*.py`
-  - [ ] `python/tests/**/*.py`
-  - [ ] `app/src/**/*.ts`
-  - [ ] `app/src/**/*.svelte`
-  - [ ] `app/src/app.css`
-  - [ ] `install.sh`
-  - [ ] Any other file grep-discovers with the boilerplate block
-- [ ] Write a one-shot replacement script (or use a sed command pinned in the PR description) that:
-  - [ ] Matches the full boilerplate block verbatim (the current 14-line form)
-  - [ ] Replaces it with the 2-line SPDX variant in the correct comment syntax for each file type
-  - [ ] Preserves the copyright year as written (do not mass-rewrite years; if a file had `2025`, keep `2025`)
-  - [ ] Leaves the rest of the file byte-for-byte identical
-- [ ] Run the script; review the diff
-  - [ ] Verify every changed file's diff shows **only** the header block substitution and nothing else
-  - [ ] If any file's diff contains other changes, back out and investigate before landing
-- [ ] Config files (`pyproject.toml`, `svelte.config.js`, `vite.config.ts`, `vitest.config.ts`, `tsconfig.json`, `.gitignore`, `pnpm-workspace.yaml`) are left untouched — these do not conventionally carry per-file license headers
-- [ ] Generated artifacts are left untouched (`app/src/lib/data/*.json`, `app/static/sql-wasm.wasm`)
+- [ ] Add `.github/workflows/publish-npm.yml`
+  - [ ] Trigger on tag push matching `npm-v*` (matches the convention in [`app/RELEASE.md`](../../app/RELEASE.md))
+  - [ ] Job runs on `ubuntu-latest`; uses a GitHub environment named `npm` (mirrors the `pypi` environment pattern, supports optional reviewers / branch filters)
+  - [ ] `permissions: id-token: write` (required for OIDC trusted publishing)
+  - [ ] Steps:
+    - [ ] Checkout
+    - [ ] Setup Node (matching app's engines field) and pnpm
+    - [ ] `pnpm --dir app install --frozen-lockfile`
+    - [ ] Preflight: `pnpm --dir app exec vitest run`, `pnpm --dir app check` (treats warnings as errors via `--fail-on-warnings` or equivalent — see M.a)
+    - [ ] Build: `pnpm --dir app package`
+    - [ ] Validate: `pnpm --dir app publint`
+    - [ ] Publish: `pnpm --dir app publish --access public --provenance` (OIDC-signed; no stored token)
+- [ ] One-time configuration *(developer, before first tag push)*
+  - [ ] Create GitHub environment `npm` on the repo
+  - [ ] On npmjs.com: register the workflow as a trusted publisher for `@pointmatic/quizazz` (Account → Access Tokens → Trusted Publishers; needs repo owner `pointmatic`, repo `quizazz`, workflow `publish-npm.yml`, environment `npm`)
+- [ ] Update [`app/RELEASE.md`](../../app/RELEASE.md)
+  - [ ] Replace the "Publishing" section with the tag-driven flow as primary: bump version in three files → commit → push tag `npm-v<version>` → CI does the rest
+  - [ ] Keep the manual `pnpm publish` flow as a labeled fallback (for emergency / offline use)
+  - [ ] Document the one-time GitHub environment + npm trusted publisher setup
+- [ ] Update [`docs/specs/project-essentials.md`](../../docs/specs/project-essentials.md) "One project version" section to mention both PyPI (`v*` tag) and npm (`npm-v*` tag) trigger CI workflows
 - [ ] Bump `python/pyproject.toml` `[project].version` and `python/src/quizazz/__init__.py` `__version__` to `1.2.0` (Phase M version-bump story; landed after Phase L's `1.1.0`)
-- [ ] Verify: all builder + app tests pass; `pnpm check` — 0 errors; manual spot-check of 3–5 files confirms the SPDX two-liner is correct for the file type
+- [ ] Verify
+  - [ ] First-time use validates by being the actual publish mechanism for 1.2.0 — push `npm-v1.2.0` tag, CI completes, `pnpm view @pointmatic/quizazz version` returns `1.2.0`
+  - [ ] Provenance signature visible on the npm web UI (the "Built and signed on GitHub Actions" attestation)
+  - [ ] PyPI side: tag `v1.2.0` separately to trigger the existing PyPI workflow; both packages land at 1.2.0
+  - [ ] Re-run the post-publish host harness ([stories.md:264](stories.md#L264)) against the CI-published 1.2.0 to confirm parity with manual publish
 
 ---
 

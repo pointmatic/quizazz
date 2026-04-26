@@ -16,6 +16,7 @@
 
 <script lang="ts">
 	import { BookOpen, ArrowLeft } from 'lucide-svelte';
+	import { untrack } from 'svelte';
 	import type { Question } from '$lib/types';
 
 	interface Props {
@@ -36,7 +37,7 @@
 			: questions.filter((q) => q.tags.some((t) => selectedTags.includes(t))).length
 	);
 
-	let questionCount = $state(Math.min(10, questions.length));
+	let questionCount = $state(untrack(() => Math.min(10, questions.length)));
 	$effect(() => {
 		if (filteredCount === 0) {
 			questionCount = 0;
