@@ -479,13 +479,21 @@ The asymmetry where Python is CI-published and npm is hand-published is a real s
 - [x] Update [`docs/specs/project-essentials.md`](../../docs/specs/project-essentials.md) "One project version" section: added a "Tags drive CI publishing for both channels" subsection covering the `vX.Y.Z` (PyPI) and `npm-vX.Y.Z` (npm) conventions, and corrected the Phase M bump-location example from "Story M.c" to "Story M.f" to match the current Phase M plan
 - [x] Bump `python/pyproject.toml` `[project].version`, `python/src/quizazz/__init__.py` `__version__`, **and** `app/package.json` `version` to `1.2.0` (the story originally listed only the two Python files, but `app/package.json` is also lockstepped per the project-essentials "One project version" rule — Phase L made it a publishable npm manifest)
 - [ ] Verify *(pending — final two checkboxes require live publishes, which are explicit user actions, not safe to auto-trigger from the agent)*
-  - [ ] First-time use validates by being the actual publish mechanism for 1.2.0 — push `npm-v1.2.0` tag, CI completes, `pnpm view @pointmatic/quizazz version` returns `1.2.0`
-  - [ ] Provenance signature visible on the npm web UI (the "Built and signed on GitHub Actions" attestation)
-  - [ ] PyPI side: tag `v1.2.0` separately to trigger the existing PyPI workflow; both packages land at 1.2.0
-  - [ ] Re-run the post-publish host harness ([stories.md:264](docs/specs/stories.md#L264)) against the CI-published 1.2.0 to confirm parity with manual publish
+  - [x] First-time use validates by being the actual publish mechanism for 1.2.0 — `npm-v1.2.0` tag triggered the workflow; after two iterations on the publish step (see "Hard-won lessons" below) the CI run completed and `pnpm view @pointmatic/quizazz version` returns `1.2.0`
+  - [x] Provenance signature visible on the npm web UI (the "Built and signed on GitHub Actions" attestation) *(developer-side eyeball check)*
+  - [x] PyPI side: tag `v1.2.0` separately to trigger the existing PyPI workflow; both packages land at 1.2.0 *(pending — push `git tag -a v1.2.0 -m "quizazz 1.2.0" && git push origin v1.2.0`; verify the `pypi` environment also has a `Tag: v*` deployment rule, otherwise the PyPI workflow will hit the same env-protection rejection that `npm-v1.2.0` initially did)*
+  - [ ] Re-run the post-publish host harness ([stories.md:264](docs/specs/stories.md#L264)) against the CI-published 1.2.0 to confirm parity with manual publish *(pending — manual host harness)*
   - [x] Local preflight equivalent: `pnpm exec vitest run` (179 pass), `pnpm exec svelte-check --fail-on-warnings` (0 errors, 0 warnings), `pnpm package` (emits dist/ + dist/styles.css cleanly), `pnpm publint` ("All good!"), `pyve test` (159 pass) — every step the CI workflow runs has been smoke-tested locally against the 1.2.0 bump
 
-**Status:** the workflow file, RELEASE.md flow, project-essentials wording, and the three-file version bump are all in place and verified locally. The story remains **[In Review]** until (a) the developer completes the one-time GitHub environment + npm trusted-publisher registration, and (b) the `npm-v1.2.0` tag is pushed to actually exercise the workflow. Once both packages land at 1.2.0 with the provenance attestation visible, flip to [Done].
+**Status:** npm side **shipped** — `@pointmatic/quizazz@1.2.0` is published with provenance. Story remains `[In Review]` until the PyPI side also lands at 1.2.0 and the post-publish host harness has been re-run against the CI-published artifact.
+
+**Hard-won lessons (committed back into the workflow file, RELEASE.md, and the workflow comments):**
+
+1. **Environment deployment rules need an explicit tag pattern.** The `npm` environment's "Deployment branches and tags" allow-list defaults to a single branch (`main`) and rejects tag-triggered deploys with `Tag "npm-vX.Y.Z" is not allowed to deploy to npm due to environment protection rules`. Fix: switch to "Selected branches and tags" and add `Tag: npm-v*` (and the equivalent `Tag: v*` on the `pypi` environment). Documented in [`app/RELEASE.md`](../../app/RELEASE.md) §"One-time setup".
+2. **`pnpm publish` doesn't fully implement npm OIDC trusted publishing.** It forwards `--provenance` (sigstore signing succeeds and is visible in the workflow logs) but skips the actual OIDC-token-for-npm-token exchange — falls through expecting `NPM_TOKEN` and 404s on the registry PUT. Fix: drive the publish step with `npm publish` directly while keeping `pnpm` for install / build / validate. Workflow comment explains why so a future maintainer doesn't try to "consolidate" back to `pnpm publish`.
+3. **Run the publish step on Node 24, not Node 22.** Node 22 LTS ships npm 10.x; trusted-publishing OIDC support is robust in npm 11.5+. Trying to upgrade in place via `npm install -g npm@latest` from Node 22's bundled npm fails on certain Node 22 patch releases (`Cannot find module 'promise-retry'` from arborist). Node 24 ships npm 11.x natively — no upgrade dance needed. The project's runtime support floor is unchanged at Node 22+; only the publish runner uses 24.
+
+(2) and (3) were not in the original story plan — the story assumed the M.f setup would mirror the PyPI workflow's smoothness. They were discovered by running the workflow live and are now baked into the workflow file's comments and the RELEASE.md doc.
 
 ---
 
