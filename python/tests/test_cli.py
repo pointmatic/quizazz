@@ -4,12 +4,13 @@
 """Tests for the unified quizazz CLI."""
 
 import json
+import subprocess
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from quizazz.cli import cmd_build, cmd_generate, cmd_run, main
+from quizazz.cli import _stage_standalone, cmd_build, cmd_generate, cmd_run, main
 
 # Minimal valid YAML for a quiz file
 MINIMAL_YAML = """\
@@ -130,6 +131,220 @@ class TestCmdRun:
             args = _make_args(output=str(tmp_path / "build"), port=8000)
             with pytest.raises(SystemExit):
                 cmd_run(args)
+
+
+class TestStageStandalone:
+    """Direct tests for the staging contextmanager."""
+
+    def test_moves_others_and_restores(self, tmp_path):
+        # Set up: target.json + two siblings
+        (tmp_path / "target.json").write_text("{}")
+        (tmp_path / "other-a.json").write_text("{}")
+        (tmp_path / "other-b.json").write_text("{}")
+
+        with _stage_standalone(tmp_path, "target"):
+            # Inside the context: only the target should remain
+            present = sorted(p.name for p in tmp_path.glob("*.json"))
+            assert present == ["target.json"]
+
+        # After the context: all three must be back
+        present = sorted(p.name for p in tmp_path.glob("*.json"))
+        assert present == ["other-a.json", "other-b.json", "target.json"]
+
+    def test_missing_target_exits_without_moving(self, tmp_path, capsys):
+        (tmp_path / "other.json").write_text("{}")
+
+        with pytest.raises(SystemExit) as exc_info:
+            with _stage_standalone(tmp_path, "missing"):
+                pytest.fail("body should not execute when target is missing")
+
+        assert exc_info.value.code == 1
+        captured = capsys.readouterr()
+        assert "missing" in captured.err
+        # Other files untouched
+        assert (tmp_path / "other.json").exists()
+
+    def test_only_target_present_skips_temp_dir(self, tmp_path):
+        (tmp_path / "lonely.json").write_text("{}")
+
+        with patch("tempfile.TemporaryDirectory") as tmp_mock:
+            with _stage_standalone(tmp_path, "lonely"):
+                pass
+            # Temp dir is overhead we want to avoid when there's nothing to stage
+            tmp_mock.assert_not_called()
+
+        assert (tmp_path / "lonely.json").exists()
+
+    def test_restores_on_exception(self, tmp_path):
+        (tmp_path / "target.json").write_text("{}")
+        (tmp_path / "other.json").write_text("{}")
+
+        with pytest.raises(RuntimeError):
+            with _stage_standalone(tmp_path, "target"):
+                raise RuntimeError("simulated build failure")
+
+        # Both manifests must be back at their original paths
+        assert (tmp_path / "target.json").exists()
+        assert (tmp_path / "other.json").exists()
+
+    def test_restores_on_keyboard_interrupt(self, tmp_path):
+        (tmp_path / "target.json").write_text("{}")
+        (tmp_path / "other.json").write_text("{}")
+
+        with pytest.raises(KeyboardInterrupt):
+            with _stage_standalone(tmp_path, "target"):
+                raise KeyboardInterrupt()
+
+        assert (tmp_path / "target.json").exists()
+        assert (tmp_path / "other.json").exists()
+
+
+class TestCmdBuildStandalone:
+    """End-to-end behavior of `cmd_build` with the --standalone flag."""
+
+    def _make_app_tree(self, tmp_path: Path, manifests: list[str]) -> Path:
+        """Build a fake app/ tree at tmp_path and seed the manifest dir."""
+        data_dir = tmp_path / "app" / "src" / "lib" / "data"
+        data_dir.mkdir(parents=True)
+        for name in manifests:
+            (data_dir / f"{name}.json").write_text("{}")
+        return data_dir
+
+    def test_standalone_runs_pnpm_with_env_and_restores_others(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        data_dir = self._make_app_tree(tmp_path, ["primary", "other-a", "other-b"])
+
+        captured: dict = {}
+
+        def fake_run(cmd, *args, **kwargs):
+            captured["cmd"] = cmd
+            captured["env"] = kwargs.get("env")
+            # Inside the build, only the target manifest should be present
+            present = sorted(p.name for p in data_dir.glob("*.json"))
+            captured["present_during_build"] = present
+            return MagicMock(returncode=0)
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/pnpm"),
+            patch("subprocess.run", side_effect=fake_run),
+        ):
+            args = _make_args(output="app/build/", standalone="primary")
+            cmd_build(args)
+
+        assert captured["cmd"] == ["pnpm", "--dir", "app", "build"]
+        assert captured["env"] is not None
+        assert captured["env"]["QUIZAZZ_STANDALONE"] == "primary"
+        assert captured["env"]["VITE_QUIZAZZ_STANDALONE"] == "primary"
+        assert captured["present_during_build"] == ["primary.json"]
+
+        # All three manifests are back after the build
+        present_after = sorted(p.name for p in data_dir.glob("*.json"))
+        assert present_after == ["other-a.json", "other-b.json", "primary.json"]
+
+    def test_standalone_missing_target_exits_one(self, tmp_path, monkeypatch, capsys):
+        monkeypatch.chdir(tmp_path)
+        data_dir = self._make_app_tree(tmp_path, ["only"])
+
+        # subprocess.run must NOT be called if staging failed
+        with (
+            patch("shutil.which", return_value="/usr/bin/pnpm"),
+            patch("subprocess.run") as run_mock,
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            args = _make_args(output="app/build/", standalone="missing")
+            cmd_build(args)
+
+        assert exc_info.value.code == 1
+        run_mock.assert_not_called()
+        captured = capsys.readouterr()
+        assert "missing" in captured.err
+        # Existing manifests untouched
+        assert (data_dir / "only.json").exists()
+
+    def test_standalone_only_target_present_no_staging(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        self._make_app_tree(tmp_path, ["lonely"])
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/pnpm"),
+            patch("subprocess.run", return_value=MagicMock(returncode=0)) as run_mock,
+            patch("tempfile.TemporaryDirectory") as tmp_mock,
+        ):
+            args = _make_args(output="app/build/", standalone="lonely")
+            cmd_build(args)
+
+        run_mock.assert_called_once()
+        env = run_mock.call_args.kwargs.get("env")
+        assert env is not None
+        assert env["VITE_QUIZAZZ_STANDALONE"] == "lonely"
+        # No temp dir should have been created — there was nothing to stage
+        tmp_mock.assert_not_called()
+
+    def test_standalone_pnpm_failure_exits_one_and_restores(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        data_dir = self._make_app_tree(tmp_path, ["primary", "other"])
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/pnpm"),
+            patch("subprocess.run", return_value=MagicMock(returncode=1)),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            args = _make_args(output="app/build/", standalone="primary")
+            cmd_build(args)
+
+        assert exc_info.value.code == 1
+        # Both manifests must be back even on pnpm failure
+        present_after = sorted(p.name for p in data_dir.glob("*.json"))
+        assert present_after == ["other.json", "primary.json"]
+
+    def test_standalone_keyboard_interrupt_restores(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        data_dir = self._make_app_tree(tmp_path, ["primary", "other"])
+
+        def raise_interrupt(*_args, **_kwargs):
+            raise KeyboardInterrupt()
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/pnpm"),
+            patch("subprocess.run", side_effect=raise_interrupt),
+            pytest.raises(KeyboardInterrupt),
+        ):
+            args = _make_args(output="app/build/", standalone="primary")
+            cmd_build(args)
+
+        # finally clause must have restored the moved manifest
+        present_after = sorted(p.name for p in data_dir.glob("*.json"))
+        assert present_after == ["other.json", "primary.json"]
+
+    def test_non_standalone_build_unchanged(self, tmp_path, monkeypatch):
+        """Regression: --standalone unset must not pass any QUIZAZZ_STANDALONE env vars
+        and must not stage anything."""
+        monkeypatch.chdir(tmp_path)
+        self._make_app_tree(tmp_path, ["a", "b"])
+
+        captured: dict = {}
+
+        def fake_run(cmd, *args, **kwargs):
+            captured["cmd"] = cmd
+            captured["env"] = kwargs.get("env")
+            return MagicMock(returncode=0)
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/pnpm"),
+            patch("subprocess.run", side_effect=fake_run),
+        ):
+            args = _make_args(output="app/build/", standalone=None)
+            cmd_build(args)
+
+        assert captured["cmd"] == ["pnpm", "--dir", "app", "build"]
+        # Default build path must not pass an env kwarg (or, if it does, it must
+        # not contain the standalone vars)
+        env = captured.get("env")
+        if env is not None:
+            assert "QUIZAZZ_STANDALONE" not in env
+            assert "VITE_QUIZAZZ_STANDALONE" not in env
 
 
 class TestMainEntryPoint:

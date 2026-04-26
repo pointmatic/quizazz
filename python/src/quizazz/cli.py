@@ -4,13 +4,16 @@
 """Unified CLI entry point for Quizazz."""
 
 import argparse
+import contextlib
 import http.server
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import webbrowser
+from collections.abc import Iterator
 from pathlib import Path
 
 from quizazz import __version__
@@ -21,7 +24,49 @@ from quizazz.validator import ValidationError, validate_quiz_directory
 DEFAULT_INPUT = "data/quiz/"
 DEFAULT_GENERATE_OUTPUT = "app/src/lib/data/"
 DEFAULT_BUILD_OUTPUT = "app/build/"
+APP_DATA_DIR = Path("app/src/lib/data/")
 DEFAULT_PORT = 8000
+
+
+@contextlib.contextmanager
+def _stage_standalone(data_dir: Path, target_name: str) -> Iterator[None]:
+    """Move every manifest in ``data_dir`` other than ``<target_name>.json`` to
+    a ``TemporaryDirectory`` for the duration of the context, restoring them
+    on exit (success, exception, or KeyboardInterrupt).
+
+    Exits with code 1 (without creating a temp dir or moving anything) if
+    ``<target_name>.json`` is not present under ``data_dir``.
+    """
+    target_path = data_dir / f"{target_name}.json"
+    if not target_path.exists():
+        print(
+            f"Error: standalone target manifest '{target_name}.json' not found "
+            f"in {data_dir}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    others = sorted(
+        p for p in data_dir.glob("*.json") if p.name != f"{target_name}.json"
+    )
+
+    if not others:
+        # Nothing to move — skip the temp-dir overhead entirely.
+        yield
+        return
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp_path = Path(tmpdir)
+        moved: list[tuple[Path, Path]] = []
+        try:
+            for src in others:
+                dst = tmp_path / src.name
+                src.rename(dst)
+                moved.append((dst, src))
+            yield
+        finally:
+            for staged, original in moved:
+                staged.rename(original)
 
 
 def _count_questions(validated_files: list) -> int:
@@ -102,7 +147,19 @@ def cmd_build(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     cmd = ["pnpm", "--dir", "app", "build"]
-    result = subprocess.run(cmd)
+    standalone = getattr(args, "standalone", None)
+
+    if standalone:
+        env = {
+            **os.environ,
+            "QUIZAZZ_STANDALONE": standalone,
+            "VITE_QUIZAZZ_STANDALONE": standalone,
+        }
+        with _stage_standalone(APP_DATA_DIR, standalone):
+            result = subprocess.run(cmd, env=env)
+    else:
+        result = subprocess.run(cmd)
+
     if result.returncode != 0:
         print("Build failed.", file=sys.stderr)
         sys.exit(1)
@@ -188,6 +245,16 @@ def main() -> None:
         "--output",
         default=DEFAULT_BUILD_OUTPUT,
         help=f"Output directory for the built app (default: {DEFAULT_BUILD_OUTPUT}).",
+    )
+    build_parser.add_argument(
+        "--standalone",
+        metavar="QUIZ_NAME",
+        default=None,
+        help=(
+            "Build a single-quiz SPA bundling only <QUIZ_NAME>.json from "
+            f"{DEFAULT_GENERATE_OUTPUT}. Other manifests are temporarily moved "
+            "aside and restored after the build."
+        ),
     )
     build_parser.set_defaults(func=cmd_build)
 

@@ -399,7 +399,7 @@ import '@pointmatic/quizazz/styles.css';   // ← new
 
 **Scope expansion noted during implementation:** the main repo [`README.md`](../../README.md) "Embed in your own SvelteKit app" section was updated to add the styles import as a third host-setup step (alongside the SSR-disable and WASM-copy steps from M.b). The story didn't list this explicitly, but leaving the main README at "two steps" while adding a third release-quality host requirement would have been a discoverability hole.
 
-### Story M.e: UC-1 `quizazz build --standalone <name>` [Planned]
+### Story M.e: UC-1 `quizazz build --standalone <name>` [Done]
 
 Add the `--standalone <quiz-name>` flag to `quizazz build`. In standalone mode the CLI moves every non-target manifest to a `TemporaryDirectory`, sets `QUIZAZZ_STANDALONE` and `VITE_QUIZAZZ_STANDALONE` in the subprocess environment, runs the pnpm build, and unconditionally restores the moved files in a `finally` block. The app reads the Vite-prefixed env var and behaves accordingly: hides `ManifestUpload`, skips the chooser, auto-advances to nav.
 
@@ -408,41 +408,47 @@ quizazz build --standalone my-quiz
 # → app/build/ contains a one-quiz SPA bundled with only my-quiz.json
 ```
 
-- [ ] Update `python/src/quizazz/cli.py`
-  - [ ] Add `--standalone <quiz-name>` flag to the `build` subparser
-  - [ ] Implement `_stage_standalone(data_dir, target_name)` as a `contextmanager`:
-    - [ ] Validate `<target_name>.json` exists under `data_dir`; fail with clear stderr + exit 1 if not
-    - [ ] Move every other `*.json` in `data_dir` to a `tempfile.TemporaryDirectory`
-    - [ ] `yield`
-    - [ ] On `finally`, restore every moved file to its original path
-  - [ ] In `cmd_build`, when `args.standalone` is set:
-    - [ ] Enter the staging context
-    - [ ] Build the environment dict: `{**os.environ, "QUIZAZZ_STANDALONE": args.standalone, "VITE_QUIZAZZ_STANDALONE": args.standalone}`
-    - [ ] Run `pnpm --dir app build` with that env
-    - [ ] Exit 0 on success, 1 on pnpm non-zero
-  - [ ] No change to the default (non-standalone) build path
-- [ ] Update `app/src/routes/+page.svelte`
-  - [ ] Read `import.meta.env.VITE_QUIZAZZ_STANDALONE` at module scope
-  - [ ] When set:
-    - [ ] Filter `manifests` to the named one
-    - [ ] If not found in `manifests`, render an explicit "build misconfiguration" error state (not a blank screen)
-    - [ ] Do not render `ManifestUpload`
-    - [ ] Skip the `chooser` view entirely; initial `viewMode` goes directly to `nav`
-    - [ ] Defensive: ignore any `uploadedManifests` that somehow appear
-  - [ ] When unset: existing UC-2 behavior unchanged
-- [ ] Update `python/tests/test_cli.py`
-  - [ ] Standalone with valid target manifest: stages others to temp, sets env, runs pnpm, restores others
-  - [ ] Standalone with missing target manifest: exits 1 with clear message; no files moved
-  - [ ] Standalone with only the target already present: no staging work done (no temp dir created); env set; pnpm run
-  - [ ] Simulate pnpm failure (returncode 1): exit 1, others restored
-  - [ ] Simulate KeyboardInterrupt during pnpm: `finally` runs, others restored
-  - [ ] Non-standalone build unchanged (regression test)
-- [ ] Update app tests
-  - [ ] With `VITE_QUIZAZZ_STANDALONE` unset: chooser + upload visible for multi-manifest fixture
-  - [ ] With `VITE_QUIZAZZ_STANDALONE="known"`: matching manifest → goes straight to `nav`; no upload UI
-  - [ ] With `VITE_QUIZAZZ_STANDALONE="missing"`: build-misconfiguration error state rendered
-- [ ] Update main README with a "Standalone single-quiz SPA" section covering the flag and intended use case
-- [ ] Verify: all builder + app tests pass; `pnpm check` — 0 errors
+- [x] Update `python/src/quizazz/cli.py`
+  - [x] Add `--standalone <quiz-name>` flag to the `build` subparser (with `metavar="QUIZ_NAME"` and a help string covering the move-and-restore semantics)
+  - [x] Implement `_stage_standalone(data_dir, target_name)` as a `@contextlib.contextmanager`:
+    - [x] Validate `<target_name>.json` exists under `data_dir`; fail with clear stderr + `sys.exit(1)` if not (returns *before* any temp dir is created so the existing tree is untouched)
+    - [x] Move every other `*.json` in `data_dir` to a `tempfile.TemporaryDirectory`
+    - [x] `yield`
+    - [x] On `finally`, restore every moved file to its original path
+    - [x] Optimization (per the test in the story): when `others` is empty, skip the temp-dir creation entirely (`yield` immediately)
+  - [x] In `cmd_build`, when `args.standalone` is set:
+    - [x] Enter the staging context (using a hardcoded `APP_DATA_DIR = Path("app/src/lib/data/")`)
+    - [x] Build the environment dict: `{**os.environ, "QUIZAZZ_STANDALONE": <name>, "VITE_QUIZAZZ_STANDALONE": <name>}`
+    - [x] Run `pnpm --dir app build` with that env
+    - [x] Exit 0 on success, 1 on pnpm non-zero
+  - [x] No change to the default (non-standalone) build path — confirmed by the regression test
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] Read `import.meta.env.VITE_QUIZAZZ_STANDALONE` at module scope (via `getStandaloneTarget()` in `$lib/utils/standalone.ts` so the read is one place)
+  - [x] When set:
+    - [x] Resolve to a manifest via `resolveStandalone()` (returns `{ mode: 'matched', manifest }` or `{ mode: 'missing', target }`)
+    - [x] If not found in `manifests`, set the existing `error` state with a "Standalone build misconfiguration: …" message — renders inside the existing error-state branch (not a blank screen)
+    - [x] Do not render `ManifestUpload` — it's nested inside `<QuizChooser>`, which only renders when `viewMode === 'chooser'`; in standalone mode `onMount` jumps straight to `selectManifest()` so the chooser branch is never entered
+    - [x] Skip the `chooser` view entirely; initial `viewMode` goes directly to `nav` (via the same `selectManifest()` call as the single-manifest UC-2 case)
+    - [x] Defensive: `handleUpload` and `handleRemove` early-return when `isStandalone` is true
+  - [x] When unset: existing UC-2 behavior unchanged (`resolveStandalone(null, manifests).mode === 'unset'` → falls through to the original `manifests.length === 1` / chooser logic)
+- [x] Update `python/tests/test_cli.py` — added `TestStageStandalone` (5 tests on the contextmanager directly) + `TestCmdBuildStandalone` (6 tests covering all six scenarios in the checklist)
+  - [x] Standalone with valid target manifest: stages others to temp, sets env, runs pnpm, restores others (`test_standalone_runs_pnpm_with_env_and_restores_others`)
+  - [x] Standalone with missing target manifest: exits 1 with clear message; no files moved (`test_standalone_missing_target_exits_one`, plus `test_missing_target_exits_without_moving` on the contextmanager directly)
+  - [x] Standalone with only the target already present: no staging work done (no temp dir created); env set; pnpm run (`test_standalone_only_target_present_no_staging`, asserts via `patch("tempfile.TemporaryDirectory")` that the temp dir constructor is never called)
+  - [x] Simulate pnpm failure (returncode 1): exit 1, others restored (`test_standalone_pnpm_failure_exits_one_and_restores`)
+  - [x] Simulate KeyboardInterrupt during pnpm: `finally` runs, others restored (`test_standalone_keyboard_interrupt_restores`)
+  - [x] Non-standalone build unchanged (regression test): `test_non_standalone_build_unchanged` confirms the default path doesn't pass `QUIZAZZ_STANDALONE` env vars
+- [x] Update app tests
+  - [x] Created `app/tests/utils/standalone.test.ts` (6 tests on the pure `resolveStandalone()` helper) covering:
+    - `mode: 'unset'` for `null`, `undefined`, and `""`
+    - `mode: 'matched'` when a manifest's `quizName` matches
+    - `mode: 'missing'` for an unknown target *and* for an empty manifest list
+  - [x] *Tradeoff:* the story listed three behavioral integration tests on `+page.svelte` ("chooser visible vs. nav direct vs. error state"). Mounting `+page.svelte` directly is impractical (sql.js + `import.meta.glob` + ssr-disabled route — there's no precedent for it in `app/tests/`). I extracted the routing decision into the pure `resolveStandalone()` function and unit-tested all three modes there; the `+page.svelte` `onMount` then dispatches on the resolution. The seam is small enough that the integration is "just plumbing"; if the helper is correct and `pnpm check` passes, the route does the right thing. Flagged for the post-publish manual harness.
+- [x] Update main [`README.md`](../../README.md) with a "Standalone single-quiz SPA" section — covers the flag, the move-and-restore semantics, the env-var coupling, the misconfiguration error state, and the regression-safety claim that the non-standalone path is unchanged. Also added a row to the "CLI Reference" table.
+- [x] Verify: all builder + app tests pass; `pnpm check` — 0 errors
+  - [x] `pyve test` — **159 passed** (up from 148; +11 new tests)
+  - [x] `pnpm --dir app exec vitest run` — **179 passed** across 17 files (up from 173; +6 standalone helper tests)
+  - [x] `pnpm --dir app check` — **0 errors, 0 warnings**
 
 ### Story M.f: CI-Based npm Publishing [Planned]
 

@@ -207,9 +207,45 @@ Scores accumulate per question across sessions. The selection algorithm uses the
 |---------|-------------|
 | `quizazz generate` | Compile YAML question banks into a quiz manifest |
 | `quizazz build` | Build the Svelte application for production |
+| `quizazz build --standalone <name>` | Build a single-quiz SPA bundling only `<name>.json` (see "Standalone single-quiz SPA" below) |
 | `quizazz run` | Launch a local web server and open the app |
 
 All commands support `--help` for full option details.
+
+## Standalone single-quiz SPA
+
+When the SPA only needs to ship one quiz — for embedding on a course page,
+training portal, or kiosk where the chooser screen is just clutter —
+`quizazz build --standalone <name>` produces a one-quiz bundle from
+the manifest already compiled at `app/src/lib/data/<name>.json`:
+
+```bash
+quizazz generate --input data/aws-ml-specialty-exam/
+quizazz build --standalone aws-ml-specialty-exam
+# → app/build/ contains a SPA that loads aws-ml-specialty-exam directly,
+#   with the chooser and manifest-upload UI elided
+```
+
+What changes vs. the default build:
+
+- The CLI temporarily moves every other `*.json` under `app/src/lib/data/`
+  to a `TemporaryDirectory` for the duration of the `pnpm build`, so the
+  Vite glob (`import.meta.glob('./*.json', { eager: true })`) only picks
+  up the target. After the build, every moved manifest is restored — the
+  source tree is left exactly as it started, even if the build crashes
+  or is `Ctrl+C`'d mid-run.
+- The CLI exports `QUIZAZZ_STANDALONE=<name>` and
+  `VITE_QUIZAZZ_STANDALONE=<name>` to the build subprocess. The app
+  reads the prefixed form (Vite only exposes `VITE_*` vars to
+  `import.meta.env`) and skips straight to the navigation tree on first
+  paint — no chooser, no manifest-upload UI.
+- If `<name>.json` doesn't exist under `app/src/lib/data/`, the CLI exits
+  with a clear error before invoking pnpm, and no manifests are moved.
+  If the runtime check fails (the env var is set but the manifest didn't
+  end up bundled), the SPA renders an explicit "build misconfiguration"
+  message instead of a blank screen.
+- The non-standalone path (`quizazz build` without `--standalone`) is
+  unchanged and continues to bundle every manifest in `app/src/lib/data/`.
 
 ## Library API (UC-3)
 

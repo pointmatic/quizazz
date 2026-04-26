@@ -11,6 +11,7 @@
 	import { activeManifest, questions as questionsStore, navTree as navTreeStore, allTags as allTagsStore } from '$lib/stores/manifest';
 	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, editAnsweredQuestion, backToQuiz, setNavNodes, getFrontierIndex, getQuestionStartTime } from '$lib/engine/lifecycle';
 	import type { Question, QuestionScore, QuizManifest, NavNode } from '$lib/types';
+	import { getStandaloneTarget, resolveStandalone } from '$lib/utils/standalone';
 	import QuizChooser from '$lib/components/QuizChooser.svelte';
 	import NavigationTree from '$lib/components/NavigationTree.svelte';
 	import ConfigView from '$lib/components/ConfigView.svelte';
@@ -18,6 +19,10 @@
 	import SummaryView from '$lib/components/SummaryView.svelte';
 	import ReviewView from '$lib/components/ReviewView.svelte';
 	import AnsweredQuestionsView from '$lib/components/AnsweredQuestionsView.svelte';
+
+	const standaloneTarget = getStandaloneTarget();
+	const standaloneResolution = resolveStandalone(standaloneTarget, manifests);
+	const isStandalone = standaloneResolution.mode !== 'unset';
 
 	let db: Database | null = $state(null);
 	let scores: QuestionScore[] = $state([]);
@@ -27,7 +32,9 @@
 	let filteredQuestions = $state<Question[]>([]);
 	let uploadedManifests = $state<QuizManifest[]>([]);
 
-	let hasMultipleQuizzes = $derived(manifests.length + uploadedManifests.length > 1);
+	let hasMultipleQuizzes = $derived(
+		isStandalone ? false : manifests.length + uploadedManifests.length > 1
+	);
 
 	let filteredTags = $derived(
 		[...new Set(filteredQuestions.flatMap((q) => q.tags))].sort()
@@ -35,6 +42,18 @@
 
 	onMount(async () => {
 		try {
+			if (standaloneResolution.mode === 'missing') {
+				error =
+					`Standalone build misconfiguration: manifest "${standaloneResolution.target}" ` +
+					`was not bundled with this app. Re-run \`quizazz build --standalone <name>\` ` +
+					`with a name that exists under app/src/lib/data/.`;
+				loading = false;
+				return;
+			}
+			if (standaloneResolution.mode === 'matched') {
+				await selectManifest(standaloneResolution.manifest);
+				return;
+			}
 			if (manifests.length === 1) {
 				await selectManifest(manifests[0]);
 			} else {
@@ -123,6 +142,9 @@
 	}
 
 	function handleUpload(m: QuizManifest) {
+		// Defensive: in standalone mode, the chooser/upload UI is never rendered, but
+		// guard the state mutation too so a stale call can't corrupt the single-quiz view.
+		if (isStandalone) return;
 		const exists = uploadedManifests.some((u) => u.quizName === m.quizName);
 		if (exists) {
 			uploadedManifests = uploadedManifests.map((u) => u.quizName === m.quizName ? m : u);
@@ -132,6 +154,7 @@
 	}
 
 	function handleRemove(quizName: string) {
+		if (isStandalone) return;
 		uploadedManifests = uploadedManifests.filter((u) => u.quizName !== quizName);
 	}
 
