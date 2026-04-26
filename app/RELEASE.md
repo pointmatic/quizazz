@@ -20,9 +20,29 @@ settings + npmjs.com web UI) and are not version-controlled:
 
 1. **Create the GitHub environment.** In the repo's *Settings → Environments*,
    add an environment named `npm`. Optional but recommended: configure
-   reviewers and/or a branch filter (`main` only) so a stray tag from a
-   feature branch can't trigger a publish.
-2. **Register the trusted publisher on npmjs.com.** Sign in as a maintainer
+   reviewers so a publish requires explicit approval.
+2. **Allow the tag pattern in the environment's deployment rules.** This is
+   the easy-to-miss step. In the same `npm` environment settings, find
+   *"Deployment branches and tags"* and switch to **"Selected branches
+   and tags"**. Add **two** entries:
+   - **Branch**: `main` (lets you trigger ad-hoc workflow runs from `main`
+     if you ever add a `workflow_dispatch` trigger).
+   - **Tag**: `npm-v*` (this is the one that matters — the publish workflow
+     fires on tag push, and the deployment ref is `refs/tags/npm-v*`, not a
+     branch ref).
+
+   If you only list `main` (the GitHub UI's first suggestion), the
+   workflow will run all the preflight steps successfully but the
+   `Publish to npm` step will be blocked at the environment gate with:
+
+   > Tag "npm-vX.Y.Z" is not allowed to deploy to npm due to environment
+   > protection rules.
+
+   That rejection happens *before* `pnpm publish` runs, so the npm version
+   is still claimable — fix the rule, then re-run the workflow from the
+   Actions UI (top-right → *"Re-run all jobs"*). GitHub re-evaluates the
+   protection rule at re-run time, so no tag delete-and-re-push is needed.
+3. **Register the trusted publisher on npmjs.com.** Sign in as a maintainer
    of the `@pointmatic` org → *Account → Trusted Publishers* (or, on the
    `@pointmatic/quizazz` package page, *Settings → Trusted Publishers*) →
    add a publisher with:
@@ -33,6 +53,14 @@ settings + npmjs.com web UI) and are not version-controlled:
 
 After these one-time steps, the workflow can mint short-lived publish
 tokens via OIDC — there is no need to store an `NPM_TOKEN` secret.
+
+> **PyPI parallels.** The PyPI side has the same trio of one-time
+> requirements against the `pypi` environment and the
+> [`publish-pypi.yml`](../.github/workflows/publish-pypi.yml) workflow,
+> with the deployment-tag pattern set to `v*` (bare, no `npm-` prefix).
+> If `pypi` was first set up before tag-based deployment protection
+> rules were tightened, double-check it has a `Tag: v*` entry too —
+> otherwise the next `vX.Y.Z` push will hit the same rejection.
 
 ## Publishing (CI flow — primary)
 
@@ -69,11 +97,22 @@ The `npm-vX.Y.Z` tag triggers
 5. Builds the publishable bundle: `pnpm package` (runs `svelte-package` →
    `scripts/build-styles.mjs` → `scripts/clean-dist.mjs`).
 6. Validates the package layout: `pnpm publint`.
-7. Publishes with `pnpm publish --access public --provenance
-   --no-git-checks`. Auth is negotiated via the GitHub OIDC token against
-   the npm trusted-publisher config; npm attaches a provenance attestation
-   that displays as "Built and signed on GitHub Actions" on the package
-   page.
+7. Refreshes the runner's bundled npm (`npm install -g npm@latest`) so
+   the publish step uses npm 11.5+ where trusted-publishing OIDC support
+   is most robust. Node 22 LTS ships npm 10.x, which has partial
+   trusted-publishing support that varies by minor version.
+8. Publishes with `npm publish --access public --provenance`. Auth is
+   negotiated via the GitHub OIDC token against the npm trusted-publisher
+   config; npm attaches a provenance attestation that displays as "Built
+   and signed on GitHub Actions" on the package page.
+
+> **Why `npm publish` and not `pnpm publish`** for the final step: as of
+> pnpm 10.x, `pnpm publish` forwards `--provenance` (which produces the
+> sigstore signature) but doesn't fully implement npm's OIDC
+> trusted-publishing handshake — it falls through expecting a stored
+> `NPM_TOKEN` and hits a 404 on the actual registry PUT. The build,
+> install, validate, and test steps still use pnpm so the rest of the
+> workflow shape matches local dev.
 
 The `v*` tag (without `npm-` prefix) drives the existing PyPI publish
 workflow ([`.github/workflows/publish-pypi.yml`](../.github/workflows/publish-pypi.yml)).

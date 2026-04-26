@@ -50,11 +50,20 @@ jobs:
       - name: Validate package layout
         run: pnpm publint
 
+      - name: Update npm to latest
+        # `pnpm publish` doesn't fully implement npm's OIDC trusted-publishing
+        # handshake — it forwards `--provenance` (signs to sigstore) but
+        # falls through expecting a stored NPM_TOKEN for the actual registry
+        # PUT. We use `pnpm` for build/install/validate, then drive the
+        # publish step with `npm publish` directly. Trusted-publishing
+        # support is most robust in npm 11.5+, so refresh the bundled npm
+        # (Node 22 LTS ships npm 10.x).
+        run: npm install -g npm@latest
+
       - name: Publish to npm with provenance (OIDC trusted publishing)
-        # No stored NPM_TOKEN — auth is negotiated via the GitHub OIDC token
-        # against the npm trusted-publisher config registered for this repo +
-        # workflow. The `--provenance` flag attaches the build attestation
-        # that npmjs.com displays as "Built and signed on GitHub Actions".
-        # `--no-git-checks` skips pnpm's "branch matches publish branch"
-        # guard, which fails for tag-triggered runs that aren't on a branch.
-        run: pnpm publish --access public --provenance --no-git-checks
+        # No stored NPM_TOKEN — auth is negotiated via the GitHub OIDC
+        # token against the npm trusted-publisher config registered for
+        # this repo + workflow. The `--provenance` flag attaches the build
+        # attestation that npmjs.com displays as "Built and signed on
+        # GitHub Actions".
+        run: npm publish --access public --provenance
