@@ -320,29 +320,36 @@ Both are documentation-only fixes — no component code changes — but they're 
   - [x] Note that this workspace is pinned to `sql.js@^1.13.0` so the existing single-file local copy is correct for the in-tree app — the dual-filename caveat is a host-side concern only
 - [x] Verify: re-run the post-publish host harness ([stories.md:264](docs/specs/stories.md#L264)) following the updated README verbatim from a fresh scratch app; quiz renders end-to-end without ad-hoc fixes *(pending — manual host harness re-run; the README's claims were verified against this project's pinned `sql.js@1.13.0` (only `sql-wasm.wasm` exists in `node_modules/.pnpm/sql.js@1.13.0/node_modules/sql.js/dist/`) and against the `sql.js@1.14.1` tarball pulled fresh from npm (which ships both `sql-wasm.wasm` and `sql-wasm-browser.wasm` with a `"browser"` export-conditional pointing at `dist/sql-wasm-browser.js` — exactly matching the failure mode the story describes))*
 
-### Story M.c: v1.2.0 SPDX-Only Header Retrofit [Planned]
+### Story M.c: SPDX-Only Header Retrofit [Done]
 
 Replace the full 14-line Apache-2.0 boilerplate on every existing source file with the 2-line SPDX variant defined in project-essentials. Mechanical, verify-only diff — no semantic content changes. New files created between Phase K and now already use SPDX-only; this story closes the gap for pre-K files.
 
-- [ ] Identify the full set of files carrying the Apache-2.0 boilerplate
-  - [ ] `python/src/quizazz/**/*.py`
-  - [ ] `python/tests/**/*.py`
-  - [ ] `app/src/**/*.ts`
-  - [ ] `app/src/**/*.svelte`
-  - [ ] `app/src/app.css`
-  - [ ] `install.sh`
-  - [ ] Any other file grep-discovers with the boilerplate block
-- [ ] Write a one-shot replacement script (or use a sed command pinned in the PR description) that:
-  - [ ] Matches the full boilerplate block verbatim (the current 14-line form)
-  - [ ] Replaces it with the 2-line SPDX variant in the correct comment syntax for each file type
-  - [ ] Preserves the copyright year as written (do not mass-rewrite years; if a file had `2025`, keep `2025`)
-  - [ ] Leaves the rest of the file byte-for-byte identical
-- [ ] Run the script; review the diff
-  - [ ] Verify every changed file's diff shows **only** the header block substitution and nothing else
-  - [ ] If any file's diff contains other changes, back out and investigate before landing
-- [ ] Config files (`pyproject.toml`, `svelte.config.js`, `vite.config.ts`, `vitest.config.ts`, `tsconfig.json`, `.gitignore`, `pnpm-workspace.yaml`) are left untouched — these do not conventionally carry per-file license headers
-- [ ] Generated artifacts are left untouched (`app/src/lib/data/*.json`, `app/static/sql-wasm.wasm`)
-- [ ] Verify: all builder + app tests pass; `pnpm check` — 0 errors; manual spot-check of 3–5 files confirms the SPDX two-liner is correct for the file type
+- [x] Identify the full set of files carrying the Apache-2.0 boilerplate (**56 files swept** — 52 source files in the standard trees plus `install.sh` and the 3 JS/TS config files at `app/` root; addressed during in-flight scope expansion when the gaps were noticed)
+  - [x] `python/src/quizazz/**/*.py` (6 files)
+  - [x] `python/tests/**/*.py` (5 files)
+  - [x] `app/src/**/*.ts` (15 files)
+  - [x] `app/src/**/*.svelte` (11 files: 9 components + 2 routes)
+  - [x] `app/src/app.css` (1 file)
+  - [x] `install.sh` — had no header at all, only a shebang and a one-line description; SPDX 2-liner inserted as new lines 2-3 (between shebang and existing description), so the file now matches project convention
+  - [x] `app/svelte.config.js`, `app/vite.config.ts`, `app/vitest.config.ts` — originally listed as "left untouched" because config files don't conventionally carry per-file headers, but these three actively carried the full Apache-2.0 boilerplate (and these *are* JS/TS source files, just at the workspace root). Retrofitted alongside the rest for consistency. (`pyproject.toml`, `tsconfig.json`, `.gitignore`, `pnpm-workspace.yaml` remain untouched — those formats don't support comments, or genuinely don't carry headers.)
+  - [x] Any other file grep-discovers with the boilerplate block (14 more files in `app/tests/**/*.ts`)
+- [x] Write a one-shot replacement script (or use a sed command pinned in the PR description) that:
+  - [x] Matches the full boilerplate block verbatim (current 14-line `#`/`//`, 16-line Svelte `<!---->`, 14-line CSS `/* */` forms — all four variants handled)
+  - [x] Replaces it with the 2-line SPDX variant in the correct comment syntax for each file type
+  - [x] Preserves the copyright year as written (every file in the tree carries `2026`; the script preserves whatever year is in the original line, but no `2025` or other years exist to test that path)
+  - [x] Leaves the rest of the file byte-for-byte identical (script uses exact-prefix match + slice, refuses to write if the boilerplate doesn't match the first byte sequence verbatim)
+  - [x] Scripts saved at `/tmp/m_c_retrofit.py` (main sweep) and `/tmp/m_c_configs.py` (3 config files at `app/` root); `install.sh` was edited directly via `Edit` since it required adding a new header rather than substituting an existing one
+- [x] Run the script; review the diff
+  - [x] Verify every changed file's diff shows **only** the header block substitution and nothing else (audited via `git diff -U0` per file; **every one of the 55 swap files** has exactly one hunk confined to the header, with body content untouched — Python/TS files: `@@ -2,12 +2 @@` (1 ins, 12 del); Svelte files: `@@ -1,15 +1,2 @@` (2 ins, 15 del); CSS file: `@@ -1,14 +1,2 @@` (2 ins, 14 del); the 3 config files match the TS shape; `install.sh` is the one exception — pure 3-line insertion right after the shebang, no deletions)
+  - [x] If any file's diff contains other changes, back out and investigate before landing — n/a, no such file
+- [x] Config files (`pyproject.toml`, `tsconfig.json`, `.gitignore`, `pnpm-workspace.yaml`) are left untouched — these do not conventionally carry per-file license headers (or don't support comments). The story originally listed `svelte.config.js`, `vite.config.ts`, `vitest.config.ts` here too, but those are JS/TS sources that did carry the full boilerplate, so they were retrofitted in-scope rather than left in a half-state.
+- [x] Generated artifacts are left untouched (`app/src/lib/data/*.json`, `app/static/sql-wasm.wasm`) — n/a, the script's file-walker only descends into `python/src`, `python/tests`, `app/src`, `app/tests` (plus the 3 explicit config-file paths and `install.sh`) and matches by extension, so no generated artifacts are eligible for substitution
+- [x] Verify: all builder + app tests pass; `pnpm check` — 0 errors; manual spot-check of 3–5 files confirms the SPDX two-liner is correct for the file type
+  - [x] `pyve test` — 148/148 pass (re-run after the expanded sweep)
+  - [x] `pnpm --dir app exec vitest run` — 173/173 pass across 16 test files (re-run after the expanded sweep — touching `vite.config.ts` / `vitest.config.ts` / `svelte.config.js` could plausibly affect the build, but did not)
+  - [x] `pnpm --dir app check` — 0 errors, 0 warnings
+  - [x] `bash -n install.sh` — syntax OK
+  - [x] Spot-checked 4 files (one per syntax variant): `python/src/quizazz/cli.py`, `app/src/lib/engine/scoring.ts`, `app/src/lib/components/SummaryView.svelte`, `app/src/app.css` — all four render the correct 2-line SPDX form for their comment syntax
 
 ### Story M.d: `<QuizBlock>` Self-Contained Styles Bundle [Planned]
 
