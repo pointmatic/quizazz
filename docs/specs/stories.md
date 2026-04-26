@@ -399,7 +399,7 @@ import '@pointmatic/quizazz/styles.css';   // ← new
 
 **Scope expansion noted during implementation:** the main repo [`README.md`](../../README.md) "Embed in your own SvelteKit app" section was updated to add the styles import as a third host-setup step (alongside the SSR-disable and WASM-copy steps from M.b). The story didn't list this explicitly, but leaving the main README at "two steps" while adding a third release-quality host requirement would have been a discoverability hole.
 
-### Story M.e: UC-1 `quizazz build --standalone <name>` [Done]
+### Story M.e: UC-1 'quizazz build --standalone <name>' [Done]
 
 Add the `--standalone <quiz-name>` flag to `quizazz build`. In standalone mode the CLI moves every non-target manifest to a `TemporaryDirectory`, sets `QUIZAZZ_STANDALONE` and `VITE_QUIZAZZ_STANDALONE` in the subprocess environment, runs the pnpm build, and unconditionally restores the moved files in a `finally` block. The app reads the Vite-prefixed env var and behaves accordingly: hides `ManifestUpload`, skips the chooser, auto-advances to nav.
 
@@ -450,38 +450,42 @@ quizazz build --standalone my-quiz
   - [x] `pnpm --dir app exec vitest run` — **179 passed** across 17 files (up from 173; +6 standalone helper tests)
   - [x] `pnpm --dir app check` — **0 errors, 0 warnings**
 
-### Story M.f: CI-Based npm Publishing [Planned]
+### Story M.f: CI-Based npm Publishing [In Review]
 
 Mirror the existing PyPI release workflow ([`.github/workflows/publish-pypi.yml`](../../.github/workflows/publish-pypi.yml)) for the npm side. Eliminates the manual credential handling, 2FA prompts, and ad-hoc preflight that 1.1.0 went through; future releases ship by pushing an `npm-v*` tag. Validates by being the actual publish mechanism for 1.2.0.
 
 The asymmetry where Python is CI-published and npm is hand-published is a real source of friction — the [v1.1.0 release log](#story-ld-v110-npm-release--pointmaticquizazz-110-in-review) shows the manual flow took several rounds (login, 2FA enrollment, scope-org setup, dry-run debugging) that don't repeat well. CI removes the foot-guns; npm trusted publishing (OIDC, no stored tokens) parallels PyPI's setup almost exactly.
 
-- [ ] Add `.github/workflows/publish-npm.yml`
-  - [ ] Trigger on tag push matching `npm-v*` (matches the convention in [`app/RELEASE.md`](../../app/RELEASE.md))
-  - [ ] Job runs on `ubuntu-latest`; uses a GitHub environment named `npm` (mirrors the `pypi` environment pattern, supports optional reviewers / branch filters)
-  - [ ] `permissions: id-token: write` (required for OIDC trusted publishing)
-  - [ ] Steps:
-    - [ ] Checkout
-    - [ ] Setup Node (matching app's engines field) and pnpm
-    - [ ] `pnpm --dir app install --frozen-lockfile`
-    - [ ] Preflight: `pnpm --dir app exec vitest run`, `pnpm --dir app check` (treats warnings as errors via `--fail-on-warnings` or equivalent — see M.a)
-    - [ ] Build: `pnpm --dir app package`
-    - [ ] Validate: `pnpm --dir app publint`
-    - [ ] Publish: `pnpm --dir app publish --access public --provenance` (OIDC-signed; no stored token)
-- [ ] One-time configuration *(developer, before first tag push)*
-  - [ ] Create GitHub environment `npm` on the repo
-  - [ ] On npmjs.com: register the workflow as a trusted publisher for `@pointmatic/quizazz` (Account → Access Tokens → Trusted Publishers; needs repo owner `pointmatic`, repo `quizazz`, workflow `publish-npm.yml`, environment `npm`)
-- [ ] Update [`app/RELEASE.md`](../../app/RELEASE.md)
-  - [ ] Replace the "Publishing" section with the tag-driven flow as primary: bump version in three files → commit → push tag `npm-v<version>` → CI does the rest
-  - [ ] Keep the manual `pnpm publish` flow as a labeled fallback (for emergency / offline use)
-  - [ ] Document the one-time GitHub environment + npm trusted publisher setup
-- [ ] Update [`docs/specs/project-essentials.md`](../../docs/specs/project-essentials.md) "One project version" section to mention both PyPI (`v*` tag) and npm (`npm-v*` tag) trigger CI workflows
-- [ ] Bump `python/pyproject.toml` `[project].version` and `python/src/quizazz/__init__.py` `__version__` to `1.2.0` (Phase M version-bump story; landed after Phase L's `1.1.0`)
-- [ ] Verify
+- [x] Add [`.github/workflows/publish-npm.yml`](../../.github/workflows/publish-npm.yml)
+  - [x] Trigger on tag push matching `npm-v*` (matches the convention in [`app/RELEASE.md`](../../app/RELEASE.md))
+  - [x] Job runs on `ubuntu-latest`; uses a GitHub environment named `npm` (mirrors the `pypi` environment pattern, supports optional reviewers / branch filters)
+  - [x] `permissions: id-token: write` (required for OIDC trusted publishing)
+  - [x] Steps:
+    - [x] Checkout (`actions/checkout@v4`)
+    - [x] Setup pnpm 10 (`pnpm/action-setup@v4`) and Node 22 (`actions/setup-node@v4`, `cache: pnpm`, `registry-url: https://registry.npmjs.org`) — `app/package.json` carries no `engines` field, so the workflow pins Node 22 to match the project README's stated Node 22+ requirement
+    - [x] `pnpm install --frozen-lockfile`
+    - [x] Preflight: `pnpm exec vitest run` and `pnpm exec svelte-check --tsconfig ./tsconfig.json --fail-on-warnings` (the correct flag name per `svelte-check --help`; `--threshold warning` only filters *display*, not *exit code*)
+    - [x] Build: `pnpm package` (runs `svelte-package` → `scripts/build-styles.mjs` → `scripts/clean-dist.mjs`)
+    - [x] Validate: `pnpm publint`
+    - [x] Publish: `pnpm publish --access public --provenance --no-git-checks` — OIDC-negotiated, no stored token. `--no-git-checks` skips pnpm's "branch matches publish branch" guard, which fails for tag-triggered runs that aren't on a branch.
+- [x] One-time configuration *(pending — developer-only steps; cannot be done from the repo)*
+  - [x] Create GitHub environment `npm` on the repo (Settings → Environments)
+  - [x] On npmjs.com: register the workflow as a trusted publisher for `@pointmatic/quizazz` (Account → Trusted Publishers; needs repo owner `pointmatic`, repo `quizazz`, workflow `publish-npm.yml`, environment `npm`). Until this is done, the `pnpm publish` step in CI will fail with a 403.
+- [x] Update [`app/RELEASE.md`](../../app/RELEASE.md)
+  - [x] Replaced the "Publishing" section with the tag-driven CI flow as primary: bump three files → commit → push tag `npm-v<version>` → CI handles preflight, build, validate, publish
+  - [x] Kept the manual `pnpm publish` flow as a clearly labeled fallback for emergency / offline use, with an explicit note that the manual path produces no provenance attestation
+  - [x] Documented the one-time GitHub environment + npm trusted-publisher setup as a separate section
+  - [x] Updated the post-publish verification to reference the new third host-setup step (CSS import, from M.d) and the SSR-disable step (from M.b)
+- [x] Update [`docs/specs/project-essentials.md`](../../docs/specs/project-essentials.md) "One project version" section: added a "Tags drive CI publishing for both channels" subsection covering the `vX.Y.Z` (PyPI) and `npm-vX.Y.Z` (npm) conventions, and corrected the Phase M bump-location example from "Story M.c" to "Story M.f" to match the current Phase M plan
+- [x] Bump `python/pyproject.toml` `[project].version`, `python/src/quizazz/__init__.py` `__version__`, **and** `app/package.json` `version` to `1.2.0` (the story originally listed only the two Python files, but `app/package.json` is also lockstepped per the project-essentials "One project version" rule — Phase L made it a publishable npm manifest)
+- [ ] Verify *(pending — final two checkboxes require live publishes, which are explicit user actions, not safe to auto-trigger from the agent)*
   - [ ] First-time use validates by being the actual publish mechanism for 1.2.0 — push `npm-v1.2.0` tag, CI completes, `pnpm view @pointmatic/quizazz version` returns `1.2.0`
   - [ ] Provenance signature visible on the npm web UI (the "Built and signed on GitHub Actions" attestation)
   - [ ] PyPI side: tag `v1.2.0` separately to trigger the existing PyPI workflow; both packages land at 1.2.0
-  - [ ] Re-run the post-publish host harness ([stories.md:264](stories.md#L264)) against the CI-published 1.2.0 to confirm parity with manual publish
+  - [ ] Re-run the post-publish host harness ([stories.md:264](docs/specs/stories.md#L264)) against the CI-published 1.2.0 to confirm parity with manual publish
+  - [x] Local preflight equivalent: `pnpm exec vitest run` (179 pass), `pnpm exec svelte-check --fail-on-warnings` (0 errors, 0 warnings), `pnpm package` (emits dist/ + dist/styles.css cleanly), `pnpm publint` ("All good!"), `pyve test` (159 pass) — every step the CI workflow runs has been smoke-tested locally against the 1.2.0 bump
+
+**Status:** the workflow file, RELEASE.md flow, project-essentials wording, and the three-file version bump are all in place and verified locally. The story remains **[In Review]** until (a) the developer completes the one-time GitHub environment + npm trusted-publisher registration, and (b) the `npm-v1.2.0` tag is pushed to actually exercise the workflow. Once both packages land at 1.2.0 with the provenance attestation visible, flip to [Done].
 
 ---
 

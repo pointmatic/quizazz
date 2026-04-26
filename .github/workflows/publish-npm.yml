@@ -1,0 +1,60 @@
+name: Publish @pointmatic/quizazz to npm
+
+on:
+  push:
+    tags:
+      - 'npm-v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      id-token: write    # npm trusted publishing (OIDC) — required for --provenance
+      contents: read
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: app/pnpm-lock.yaml
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run unit + integration tests
+        run: pnpm exec vitest run
+
+      - name: Type-check (svelte-check, fail on warnings)
+        run: |
+          pnpm exec svelte-kit sync
+          pnpm exec svelte-check --tsconfig ./tsconfig.json --fail-on-warnings
+
+      - name: Build the publishable package
+        run: pnpm package
+
+      - name: Validate package layout
+        run: pnpm publint
+
+      - name: Publish to npm with provenance (OIDC trusted publishing)
+        # No stored NPM_TOKEN — auth is negotiated via the GitHub OIDC token
+        # against the npm trusted-publisher config registered for this repo +
+        # workflow. The `--provenance` flag attaches the build attestation
+        # that npmjs.com displays as "Built and signed on GitHub Actions".
+        # `--no-git-checks` skips pnpm's "branch matches publish branch"
+        # guard, which fails for tag-triggered runs that aren't on a branch.
+        run: pnpm publish --access public --provenance --no-git-checks

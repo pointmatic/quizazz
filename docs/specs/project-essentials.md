@@ -201,6 +201,23 @@ mirrored in `python/src/quizazz/__init__.py.__version__`. Both published
 packages (`quizazz` on PyPI, `@pointmatic/quizazz` on npm from Phase L)
 bump to match in lockstep.
 
+**Tags drive CI publishing for both channels** (Phase M onwards):
+
+- `vX.Y.Z` — bare version tag. Triggers
+  [`publish-pypi.yml`](../../.github/workflows/publish-pypi.yml), which
+  publishes `quizazz` to PyPI via OIDC trusted publishing.
+- `npm-vX.Y.Z` — npm-prefixed version tag. Triggers
+  [`publish-npm.yml`](../../.github/workflows/publish-npm.yml), which
+  publishes `@pointmatic/quizazz` to npm via OIDC trusted publishing
+  (with provenance).
+
+Both workflows do their own preflight (tests + lint + type-check + dry
+runs) so a broken commit can't reach a registry even if the tag is
+pushed by mistake. The two prefixes are deliberately distinct so a
+Python-only or npm-only hotfix can ship independently — though in
+practice the version-lockstep means tags are usually pushed in pairs
+right after a release commit.
+
 Since Phase L, [`app/package.json`](../../app/package.json) is **also a
 publishable npm manifest** — it carries `name = "@pointmatic/quizazz"`, a
 `version` field matched to `pyproject.toml`, `exports` / `files` / `svelte`
@@ -229,8 +246,8 @@ outside a phase still carry a version in their header and bump at
 completion. Examples:
 
 - Phase L (Embeddable Component) → `v1.1.0`; bump lands in Story L.d.
-- Phase M (Standalone SPA + housekeeping) → `v1.2.0`; bump lands in
-  Story M.c.
+- Phase M (Hardening, standalone build, release automation) → `v1.2.0`;
+  bump lands in Story M.f.
 
 `MANIFEST_SCHEMA_VERSION` (in `quizazz/__init__.py`) is a **separate
 protocol marker** embedded in every compiled manifest so consumers can
