@@ -17,7 +17,11 @@ const excludedPaths = [
 	'components/ConfigView.svelte',
 	'components/ConfigView.svelte.d.ts',
 	'utils/validate-manifest.ts',
-	'utils/validate-manifest.d.ts'
+	'utils/validate-manifest.d.ts',
+	// `embed/styles.css` is the *source* for the precompiled bundle —
+	// `svelte-package` copies it verbatim, but the published artifact lives
+	// at `dist/styles.css` (built by `scripts/build-styles.mjs`).
+	'embed/styles.css'
 ];
 
 for (const rel of excludedPaths) {

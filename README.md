@@ -247,6 +247,7 @@ pnpm add @pointmatic/quizazz
 ```svelte
 <script lang="ts">
   import { QuizBlock } from '@pointmatic/quizazz';
+  import '@pointmatic/quizazz/styles.css';
   import manifest from './module-4-pre-quiz.json';
 
   function handleComplete(e) {
@@ -257,7 +258,7 @@ pnpm add @pointmatic/quizazz
 <QuizBlock {manifest} quizRef="module-4-pre" oncomplete={handleComplete} />
 ```
 
-Two host-side setup steps are required and easy to miss:
+Three host-side setup steps are required and easy to miss:
 
 1. Disable SSR on the route that mounts `<QuizBlock>` (sql.js + IndexedDB
    are browser-only). Add `export const ssr = false;` to the route's
@@ -267,6 +268,11 @@ Two host-side setup steps are required and easy to miss:
    wildcard form covers both `sql-wasm.wasm` (sql.js ≤ 1.13) and the
    `sql-wasm-browser.wasm` that sql.js ≥ 1.14 ships and that Vite
    resolves via the `browser` export condition.
+3. Import the precompiled styles bundle once:
+   `import '@pointmatic/quizazz/styles.css';`. The bundle ships only the
+   utilities the component uses (no Tailwind preflight, no project-wide
+   footprint) so it composes cleanly whether or not your host already
+   uses Tailwind.
 
 The full embedding reference — theming custom properties, the `complete`
 event's DOM-event form, the single-instance-per-page guard, and the

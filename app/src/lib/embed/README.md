@@ -20,6 +20,7 @@ Svelte 5 runtime installed (SvelteKit apps already do).
 ```svelte
 <script lang="ts">
   import { QuizBlock } from '@pointmatic/quizazz';
+  import '@pointmatic/quizazz/styles.css';
   import type { QuizCompleteEvent } from '@pointmatic/quizazz';
   import manifest from './content/module-4-pre.json';
 
@@ -100,6 +101,44 @@ remains fine alongside (`export const prerender = true;` and
 `export const ssr = false;` coexist); the quiz hydrates and runs entirely
 client-side.
 
+## Styles
+
+`@pointmatic/quizazz` ships a precompiled stylesheet alongside the component
+so hosts get a polished default look without having to set up Tailwind (or
+any other CSS framework) of their own. Import it once, anywhere — typically
+in the same `<script>` block where you import `<QuizBlock>`, or in your
+host's root `+layout.svelte` if the embed is reused across routes:
+
+```ts
+import { QuizBlock } from '@pointmatic/quizazz';
+import '@pointmatic/quizazz/styles.css';
+```
+
+The bundle (~13 KB minified) contains:
+
+- The Tailwind v4 theme layer (CSS custom properties — colors, spacing,
+  radii, font sizes) used by the component's utilities.
+- Only the utility classes the embed-reachable components actually use.
+  No project-wide Tailwind footprint.
+
+What the bundle does **not** contain:
+
+- **No Tailwind preflight / base resets.** Host pages keep their own resets
+  and global element styles. The bundle won't restyle `<button>`, `<h1>`,
+  `<a>`, etc. on the rest of the page.
+- No `<svelte:head>` auto-injection. The `import '@pointmatic/quizazz/styles.css'`
+  is explicit so the host controls load order, deduplication, and bundling.
+
+### Hosts that already use Tailwind
+
+If your host is already a Tailwind-based app, importing the bundle is still
+safe — the Tailwind utilities resolve via the cascade. The host's own
+utilities co-exist with the bundle's; there's no preflight collision because
+the bundle ships none. If the same utility class is defined in both your host
+build and the bundle, the cascade resolves it in document-order — typical
+behavior for stacked Tailwind builds. Theming overrides via the
+`--quizazz-*` CSS custom properties (see below) layer additively on top.
+
 ## Keyboard scoping
 
 `<QuizBlock>` confines all keyboard handling to elements inside the component
@@ -142,16 +181,6 @@ Example — theme via a wrapping class:
 
 <QuizBlock class="my-theme" manifest={...} quizRef="module-3" />
 ```
-
-### Coverage caveat
-
-The initial pass applies these variables to the most visible
-category-sensitive elements (the summary-list correct / incorrect indicators
-among them). Many internal elements still use Tailwind color utilities
-directly; replacing the full palette with custom-property-driven styles is
-tracked as follow-on work. The behavior is intentional — host overrides reach
-the primary signal-carrying elements today, and the remaining Tailwind colors
-stay visually consistent with the defaults.
 
 ## `complete` event
 

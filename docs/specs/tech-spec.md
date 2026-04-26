@@ -16,7 +16,7 @@ For requirements and behavior, see [`features.md`](features.md). For the phased 
 | **Icons** | `lucide-svelte` | Hand-rolled components otherwise; no UI framework |
 | **Client-side DB** | sql.js (WASM) | SQLite compiled to WASM, persisted to IndexedDB |
 | **Build tool (app)** | Vite 7 (via SvelteKit) | Standard SvelteKit toolchain |
-| **Component packaging** | `@sveltejs/package` | Used to emit the `@pointmatic/quizazz` npm package for UC-3 |
+| **Component packaging** | `@sveltejs/package` + `@tailwindcss/cli` | `@sveltejs/package` emits the JS / `.svelte` source into `dist/`; `@tailwindcss/cli` emits the precompiled `dist/styles.css` bundle (sub-exported as `./styles.css`). Together they produce the published `@pointmatic/quizazz` npm package for UC-3 |
 | **Node package manager** | pnpm 10+ | Workspace-aware, fast |
 | **Linter / formatter (JS/TS)** | ESLint + Prettier | SvelteKit defaults; `prettier-plugin-svelte` |
 | **Test runner (JS/TS)** | Vitest 4 | Vite-native; `@testing-library/svelte` for component tests |
@@ -85,7 +85,8 @@ The host framework calls `compile_assessment` at *its own* build time. No subpro
 | Package | Purpose |
 |---------|---------|
 | `typescript` ^5 | Type checking |
-| `tailwindcss` ^4 + `@tailwindcss/vite` ^4 | Utility CSS |
+| `tailwindcss` ^4 + `@tailwindcss/vite` ^4 | Utility CSS for the in-tree app build |
+| `@tailwindcss/cli` ^4 | Build-time emitter for `dist/styles.css` (the precompiled bundle published with `@pointmatic/quizazz`); driven by `app/scripts/build-styles.mjs` during `pnpm package` |
 | `vitest` ^4 | Unit / component / integration testing |
 | `@testing-library/svelte` ^5 | Component-level test utilities |
 | `@types/sql.js` ^1 | Type definitions for sql.js |
@@ -172,7 +173,8 @@ quizazz/
 │   │   │   │   └── ProgressBar.svelte
 │   │   │   └── embed/
 │   │   │       ├── QuizBlock.svelte           # UC-3 embeddable component
-│   │   │       └── index.ts                   # Public package entry for @pointmatic/quizazz
+│   │   │       ├── index.ts                   # Public package entry for @pointmatic/quizazz
+│   │   │       └── styles.css                 # Source for the precompiled dist/styles.css bundle
 │   │   └── routes/
 │   │       ├── +layout.svelte
 │   │       ├── +layout.ts                     # prerender = true, ssr = false
@@ -629,8 +631,9 @@ The public component for host frameworks. Self-contained wrapper around the core
 - Keyboard handlers are scoped to the component's root element via `on:keydown` on a `tabindex="0"` container rather than `window` listeners. This prevents leakage of `a`–`e`, `Enter`, `Escape`, `←`/`→` into the host.
 - Emits `complete` via the `oncomplete` callback prop (Svelte 5 convention) and, for compatibility with hosts using the classic event dispatch pattern, dispatches a `CustomEvent('complete', { detail })` on the root element.
 - Retake reshuffles the answer order but keeps the same question set (same per-question DB updates apply).
+- Ships a precompiled `dist/styles.css` (~13 KB minified) alongside the JS — Tailwind utilities authored against `<QuizBlock>` and the views it reaches (`QuizView`, `ReviewView`, `AnsweredQuestionsView`, `SummaryView`, `ProgressBar`) are pre-emitted at package time so hosts get a polished default look without their own Tailwind setup. The bundle skips Tailwind's preflight/base layer (no global resets), keeps the theme + utilities layers only, and is opt-in via the host's explicit `import '@pointmatic/quizazz/styles.css'` (no `<svelte:head>` auto-injection).
 
-### App — `src/lib/embed/index.ts`
+### App — `src/lib/embed/index.ts` and `./styles.css` sub-export
 
 ```typescript
 export { default as QuizBlock } from './QuizBlock.svelte';
@@ -644,7 +647,14 @@ export type {
 } from '$lib/types';
 ```
 
-This barrel is the public entry for the `@pointmatic/quizazz` npm package.
+This barrel is the public entry for the `@pointmatic/quizazz` npm package. Hosts also import the precompiled stylesheet via the `./styles.css` sub-export:
+
+```ts
+import { QuizBlock } from '@pointmatic/quizazz';
+import '@pointmatic/quizazz/styles.css';
+```
+
+The CSS bundle is built by `app/scripts/build-styles.mjs` using `@tailwindcss/cli`; its source is `src/lib/embed/styles.css` (theme + utilities, `source(none)` + explicit `@source` directives for the embed-reachable component files only).
 
 ### App — `src/routes/+page.svelte`
 
@@ -836,7 +846,7 @@ Only `quizazz` is registered as a console script. `python -m quizazz` also works
 ### Embedded component isolation (UC-3)
 
 - `<QuizBlock>` never touches `window.location`, `history`, cookies, or `fetch`. All DB activity is confined to its per-quiz IndexedDB.
-- The component owns its own CSS scope via SvelteKit's standard component scoping; Tailwind utility classes are emitted into the published bundle with a configurable layer order so they compose cleanly with host Tailwind.
+- The component authors styles with Tailwind, but ships them as a precompiled `dist/styles.css` bundle (built by `@tailwindcss/cli` against an embed-reachable-only source list — no project-wide Tailwind footprint). The bundle skips Tailwind's preflight/base layer entirely, so importing it does not restyle host elements outside `<QuizBlock>`. Hosts pull it via the `./styles.css` sub-export (`import '@pointmatic/quizazz/styles.css'`); host-side Tailwind utilities, when present, layer additively via the cascade. CSS custom properties (`--quizazz-*`) remain the universal theming surface on top of either setup.
 - The manifest is treated as read-only; the component never mutates the prop.
 
 ---
@@ -918,12 +928,14 @@ Only `quizazz` is registered as a console script. `python -m quizazz` also works
     "name": "@pointmatic/quizazz",
     "version": "<matches the single project version>",
     "license": "Apache-2.0",
+    "files": ["dist", "!dist/**/*.test.*", "!dist/**/*.spec.*"],
     "exports": {
       ".": {
         "types": "./dist/embed/index.d.ts",
         "svelte": "./dist/embed/index.js",
         "default": "./dist/embed/index.js"
-      }
+      },
+      "./styles.css": "./dist/styles.css"
     },
     "peerDependencies": {
       "svelte": "^5"
@@ -933,12 +945,13 @@ Only `quizazz` is registered as a console script. `python -m quizazz` also works
     }
   }
   ```
-- **Package contents** (emitted by `@sveltejs/package` into `dist/`):
+- **Package contents** (emitted into `dist/` by `pnpm --dir app package`, which chains `svelte-package` → `scripts/build-styles.mjs` → `scripts/clean-dist.mjs`):
   - `embed/QuizBlock.svelte`
   - `embed/index.js` + `.d.ts`
   - Internal engine / db / utils modules the component needs.
-  - **Not included**: `routes/`, chooser/upload components, standalone build machinery.
-- **Peer expectations**: host provides Svelte 5 runtime and serves `sql-wasm.wasm` at its static root. Documented in the package README.
+  - **`styles.css`** — precompiled stylesheet emitted by `@tailwindcss/cli` from `src/lib/embed/styles.css` (theme + utilities, `source(none)` + explicit `@source` for embed-reachable Svelte files only, no preflight). Sub-exported as `./styles.css`.
+  - **Not included**: `routes/`, chooser/upload components, standalone build machinery, the `embed/styles.css` source (stripped post-build by `clean-dist.mjs` so the only published stylesheet is the compiled `dist/styles.css`).
+- **Peer expectations**: host provides Svelte 5 runtime, serves sql.js's WASM (filename varies by sql.js version — see the package README), disables SSR on routes that mount `<QuizBlock>`, and imports `@pointmatic/quizazz/styles.css` for the default look. All documented in the package README.
 
 ### Installation methods
 

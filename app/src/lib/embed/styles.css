@@ -1,0 +1,26 @@
+/* Copyright (c) 2026 Pointmatic */
+/* SPDX-License-Identifier: Apache-2.0 */
+
+/*
+  Source CSS for the precompiled @pointmatic/quizazz styles bundle.
+
+  Imports just the theme (CSS variables) and the utilities, NOT the
+  preflight/base layer — host pages keep their own resets, so the bundle
+  must not impose Tailwind's reset on elements outside <QuizBlock>.
+
+  source(none) on the utilities import disables Tailwind's automatic
+  source-file discovery; the explicit @source directives below restrict
+  the scan to embed-reachable component files only, so utilities used
+  exclusively by UC-1/UC-2 components (QuizChooser, ManifestUpload,
+  NavigationTree, ConfigView) do not bloat the published bundle.
+*/
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+
+@source './QuizBlock.svelte';
+@source '../components/QuizView.svelte';
+@source '../components/ReviewView.svelte';
+@source '../components/AnsweredQuestionsView.svelte';
+@source '../components/SummaryView.svelte';
+@source '../components/ProgressBar.svelte';

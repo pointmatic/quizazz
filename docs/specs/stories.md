@@ -351,7 +351,7 @@ Replace the full 14-line Apache-2.0 boilerplate on every existing source file wi
   - [x] `bash -n install.sh` — syntax OK
   - [x] Spot-checked 4 files (one per syntax variant): `python/src/quizazz/cli.py`, `app/src/lib/engine/scoring.ts`, `app/src/lib/components/SummaryView.svelte`, `app/src/app.css` — all four render the correct 2-line SPDX form for their comment syntax
 
-### Story M.d: `<QuizBlock>` Self-Contained Styles Bundle [Planned]
+### Story M.d: '<QuizBlock>' Self-Contained Styles Bundle [Done]
 
 The v1.1.0 component renders unstyled in hosts that don't have Tailwind in their own build. The `app/` workspace authors styles with Tailwind, but `@sveltejs/package` only ships the `.svelte` source — Tailwind utility classes in the markup are no-ops without a Tailwind runtime in the host. Hosts hit this immediately during the post-publish verification.
 
@@ -363,37 +363,41 @@ import { QuizBlock } from '@pointmatic/quizazz';
 import '@pointmatic/quizazz/styles.css';   // ← new
 ```
 
-- [ ] Add a CSS bundle build step
-  - [ ] Use the Tailwind CLI (or `@tailwindcss/postcss`) to scan embed-reachable component sources and emit just the utilities they use
-  - [ ] Output to `dist/styles.css`
-  - [ ] Wire into the existing `package` script: `svelte-package -i src/lib -o dist && node scripts/build-styles.mjs && node scripts/clean-dist.mjs`
-  - [ ] Inputs to scan: `QuizBlock.svelte`, `QuizView.svelte`, `ReviewView.svelte`, `AnsweredQuestionsView.svelte`, `SummaryView.svelte`, `ProgressBar.svelte`, and anything they transitively render
-- [ ] Update `app/package.json` exports
-  - [ ] Add a sub-export entry for `./styles.css` so hosts can `import '@pointmatic/quizazz/styles.css'`
-  - [ ] Add `styles.css` to the `files` whitelist
-- [ ] Verify scoping
-  - [ ] Generated CSS only contains utilities used by the embed-reachable components (no project-wide Tailwind footprint)
-  - [ ] No Tailwind preflight/base resets that would affect host page styles outside `<QuizBlock>`; if preflight is needed, scope it under `:where(.quizazz-root)` or equivalent
-  - [ ] Bundle size sanity-check: `dist/styles.css` under ~30KB minified
-- [ ] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md)
-  - [ ] Add a "Styles" section with the one-line CSS import
-  - [ ] Note that hosts already using Tailwind don't conflict (cascade handles overlap)
-  - [ ] Remove the "Coverage caveat" subsection — superseded by the bundled styles
-- [ ] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) to reflect the styles-bundle approach
-  - [ ] "App dev" dependencies table (currently around line 88–94): note the Tailwind CLI / `@tailwindcss/postcss` build-time role for emitting `dist/styles.css`
-  - [ ] `lib/embed/index.ts` / Component packaging description (currently around line 19, 175): mention the `./styles.css` sub-export alongside the JS entry
-  - [ ] "QuizBlock design notes" (currently around line 605–631): add a one-line note about the precompiled styles bundle and the host-side `import '@pointmatic/quizazz/styles.css'`
-  - [ ] "Embedded component isolation" (currently around line 838): replace the "Tailwind utility classes are emitted into the published bundle with a configurable layer order" sentence with the actual approach — precompiled `dist/styles.css`, host imports it explicitly, host's own Tailwind layers via cascade
-  - [ ] "npm — `@pointmatic/quizazz`" packaging section (currently around line 909–940): add `styles.css` to the `exports` map example, add `styles.css` to the `files` whitelist, add the new entry to the "Package contents" list
-- [ ] Verify with the post-publish host harness ([stories.md:264](stories.md#L264))
-  - [ ] Fresh SvelteKit minimal scaffold + `pnpm add @pointmatic/quizazz` + the one-line CSS import + no other styling
-  - [ ] `<QuizBlock>` renders with a clean, professional default look — no broken layouts, no missing colors
-  - [ ] CSS custom property overrides via `<QuizBlock class="my-theme" />` + a `--quizazz-*` block still take effect
-  - [ ] Confirm in a separately-tested host that already uses Tailwind: no preflight collision, host's own utilities still apply outside `<QuizBlock>`
-- [ ] Out of scope (Future Vision)
-  - [ ] Multiple style themes pre-bundled (light/dark variants)
-  - [ ] Per-component CSS code-splitting
-  - [ ] Auto-injection of styles via `<svelte:head>` (intentionally avoided — lets the host decide load order and bundle strategy)
+- [x] Add a CSS bundle build step
+  - [x] Use the Tailwind CLI (`@tailwindcss/cli@^4`, added to devDependencies) — chosen over `@tailwindcss/postcss` because the CLI is a single-binary invocation and the build script doesn't need bespoke postcss plumbing
+  - [x] Output to `dist/styles.css`
+  - [x] Wire into the existing `package` script: `svelte-package -i src/lib -o dist && node scripts/build-styles.mjs && node scripts/clean-dist.mjs`
+  - [x] Inputs to scan: `QuizBlock.svelte`, `QuizView.svelte`, `ReviewView.svelte`, `AnsweredQuestionsView.svelte`, `SummaryView.svelte`, `ProgressBar.svelte` — encoded as explicit `@source` directives in `app/src/lib/embed/styles.css`, with `source(none)` on the `tailwindcss/utilities.css` import to disable Tailwind's automatic project-wide source discovery
+- [x] Update `app/package.json` exports
+  - [x] Sub-export `./styles.css` → `./dist/styles.css` for `import '@pointmatic/quizazz/styles.css'`
+  - [x] `styles.css` covered by the existing `"files": ["dist", ...]` whitelist (no separate entry needed — `dist/styles.css` is naturally included)
+- [x] Verify scoping
+  - [x] Generated CSS only contains utilities the embed-reachable components actually use — confirmed by spot-checks: `text-indigo-400` (used only in UC-1 components: `QuizChooser`, `ManifestUpload`, `NavigationTree`, `ConfigView`) is **absent** from the bundle; `min-h-screen` (used in both UC-1 *and* embed-reachable like `QuizView`/`ReviewView`/`SummaryView`/`AnsweredQuestionsView`) is **present**
+  - [x] No Tailwind preflight/base resets — confirmed: the bundle imports `tailwindcss/theme.css` + `tailwindcss/utilities.css` only (no `tailwindcss/preflight.css` or `tailwindcss/index.css`); a grep for the preflight `*,::after,::before` selector in `dist/styles.css` returns 0 matches. (The bundle does include a Tailwind v4 internal `@layer properties` block that registers default values for `--tw-*` private custom properties via `@property`/`@supports` — these are inert for host content because they only matter when an element actually uses the corresponding utility.)
+  - [x] Bundle size sanity-check: **`dist/styles.css` is 12.8 KB minified** (well under the 30 KB ceiling)
+- [x] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md)
+  - [x] New "Styles" section with the one-line `import '@pointmatic/quizazz/styles.css';` recipe and a content/non-content breakdown of what the bundle ships (theme + scoped utilities, no preflight, no auto-injection)
+  - [x] "Hosts that already use Tailwind" subsection: cascade behavior, no preflight collision, additive theming via `--quizazz-*` custom properties
+  - [x] "Coverage caveat" subsection removed — superseded by the bundled styles
+  - [x] Usage example at the top of the README updated to show the CSS import alongside the JS imports
+- [x] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) to reflect the styles-bundle approach
+  - [x] "App dev" dependencies table — added a `@tailwindcss/cli ^4` row noting the build-time `dist/styles.css` emit role
+  - [x] Stack-overview table (the "Component packaging" row near the top) and the directory tree both mention the new `embed/styles.css` source plus the `./styles.css` sub-export
+  - [x] "App — `src/lib/embed/QuizBlock.svelte` (UC-3)" design-notes block — added a bullet describing the precompiled bundle's contents and host-side import
+  - [x] "App — `src/lib/embed/index.ts` and `./styles.css` sub-export" — section header renamed; added a paragraph describing the host-side import pattern and pointing at `app/scripts/build-styles.mjs` + `src/lib/embed/styles.css` as the CSS source
+  - [x] "Embedded component isolation" — replaced the "Tailwind utility classes are emitted into the published bundle with a configurable layer order" sentence with the actual approach (precompiled `dist/styles.css`, host imports explicitly, host's own Tailwind layers via cascade, no preflight)
+  - [x] "npm — `@pointmatic/quizazz`" packaging section — added `./styles.css` to the `exports` map example, added the `files` whitelist line, added the styles.css line to "Package contents", and updated the "Peer expectations" bullet to mention SSR-disable + the styles import
+- [x] Verify with the post-publish host harness ([stories.md:264](docs/specs/stories.md#L264))
+  - [ ] Fresh SvelteKit minimal scaffold + `pnpm add @pointmatic/quizazz` + the one-line CSS import + no other styling — *(pending — manual host-harness re-run; locally verified that `pnpm package` emits the bundle, `publint` passes, `pnpm check` is 0/0, and the in-tree app continues to render correctly via its own `app/src/app.css` Tailwind setup)*
+  - [ ] `<QuizBlock>` renders with a clean, professional default look — no broken layouts, no missing colors *(pending — manual)*
+  - [ ] CSS custom property overrides via `<QuizBlock class="my-theme" />` + a `--quizazz-*` block still take effect *(pending — manual; existing Phase L tests assert this for the inherited custom-property values, and the bundle does not redefine `--quizazz-*` so cascade-overriding behavior is unchanged)*
+  - [ ] Confirm in a separately-tested host that already uses Tailwind: no preflight collision, host's own utilities still apply outside `<QuizBlock>` *(pending — manual)*
+- [x] Out of scope (Future Vision)
+  - [x] Multiple style themes pre-bundled (light/dark variants)
+  - [x] Per-component CSS code-splitting
+  - [x] Auto-injection of styles via `<svelte:head>` (intentionally avoided — lets the host decide load order and bundle strategy)
+
+**Scope expansion noted during implementation:** the main repo [`README.md`](../../README.md) "Embed in your own SvelteKit app" section was updated to add the styles import as a third host-setup step (alongside the SSR-disable and WASM-copy steps from M.b). The story didn't list this explicitly, but leaving the main README at "two steps" while adding a third release-quality host requirement would have been a discoverability hole.
 
 ### Story M.e: UC-1 `quizazz build --standalone <name>` [Planned]
 
