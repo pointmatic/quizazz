@@ -50,18 +50,55 @@ Props:
 
 `<QuizBlock>` uses [sql.js](https://sql.js.org/) for per-quiz score
 persistence in IndexedDB. sql.js loads its SQLite WebAssembly binary at
-runtime from a URL relative to the host origin. Copy the `.wasm` file into
-your app's static root:
+runtime from a URL relative to the host origin. Copy the `.wasm` file(s)
+into your app's static root:
 
 ```bash
 # run once, during your host app's postinstall
-cp node_modules/sql.js/dist/sql-wasm.wasm static/sql-wasm.wasm
+cp node_modules/sql.js/dist/*.wasm static/
+```
+
+The wildcard form is the bulletproof recommendation. **sql.js ≥ 1.14** ships
+two browser builds and an `exports` map that Vite (and any other bundler
+honoring the `browser` package-export condition) resolves to
+`dist/sql-wasm-browser.js`, which requests `sql-wasm-browser.wasm` at
+runtime. Older sql.js (≤ 1.13) only ships `sql-wasm.wasm`. Copying every
+`*.wasm` covers both resolutions without you having to track the package's
+exact filename — a host that follows a single-file `cp .../sql-wasm.wasm`
+recipe against a 1.14+ install gets `[404] /sql-wasm-browser.wasm` and the
+quiz fails to mount.
+
+If your host uses pnpm's strict (non-hoisted) layout, transitive dep files
+don't appear under top-level `node_modules/sql.js/` — sql.js lives under
+`node_modules/.pnpm/sql.js@<version>/node_modules/sql.js/dist/`. The
+following one-liner finds the WASM either way:
+
+```bash
+find node_modules -name 'sql-wasm*.wasm' -exec cp {} static/ \;
 ```
 
 Hosts that need to serve the WASM from a non-root path can override the
 loader's `locateFile` — *Future Vision*: `<QuizBlock>` will expose a prop to
 pass this through directly. Until then, a host-level shim that patches
 `initSqlJs`'s default loader works.
+
+## SvelteKit host setup
+
+`<QuizBlock>` cannot server-side render. sql.js requires WebAssembly and
+IndexedDB, both of which exist only in the browser, so any SSR pass on a
+route that mounts the component throws during initialization. Disable SSR
+on the embedding route — a one-liner in `+page.ts` (or `+layout.ts` if
+several routes embed):
+
+```ts
+// src/routes/.../+page.ts
+export const ssr = false;
+```
+
+Without this, hitting the route returns a 500 on first request. Prerendering
+remains fine alongside (`export const prerender = true;` and
+`export const ssr = false;` coexist); the quiz hydrates and runs entirely
+client-side.
 
 ## Keyboard scoping
 

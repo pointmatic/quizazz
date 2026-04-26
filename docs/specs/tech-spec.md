@@ -811,9 +811,10 @@ Only `quizazz` is registered as a console script. `python -m quizazz` also works
 
 ### WASM binary handling
 
-- `sql.js` ships the WASM alongside its npm package. A postinstall step copies `node_modules/sql.js/dist/sql-wasm.wasm` to `app/static/`.
+- `sql.js` ships the WASM alongside its npm package. A postinstall step copies `node_modules/sql.js/dist/sql-wasm.wasm` to `app/static/` (this workspace is pinned to `sql.js@^1.13.0`, so the legacy single-file copy is sufficient here).
 - sql.js is initialized with `locateFile: (f) => '/' + f` so the browser fetches from the built app's static root.
-- For `<QuizBlock>` published as an npm package, the host app must also serve `sql-wasm.wasm` from its static root; documented in the package README.
+- For `<QuizBlock>` published as an npm package, the host app must also serve sql.js's WASM from its static root. The exact filename depends on the host's resolved sql.js version: `sql-wasm.wasm` for `sql.js ≤ 1.13`, `sql-wasm-browser.wasm` for `sql.js ≥ 1.14` (Vite picks up the new `"browser"` export condition that points at `dist/sql-wasm-browser.js`). The package README recommends the bulletproof wildcard form (`cp node_modules/sql.js/dist/*.wasm static/`) so both filenames land regardless of which version the host installs.
+- Hosts must also disable SSR on any route that mounts `<QuizBlock>` (`export const ssr = false;` in `+page.ts` or `+layout.ts`) — sql.js and IndexedDB are browser-only, so a server-side render attempt throws during initialization. Documented in the package README under "SvelteKit host setup".
 
 ### Standalone build mechanics (UC-1)
 

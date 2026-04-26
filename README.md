@@ -257,10 +257,21 @@ pnpm add @pointmatic/quizazz
 <QuizBlock {manifest} quizRef="module-4-pre" oncomplete={handleComplete} />
 ```
 
+Two host-side setup steps are required and easy to miss:
+
+1. Disable SSR on the route that mounts `<QuizBlock>` (sql.js + IndexedDB
+   are browser-only). Add `export const ssr = false;` to the route's
+   `+page.ts` or `+layout.ts`.
+2. Copy sql.js's WebAssembly binary into the host's static root, e.g.
+   `cp node_modules/sql.js/dist/*.wasm static/` during postinstall. The
+   wildcard form covers both `sql-wasm.wasm` (sql.js ≤ 1.13) and the
+   `sql-wasm-browser.wasm` that sql.js ≥ 1.14 ships and that Vite
+   resolves via the `browser` export condition.
+
 The full embedding reference — theming custom properties, the `complete`
-event's DOM-event form, the single-instance-per-page guard, and the sql.js
-WASM setup step hosts must follow — lives alongside the source at
-[`app/src/lib/embed/README.md`](app/src/lib/embed/README.md).
+event's DOM-event form, the single-instance-per-page guard, and the
+detailed sql.js WASM and SvelteKit host setup steps — lives alongside the
+source at [`app/src/lib/embed/README.md`](app/src/lib/embed/README.md).
 
 ## Testing
 

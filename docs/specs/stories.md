@@ -295,28 +295,30 @@ ConfigView is a UC-1/UC-2-only component, stripped from the published npm bundle
   - [x] Confirm UC-1/UC-2 ConfigView behavior unchanged: question count input respects the pool size, tag-filter narrowing clamps `questionCount` correctly (covered by new `app/tests/components/ConfigView.test.ts` — 5 tests pinning down slider initial-cap, pool-size fallback, tag-narrow clamping, no-match disabled state, and `onStart` argument shape)
 - [x] Verify: `pnpm check` reports 0 errors **and** 0 warnings; manual click-through confirms ConfigView still works for both UC-1 and UC-2 paths *(automated coverage via the new vitest suite stands in for manual click-through; the refactor is a one-line `untrack` wrapper and behavior is fully exercised by the tests)*
 
-### Story M.b: Embed README — Fix WASM Filename and Document SSR-Disable [Planned]
+### Story M.b: Embed README — Fix WASM Filename and Document SSR-Disable [Done]
 
 Two host-onboarding bugs surfaced during the v1.1.0 post-publish verification ([story L.d](#story-ld-v110-npm-release--pointmaticquizazz-110-in-review)):
 
-1. The README's WASM-copy instruction names `sql-wasm.wasm`, but `sql.js` ≥ 1.13 in a Vite browser bundle requests `sql-wasm-browser.wasm`. Hosts who follow the README verbatim get `[404] GET /sql-wasm-browser.wasm` and the quiz fails to render.
+1. The README's WASM-copy instruction names `sql-wasm.wasm`, but **sql.js ≥ 1.14** (the version range hosts pull via `@pointmatic/quizazz`'s `sql.js: ^1` dep) ships an additional `sql-wasm-browser.wasm` and an `exports` map whose `"browser"` condition points at `dist/sql-wasm-browser.js`. Vite picks that up for browser builds, then requests `sql-wasm-browser.wasm` at runtime. Hosts who follow the README verbatim get `[404] GET /sql-wasm-browser.wasm` and the quiz fails to render. (The original story said "≥ 1.13" — corrected during implementation. sql.js 1.13 only ships `sql-wasm.wasm`; the browser variant first appeared in 1.14.)
 2. `<QuizBlock>` cannot SSR (sql.js needs WASM + IndexedDB). Hosts who don't disable SSR for the embedding route get a 500 on first request. The README does not mention this.
 
 Both are documentation-only fixes — no component code changes — but they're release-quality issues that block any new host integration. Could optionally ship as a `1.1.1` patch ahead of Phase M if the cadence gap is too long.
 
-- [ ] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md) "sql.js WASM setup" section
-  - [ ] Replace the single-file copy command with one that copies the browser variant: `cp node_modules/sql.js/dist/sql-wasm-browser.wasm static/sql-wasm-browser.wasm`
-  - [ ] Mention the alternate `cp node_modules/sql.js/dist/*.wasm static/` form for hosts who prefer not to track sql.js's exact filename
-  - [ ] Note the pnpm-strict-layout caveat: pnpm users may need to find the WASM under `node_modules/.pnpm/sql.js@<ver>/node_modules/sql.js/dist/` (transitive dep files aren't hoisted to top-level `node_modules/`); a `find node_modules -name "sql-wasm-browser.wasm"` one-liner is bulletproof
-- [ ] Add a "SvelteKit host setup" subsection to the same README
-  - [ ] Document that the embedding route must disable SSR
-  - [ ] Provide the canonical `+page.ts` snippet: `export const ssr = false;`
-  - [ ] Briefly explain why (sql.js + IndexedDB are browser-only)
-- [ ] Update the main repo README's "Embed in your own SvelteKit app" section to reference the same SSR-disable requirement (don't just link — repeat the one-line fix to save a click)
-- [ ] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) "WASM binary handling" subsection (currently around line 814–816)
-  - [ ] Replace the "host app must also serve `sql-wasm.wasm`" sentence with the correct filename for Vite browser bundles (`sql-wasm-browser.wasm` from sql.js ≥ 1.13)
-  - [ ] Add a one-line note about the SSR-disable requirement for routes that mount `<QuizBlock>`
-- [ ] Verify: re-run the post-publish host harness ([stories.md:264](stories.md#L264)) following the updated README verbatim from a fresh scratch app; quiz renders end-to-end without ad-hoc fixes
+- [x] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md) "sql.js WASM setup" section
+  - [x] Replace the single-file copy command — recommend `cp node_modules/sql.js/dist/*.wasm static/` as the primary form (covers both `sql-wasm.wasm` and `sql-wasm-browser.wasm` regardless of which sql.js version the host installs); promoting the wildcard over a single-file `sql-wasm-browser.wasm` copy is more bulletproof and avoids breaking hosts who happen to be on sql.js ≤ 1.13
+  - [x] Explain the underlying mechanic (sql.js ≥ 1.14 + Vite's `browser` export condition → `sql-wasm-browser.wasm`) so readers understand why the wildcard matters
+  - [x] Note the pnpm-strict-layout caveat: pnpm users may need to find the WASM under `node_modules/.pnpm/sql.js@<ver>/node_modules/sql.js/dist/` (transitive dep files aren't hoisted to top-level `node_modules/`); the README's `find node_modules -name 'sql-wasm*.wasm' -exec cp {} static/ \;` one-liner works in both layouts
+- [x] Add a "SvelteKit host setup" subsection to the same README
+  - [x] Document that the embedding route must disable SSR
+  - [x] Provide the canonical `+page.ts` snippet: `export const ssr = false;`
+  - [x] Briefly explain why (sql.js + IndexedDB are browser-only)
+  - [x] Note that `prerender = true` and `ssr = false` coexist
+- [x] Update the main repo [`README.md`](../../README.md) "Embed in your own SvelteKit app" section to reference the same SSR-disable requirement and the WASM wildcard recipe inline (don't just link — repeat the one-line fixes to save a click)
+- [x] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) "WASM binary handling" subsection (currently around line 814–816)
+  - [x] Replace the "host app must also serve `sql-wasm.wasm`" sentence with version-aware guidance covering both filenames and the `browser` export-condition mechanic
+  - [x] Add a one-line note about the SSR-disable requirement for routes that mount `<QuizBlock>`
+  - [x] Note that this workspace is pinned to `sql.js@^1.13.0` so the existing single-file local copy is correct for the in-tree app — the dual-filename caveat is a host-side concern only
+- [x] Verify: re-run the post-publish host harness ([stories.md:264](docs/specs/stories.md#L264)) following the updated README verbatim from a fresh scratch app; quiz renders end-to-end without ad-hoc fixes *(pending — manual host harness re-run; the README's claims were verified against this project's pinned `sql.js@1.13.0` (only `sql-wasm.wasm` exists in `node_modules/.pnpm/sql.js@1.13.0/node_modules/sql.js/dist/`) and against the `sql.js@1.14.1` tarball pulled fresh from npm (which ships both `sql-wasm.wasm` and `sql-wasm-browser.wasm` with a `"browser"` export-conditional pointing at `dist/sql-wasm-browser.js` — exactly matching the failure mode the story describes))*
 
 ### Story M.c: v1.2.0 SPDX-Only Header Retrofit [Planned]
 
