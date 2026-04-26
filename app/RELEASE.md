@@ -89,7 +89,12 @@ The `npm-vX.Y.Z` tag triggers
 [`publish-npm.yml`](../.github/workflows/publish-npm.yml), which:
 
 1. Checks out the tag.
-2. Sets up Node 22 + pnpm 10 with `pnpm install --frozen-lockfile`.
+2. Sets up Node 24 + pnpm 10 with `pnpm install --frozen-lockfile`. (The
+   project supports Node 22+ at runtime; Node 24 is used in CI because
+   it ships npm 11.x natively, which is where trusted-publishing OIDC
+   support is robust. Trying to upgrade in place from Node 22's bundled
+   npm 10.x via `npm install -g npm@latest` fails on certain Node 22
+   patch releases.)
 3. Runs `pnpm exec vitest run` (full app suite).
 4. Runs `pnpm exec svelte-check --fail-on-warnings` (treats warnings as
    errors — see [story M.a](../docs/specs/stories.md#L287) for why this
@@ -97,11 +102,7 @@ The `npm-vX.Y.Z` tag triggers
 5. Builds the publishable bundle: `pnpm package` (runs `svelte-package` →
    `scripts/build-styles.mjs` → `scripts/clean-dist.mjs`).
 6. Validates the package layout: `pnpm publint`.
-7. Refreshes the runner's bundled npm (`npm install -g npm@latest`) so
-   the publish step uses npm 11.5+ where trusted-publishing OIDC support
-   is most robust. Node 22 LTS ships npm 10.x, which has partial
-   trusted-publishing support that varies by minor version.
-8. Publishes with `npm publish --access public --provenance`. Auth is
+7. Publishes with `npm publish --access public --provenance`. Auth is
    negotiated via the GitHub OIDC token against the npm trusted-publisher
    config; npm attaches a provenance attestation that displays as "Built
    and signed on GitHub Actions" on the package page.
