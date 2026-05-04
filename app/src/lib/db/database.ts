@@ -121,29 +121,64 @@ function saveToIndexedDB(idb: IDBDatabase, data: Uint8Array): Promise<void> {
 	});
 }
 
+type SqlJs = Awaited<ReturnType<typeof initSqlJs>>;
+
+let sqlJsInitPromise: Promise<SqlJs> | null = null;
+const dbPromises = new Map<string, Promise<Database>>();
+
+async function getSqlJs(): Promise<SqlJs> {
+	if (sqlJsInitPromise) return sqlJsInitPromise;
+	sqlJsInitPromise = (async () => {
+		try {
+			await assertWasmAssetAvailable(WASM_ASSET_URL);
+			return await initSqlJs({
+				locateFile: (file: string) => `/${file}`
+			});
+		} catch (err) {
+			sqlJsInitPromise = null;
+			throw err;
+		}
+	})();
+	return sqlJsInitPromise;
+}
+
 export async function initDatabase(quizName: string): Promise<Database> {
-	await assertWasmAssetAvailable(WASM_ASSET_URL);
+	const cached = dbPromises.get(quizName);
+	if (cached) return cached;
 
-	const SQL = await initSqlJs({
-		locateFile: (file: string) => `/${file}`
-	});
+	const promise = (async (): Promise<Database> => {
+		try {
+			const SQL = await getSqlJs();
+			const idb = await openIndexedDB(getDbName(quizName));
 
-	const idb = await openIndexedDB(getDbName(quizName));
+			try {
+				const saved = await loadFromIndexedDB(idb);
+				if (saved) {
+					const db = new SQL.Database(saved);
+					createSchema(db);
+					return db;
+				}
+			} catch {
+				// Corrupt or missing — fall through to create fresh
+			}
 
-	try {
-		const saved = await loadFromIndexedDB(idb);
-		if (saved) {
-			const db = new SQL.Database(saved);
+			const db = new SQL.Database();
 			createSchema(db);
 			return db;
+		} catch (err) {
+			dbPromises.delete(quizName);
+			throw err;
 		}
-	} catch {
-		// Corrupt or missing — fall through to create fresh
-	}
+	})();
 
-	const db = new SQL.Database();
-	createSchema(db);
-	return db;
+	dbPromises.set(quizName, promise);
+	return promise;
+}
+
+/** Test-only: clear memoized init promises. Do not call from production code. */
+export function __resetMemoization(): void {
+	sqlJsInitPromise = null;
+	dbPromises.clear();
 }
 
 export async function persistDatabase(db: Database, quizName: string): Promise<void> {

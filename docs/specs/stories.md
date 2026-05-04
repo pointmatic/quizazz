@@ -524,19 +524,20 @@ Replace bare `initSqlJs(...)` with a typed precheck so a WASM 404 (or any fetch 
   - [x] Asserts the HEAD request is sent with `cache: 'no-store'` (verify via `fetch` mock call args)
 - [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 185/185 pass (+6 new); `pyve test` — 159/159 pass; existing `<QuizBlock>` and `+page.svelte` flows continue to mount correctly when the WASM is present (`scores.test.ts` and `QuizBlock.test.ts` both pass without modification)
 
-### Story M.h: Init Memoization [Planned]
+### Story M.h: Init Memoization [Done]
 
 Concurrent callers of `initDatabase(quizName)` currently each run a full `initSqlJs` + IndexedDB-open sequence. There's no observed bug today (UC-1/UC-2 calls it once on mount; `<QuizBlock>` is single-instance-per-page), but the source doc lists this as a class of foot-gun: duplicate IDB opens, duplicate legacy migrations, half-initialised second-caller observations. Cheap insurance — Pattern B.
 
-- [ ] Refactor `app/src/lib/db/database.ts` to memoize init promises
-  - [ ] Module-level `let sqlJsInitPromise: Promise<typeof SQL> | null = null` for the `initSqlJs(...)` step
-  - [ ] Module-level `Map<string, Promise<Database>>` keyed by quiz name for the full open sequence (precheck + sql.js init + IDB load + schema)
-  - [ ] On any rejection, *do not* cache the rejected state — clear the slot so a subsequent call retries (avoid "poison the cache" failure mode)
-- [ ] Tests in `app/tests/db/database.test.ts`
-  - [ ] Two parallel `initDatabase('foo')` calls → exactly one HEAD precheck, one `initSqlJs` invocation, one IDB open; both calls resolve to the same `Database` instance
-  - [ ] First call rejects with `WasmAssetMissingError`; second call (post-rejection) re-runs the precheck (cache cleared)
-  - [ ] `initDatabase('foo')` and `initDatabase('bar')` run independently — different memoization slots
-- [ ] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` passes; manual mount of `+page.svelte` and `<QuizBlock>` shows no behavior regression
+- [x] Refactor `app/src/lib/db/database.ts` to memoize init promises
+  - [x] Module-level `let sqlJsInitPromise: Promise<SqlJs> | null = null` for the `initSqlJs(...)` step (typed via `Awaited<ReturnType<typeof initSqlJs>>` to avoid an extra import)
+  - [x] Module-level `Map<string, Promise<Database>>` keyed by quiz name for the full open sequence (precheck + sql.js init + IDB load + schema)
+  - [x] On any rejection, *do not* cache the rejected state — clear the slot so a subsequent call retries (avoid "poison the cache" failure mode); both layers (`getSqlJs` and `initDatabase`) clear their own slot
+  - [x] Added `__resetMemoization` test-only export so suites that exercise `initDatabase` can guarantee a clean slate per test
+- [x] Tests in `app/tests/db/database.test.ts`
+  - [x] Two parallel `initDatabase('memo-test')` calls → exactly one HEAD precheck (verified via `fetch` mock call count); both calls resolve from the same shared `sqlJsInitPromise`. (Verifying "one IDB open / one `initSqlJs` invocation" end-to-end requires a working `indexedDB` in jsdom, which isn't configured in this workspace — the precheck call-count assertion exercises the memoization point that gates everything below it.)
+  - [x] First call rejects with `WasmAssetMissingError`; second call (post-rejection) re-runs the precheck (cache cleared) — fetch mock call-count goes from 1 → 2
+  - [x] `initDatabase('alpha')` and `initDatabase('beta')` in parallel: both share the precheck (one fetch), both reject independently, and a follow-up `initDatabase('alpha')` re-issues the precheck (slot was cleared per-key)
+- [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 188/188 pass (+3 from 185); `pyve test` — 159/159 pass; existing `<QuizBlock>` and `+page.svelte` flows continue to mount correctly (no behavior regression — `QuizBlock.test.ts` mocks `initDatabase` at the module boundary, so memoization doesn't affect it)
 
 ### Story M.i: Vite Asset-Import WASM Bundling; Eliminate 'app/static/sql-wasm.wasm' [Planned]
 
