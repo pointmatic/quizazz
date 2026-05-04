@@ -539,37 +539,37 @@ Concurrent callers of `initDatabase(quizName)` currently each run a full `initSq
   - [x] `initDatabase('alpha')` and `initDatabase('beta')` in parallel: both share the precheck (one fetch), both reject independently, and a follow-up `initDatabase('alpha')` re-issues the precheck (slot was cleared per-key)
 - [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 188/188 pass (+3 from 185); `pyve test` — 159/159 pass; existing `<QuizBlock>` and `+page.svelte` flows continue to mount correctly (no behavior regression — `QuizBlock.test.ts` mocks `initDatabase` at the module boundary, so memoization doesn't affect it)
 
-### Story M.i: Vite Asset-Import WASM Bundling; Eliminate 'app/static/sql-wasm.wasm' [Planned]
+### Story M.i: Vite Asset-Import WASM Bundling; Eliminate 'app/static/sql-wasm.wasm' [Done]
 
 Switch both UC-1/UC-2 and UC-3 to Vite's `?url` asset-import pattern so the WASM resolves from `node_modules/sql.js/dist/` at build time and emits into the host's build output automatically. Eliminates the entire "host forgot to copy" failure class for `<QuizBlock>` consumers, removes the checked-in `app/static/sql-wasm.wasm` (no more two sources of truth), and shrinks the README's setup story to one sentence. Pattern C alternative for the embed shape.
 
 **Breaking change for existing `<QuizBlock>` hosts** — they must remove their `cp node_modules/sql.js/...` step. Per Q4, low risk: few existing implementations.
 
-- [ ] Update `app/src/lib/db/database.ts`
-  - [ ] Add `import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';` at the top
-  - [ ] Replace `WASM_ASSET_URL` constant with `wasmUrl` (or replace `locateFile: f => '/' + f` with `locateFile: () => wasmUrl`)
-  - [ ] Update the M.g HEAD precheck to use `wasmUrl` (which Vite resolves to a hashed path under `_app/immutable/assets/` in production, or the dev URL in development)
-- [ ] Delete `app/static/sql-wasm.wasm` from git (`git rm`)
-- [ ] Audit `app/package.json` for any `postinstall` or other script that copies the WASM into `static/`; remove if present
-- [ ] Update `app/src/lib/embed/README.md`
-  - [ ] Replace the entire "sql.js WASM setup" section with a single-line note: "No WASM setup required. The `sql-wasm.wasm` asset is bundled into your build output automatically by Vite when you import `<QuizBlock>`."
-  - [ ] Remove the version-aware filename guidance (no longer host-side concern)
-  - [ ] Add a one-line "Migration note for existing hosts" mentioning the removed copy step
-- [ ] Update main repo [`README.md`](../../README.md) "Embed in your own SvelteKit app" section: remove the WASM-copy step from the host-setup checklist (drops from three steps to two: SSR-disable + styles import)
-- [ ] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) "WASM binary handling" subsection
-  - [ ] Replace the version-aware filename guidance with the Vite asset-import approach (one paragraph)
-  - [ ] Remove the note about pinning to `sql.js@^1.13.0` for the legacy single-file copy — no longer relevant
-  - [ ] Update the "Package contents" / "Peer expectations" sections in the npm packaging block: hosts no longer copy WASM; `sql.js` runtime dep is the only requirement
-- [ ] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md)'s "SvelteKit host setup" subsection if it references WASM (the SSR-disable note from M.b stays as-is)
-- [ ] Tests
-  - [ ] Existing `app/tests/embed/QuizBlock.test.ts` continues to pass (Vite asset-import works in Vitest's default Vite environment)
-  - [ ] Add a test that asserts the resolved `wasmUrl` is a non-empty string (sanity check that the import resolves)
-- [ ] Verify
-  - [ ] `pnpm dev` starts and renders a quiz without `app/static/sql-wasm.wasm` present
-  - [ ] `pnpm --dir app build` produces a working static SPA; the WASM appears under `app/build/_app/immutable/assets/`
-  - [ ] `pnpm --dir app package` produces a working npm bundle (the asset-import resolves at host build time, not at package build time, so `dist/` does not contain the WASM)
-  - [ ] `pnpm publint` passes
-  - [ ] `pnpm check` — 0 errors, 0 warnings
+- [x] Update `app/src/lib/db/database.ts`
+  - [x] Add `import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';` at the top
+  - [x] Replace `WASM_ASSET_URL` constant with `wasmUrl` (or replace `locateFile: f => '/' + f` with `locateFile: () => wasmUrl`)
+  - [x] Update the M.g HEAD precheck to use `wasmUrl` (which Vite resolves to a hashed path under `_app/immutable/assets/` in production, or the dev URL in development)
+- [x] Delete `app/static/sql-wasm.wasm` from git (`git rm`)
+- [x] Audit `app/package.json` for any `postinstall` or other script that copies the WASM into `static/`; remove if present
+- [x] Update `app/src/lib/embed/README.md`
+  - [x] Replace the entire "sql.js WASM setup" section with a single-line note: "No WASM setup required. The `sql-wasm.wasm` asset is bundled into your build output automatically by Vite when you import `<QuizBlock>`."
+  - [x] Remove the version-aware filename guidance (no longer host-side concern)
+  - [x] Add a one-line "Migration note for existing hosts" mentioning the removed copy step
+- [x] Update main repo [`README.md`](../../README.md) "Embed in your own SvelteKit app" section: remove the WASM-copy step from the host-setup checklist (drops from three steps to two: SSR-disable + styles import)
+- [x] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) "WASM binary handling" subsection
+  - [x] Replace the version-aware filename guidance with the Vite asset-import approach (one paragraph)
+  - [x] Remove the note about pinning to `sql.js@^1.13.0` for the legacy single-file copy — no longer relevant
+  - [x] Update the "Package contents" / "Peer expectations" sections in the npm packaging block: hosts no longer copy WASM; `sql.js` runtime dep is the only requirement
+- [x] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md)'s "SvelteKit host setup" subsection if it references WASM (the SSR-disable note from M.b stays as-is)
+- [x] Tests
+  - [x] Existing `app/tests/embed/QuizBlock.test.ts` continues to pass (Vite asset-import works in Vitest's default Vite environment)
+  - [x] Add a test that asserts the resolved `wasmUrl` is a non-empty string (sanity check that the import resolves)
+- [x] Verify
+  - [x] `pnpm dev` starts and renders a quiz without `app/static/sql-wasm.wasm` present
+  - [x] `pnpm --dir app build` produces a working static SPA; the WASM appears under `app/build/_app/immutable/assets/`
+  - [x] `pnpm --dir app package` produces a working npm bundle (the asset-import resolves at host build time, not at package build time, so `dist/` does not contain the WASM)
+  - [x] `pnpm publint` passes
+  - [x] `pnpm check` — 0 errors, 0 warnings
   - [ ] *(pending — manual host harness)* Fresh SvelteKit scratch app, `pnpm add @pointmatic/quizazz`, no WASM copy step, `<QuizBlock>` renders and completes a quiz end-to-end
 
 ### Story M.j: '<QuizBlock>' Error Channel; '+page.svelte' Layout Banner [Planned]

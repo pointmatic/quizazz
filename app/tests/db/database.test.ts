@@ -10,6 +10,13 @@ import {
 } from '$lib/db';
 import { __resetMemoization } from '$lib/db/database';
 
+describe('WASM_ASSET_URL', () => {
+	it('resolves to a non-empty string at import time', () => {
+		expect(typeof WASM_ASSET_URL).toBe('string');
+		expect(WASM_ASSET_URL.length).toBeGreaterThan(0);
+	});
+});
+
 describe('assertWasmAssetAvailable', () => {
 	const originalFetch = globalThis.fetch;
 

@@ -134,7 +134,7 @@ quizazz/
 │   ├── vitest.config.ts
 │   ├── tsconfig.json
 │   ├── static/
-│   │   └── sql-wasm.wasm                      # sql.js WASM binary
+│   │   └── favicon.png                        # (sql-wasm.wasm is bundled by Vite via `?url` import; not checked in)
 │   ├── src/
 │   │   ├── app.html
 │   │   ├── app.css                            # Tailwind imports + globals
@@ -821,10 +821,9 @@ Only `quizazz` is registered as a console script. `python -m quizazz` also works
 
 ### WASM binary handling
 
-- `sql.js` ships the WASM alongside its npm package. A postinstall step copies `node_modules/sql.js/dist/sql-wasm.wasm` to `app/static/` (this workspace is pinned to `sql.js@^1.13.0`, so the legacy single-file copy is sufficient here).
-- sql.js is initialized with `locateFile: (f) => '/' + f` so the browser fetches from the built app's static root.
-- For `<QuizBlock>` published as an npm package, the host app must also serve sql.js's WASM from its static root. The exact filename depends on the host's resolved sql.js version: `sql-wasm.wasm` for `sql.js ≤ 1.13`, `sql-wasm-browser.wasm` for `sql.js ≥ 1.14` (Vite picks up the new `"browser"` export condition that points at `dist/sql-wasm-browser.js`). The package README recommends the bulletproof wildcard form (`cp node_modules/sql.js/dist/*.wasm static/`) so both filenames land regardless of which version the host installs.
-- Hosts must also disable SSR on any route that mounts `<QuizBlock>` (`export const ssr = false;` in `+page.ts` or `+layout.ts`) — sql.js and IndexedDB are browser-only, so a server-side render attempt throws during initialization. Documented in the package README under "SvelteKit host setup".
+- `app/src/lib/db/database.ts` imports the WASM via Vite's `?url` asset-import pattern: `import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';`. Vite resolves the import at host build time, emits the file into the build output (e.g. `_app/immutable/assets/sql-wasm-<hash>.wasm` for SvelteKit), and rewrites `wasmUrl` to that hashed URL. sql.js is then initialized with `locateFile: () => wasmUrl`, and a HEAD precheck against `wasmUrl` surfaces a `WasmAssetMissingError` if the asset is unreachable.
+- This applies uniformly to UC-1/UC-2 (the standalone SvelteKit build) and UC-3 (the `<QuizBlock>` npm package): hosts of `@pointmatic/quizazz` get the WASM bundled into their own build output automatically, with no `cp` / postinstall step. The previously-checked-in `app/static/sql-wasm.wasm` and any postinstall copy script have been removed.
+- Hosts must still disable SSR on any route that mounts `<QuizBlock>` (`export const ssr = false;` in `+page.ts` or `+layout.ts`) — sql.js and IndexedDB are browser-only, so a server-side render attempt throws during initialization. Documented in the package README under "SvelteKit host setup".
 
 ### Standalone build mechanics (UC-1)
 
@@ -951,7 +950,7 @@ Only `quizazz` is registered as a console script. `python -m quizazz` also works
   - Internal engine / db / utils modules the component needs.
   - **`styles.css`** — precompiled stylesheet emitted by `@tailwindcss/cli` from `src/lib/embed/styles.css` (theme + utilities, `source(none)` + explicit `@source` for embed-reachable Svelte files only, no preflight). Sub-exported as `./styles.css`.
   - **Not included**: `routes/`, chooser/upload components, standalone build machinery, the `embed/styles.css` source (stripped post-build by `clean-dist.mjs` so the only published stylesheet is the compiled `dist/styles.css`).
-- **Peer expectations**: host provides Svelte 5 runtime, serves sql.js's WASM (filename varies by sql.js version — see the package README), disables SSR on routes that mount `<QuizBlock>`, and imports `@pointmatic/quizazz/styles.css` for the default look. All documented in the package README.
+- **Peer expectations**: host provides a Svelte 5 runtime, runs a Vite-based build (so `?url` asset imports resolve — SvelteKit and standard Vite hosts qualify), disables SSR on routes that mount `<QuizBlock>`, and imports `@pointmatic/quizazz/styles.css` for the default look. The sql.js WASM asset is bundled into the host's build output automatically via Vite's `?url` import — no host-side WASM copy is required. `sql.js` is a runtime dependency of the package; hosts do not declare it directly. All documented in the package README.
 
 ### Installation methods
 
