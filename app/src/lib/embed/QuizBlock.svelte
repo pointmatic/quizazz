@@ -9,8 +9,8 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import type { Database } from 'sql.js';
-	import type { QuizManifest } from '$lib/types';
-	import { initDatabase, seedScores, getScores } from '$lib/db';
+	import type { QuizErrorEvent, QuizErrorType, QuizManifest } from '$lib/types';
+	import { initDatabase, seedScores, getScores, WasmAssetMissingError } from '$lib/db';
 	import { activeManifest } from '$lib/stores/manifest';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
 	import {
@@ -47,9 +47,10 @@
 		quizRef: string;
 		class?: string;
 		oncomplete?: (event: QuizCompleteEvent) => void;
+		onerror?: (event: QuizErrorEvent) => void;
 	}
 
-	const { manifest, quizRef, class: className = '', oncomplete }: Props = $props();
+	const { manifest, quizRef, class: className = '', oncomplete, onerror }: Props = $props();
 
 	let blocked = $state(false);
 	let blockedBy = $state('');
@@ -57,11 +58,12 @@
 	let db = $state<Database | null>(null);
 	let rootEl = $state<HTMLElement | undefined>();
 	let hasFiredComplete = $state(false);
+	let initError = $state<QuizErrorEvent | null>(null);
 
 	$effect(() => {
 		const mode = $viewMode;
 		const session = $quizSession;
-		if (blocked) return;
+		if (blocked || initError) return;
 		if (mode === 'summary' && session && !hasFiredComplete) {
 			const correct = session.questions.filter((q) => {
 				const submitted = q.presentedAnswers.find((a) => a.label === q.submittedLabel);
@@ -98,7 +100,19 @@
 
 		schemaStatus = isCompatible(manifest.schemaVersion);
 
-		db = await initDatabase(manifest.quizName);
+		try {
+			db = await initDatabase(manifest.quizName);
+		} catch (err) {
+			const errorType: QuizErrorType =
+				err instanceof WasmAssetMissingError ? 'wasm-missing' : 'failed';
+			const message = err instanceof Error ? err.message : String(err);
+			const payload: QuizErrorEvent = { quizRef, errorType, message };
+			initError = payload;
+			onerror?.(payload);
+			rootEl?.dispatchEvent(new CustomEvent('error', { detail: payload, bubbles: true }));
+			return;
+		}
+
 		seedScores(db, manifest.questions.map((q) => q.id));
 		activeManifest.set(manifest);
 		setNavNodes(manifest.tree);
@@ -145,6 +159,20 @@
 				Only one &lt;QuizBlock&gt; can be mounted per page in this release. The page already has
 				<code>{blockedBy}</code> mounted; <code>{quizRef}</code> was not started.
 			</p>
+		</aside>
+	{:else if initError}
+		<aside data-quizazz-error data-quizazz-error-type={initError.errorType}>
+			{#if initError.errorType === 'wasm-missing'}
+				<p>
+					The quiz database engine could not load (<code>sql-wasm.wasm</code> is unreachable).
+					This quiz cannot start until the asset is served by the host.
+				</p>
+			{:else}
+				<p>
+					The quiz database failed to initialize, so this quiz cannot start. Reloading the page
+					may resolve the issue.
+				</p>
+			{/if}
 		</aside>
 	{:else}
 		{#if schemaStatus === 'mismatch'}

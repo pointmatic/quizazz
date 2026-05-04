@@ -22,7 +22,8 @@ import {
 	reviewNext,
 	reviewPrev
 } from '$lib/engine/lifecycle';
-import type { QuizManifest } from '$lib/types';
+import type { QuizErrorEvent, QuizManifest } from '$lib/types';
+import { WasmAssetMissingError } from '$lib/db';
 
 vi.mock('$lib/db', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('$lib/db')>();
@@ -554,5 +555,99 @@ describe('QuizBlock schema-version handling', () => {
 		});
 		await vi.waitFor(() => expect(initDatabaseMock).toHaveBeenCalled());
 		expect(container.querySelector('aside[data-quizazz-warning]')).toBeNull();
+	});
+});
+
+describe('QuizBlock error channel', () => {
+	it('invokes onerror with errorType "wasm-missing" when initDatabase rejects with WasmAssetMissingError', async () => {
+		initDatabaseMock.mockRejectedValueOnce(new WasmAssetMissingError('/sql-wasm.wasm'));
+		const manifest = makeManifest('quiz-x');
+		const onerror = vi.fn();
+		render(QuizBlock, { props: { manifest, quizRef: 'ref-x', onerror } });
+
+		await vi.waitFor(() => expect(onerror).toHaveBeenCalledTimes(1));
+		const payload = onerror.mock.calls[0][0] as QuizErrorEvent;
+		expect(payload.quizRef).toBe('ref-x');
+		expect(payload.errorType).toBe('wasm-missing');
+		expect(typeof payload.message).toBe('string');
+		expect(payload.message.length).toBeGreaterThan(0);
+	});
+
+	it('invokes onerror with errorType "failed" on a generic Error rejection', async () => {
+		initDatabaseMock.mockRejectedValueOnce(new Error('IDB exploded'));
+		const manifest = makeManifest('quiz-y');
+		const onerror = vi.fn();
+		render(QuizBlock, { props: { manifest, quizRef: 'ref-y', onerror } });
+
+		await vi.waitFor(() => expect(onerror).toHaveBeenCalledTimes(1));
+		const payload = onerror.mock.calls[0][0] as QuizErrorEvent;
+		expect(payload.errorType).toBe('failed');
+		expect(payload.message).toBe('IDB exploded');
+	});
+
+	it('dispatches a bubbling CustomEvent("error") on the root with the same payload', async () => {
+		initDatabaseMock.mockRejectedValueOnce(new WasmAssetMissingError('/sql-wasm.wasm'));
+		const manifest = makeManifest('quiz-z');
+		const { container } = render(QuizBlock, { props: { manifest, quizRef: 'ref-z' } });
+
+		const events: CustomEvent<QuizErrorEvent>[] = [];
+		container.addEventListener('error', (e) =>
+			events.push(e as unknown as CustomEvent<QuizErrorEvent>)
+		);
+
+		await vi.waitFor(() => expect(events.length).toBeGreaterThan(0));
+		const evt = events[0];
+		expect(evt.bubbles).toBe(true);
+		expect(evt.detail.quizRef).toBe('ref-z');
+		expect(evt.detail.errorType).toBe('wasm-missing');
+	});
+
+	it('renders a fallback aside in place of the quiz UI on init failure', async () => {
+		initDatabaseMock.mockRejectedValueOnce(new WasmAssetMissingError('/sql-wasm.wasm'));
+		const manifest = makeManifest();
+		const { container } = render(QuizBlock, { props: { manifest, quizRef: 'ref-1' } });
+
+		await vi.waitFor(() => {
+			expect(container.querySelector('aside[data-quizazz-error]')).not.toBeNull();
+		});
+		const aside = container.querySelector('aside[data-quizazz-error]')!;
+		expect(aside.getAttribute('data-quizazz-error-type')).toBe('wasm-missing');
+	});
+
+	it('does not call startQuiz when init fails (no quiz session created)', async () => {
+		initDatabaseMock.mockRejectedValueOnce(new WasmAssetMissingError('/sql-wasm.wasm'));
+		const manifest = makeManifest();
+		render(QuizBlock, { props: { manifest, quizRef: 'ref-1' } });
+
+		await vi.waitFor(() => expect(initDatabaseMock).toHaveBeenCalled());
+		await tick();
+		expect(get(quizSession)).toBeNull();
+	});
+
+	it('does not fire complete after an error', async () => {
+		initDatabaseMock.mockRejectedValueOnce(new WasmAssetMissingError('/sql-wasm.wasm'));
+		const manifest = makeManifest();
+		const oncomplete = vi.fn();
+		render(QuizBlock, { props: { manifest, quizRef: 'ref-1', oncomplete } });
+
+		await vi.waitFor(() => expect(initDatabaseMock).toHaveBeenCalled());
+		viewMode.set('summary');
+		await tick();
+		expect(oncomplete).not.toHaveBeenCalled();
+	});
+
+	it('does not invoke onerror or dispatch error event on successful init', async () => {
+		const manifest = makeManifest();
+		const onerror = vi.fn();
+		const { container } = render(QuizBlock, {
+			props: { manifest, quizRef: 'ref-1', onerror }
+		});
+		const events: Event[] = [];
+		container.addEventListener('error', (e) => events.push(e));
+
+		await vi.waitFor(() => expect(initDatabaseMock).toHaveBeenCalled());
+		await tick();
+		expect(onerror).not.toHaveBeenCalled();
+		expect(events).toHaveLength(0);
 	});
 });

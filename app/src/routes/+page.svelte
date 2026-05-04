@@ -9,6 +9,8 @@
 	import { initDatabase, getScores, seedScores } from '$lib/db';
 	import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
 	import { activeManifest, questions as questionsStore, navTree as navTreeStore, allTags as allTagsStore } from '$lib/stores/manifest';
+	import { dbInit, classifyDbInitError } from '$lib/stores/db-init';
+	import RecordingPausedBanner from '$lib/components/RecordingPausedBanner.svelte';
 	import { startQuiz, submitAnswer, retakeQuiz, newQuiz, quitQuiz, reviewQuestion, backToSummary, reviewPrev, reviewNext, showAnsweredQuestions, editAnsweredQuestion, backToQuiz, setNavNodes, getFrontierIndex, getQuestionStartTime } from '$lib/engine/lifecycle';
 	import type { Question, QuestionScore, QuizManifest, NavNode } from '$lib/types';
 	import { getStandaloneTarget, resolveStandalone } from '$lib/utils/standalone';
@@ -69,22 +71,26 @@
 	async function selectManifest(m: QuizManifest) {
 		loading = true;
 		error = null;
+		dbInit.set('pending');
 		try {
 			activeManifest.set(m);
 			setNavNodes(m.tree);
 			db = await initDatabase(m.quizName);
 			seedScores(db, m.questions.map((q) => q.id));
 			scores = getScores(db);
+			dbInit.set('ready');
 			filteredQuestions = m.questions;
 			quizSession.set(null);
 			reviewIndex.set(null);
 			viewMode.set('nav');
 			loading = false;
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to initialize database';
+			dbInit.set(classifyDbInitError(e));
 			loading = false;
 		}
 	}
+
+	let dbBlocked = $derived($dbInit === 'wasm-missing' || $dbInit === 'failed');
 
 	function handleContinue(nodeIds: string[]) {
 		const currentTree = get(navTreeStore);
@@ -167,6 +173,8 @@
 	}
 </script>
 
+<RecordingPausedBanner />
+
 {#if loading}
 	<div class="flex min-h-screen items-center justify-center bg-gray-950">
 		<div class="text-center">
@@ -187,6 +195,8 @@
 			</button>
 		</div>
 	</div>
+{:else if dbBlocked}
+	<div class="min-h-screen bg-gray-950"></div>
 {:else if $viewMode === 'chooser'}
 	<QuizChooser {manifests} {uploadedManifests} onSelect={selectManifest} onUpload={handleUpload} onRemove={handleRemove} />
 {:else if $viewMode === 'nav'}

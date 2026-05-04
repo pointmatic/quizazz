@@ -66,3 +66,11 @@ export interface QuestionScore {
 	questionId: string;
 	cumulativeScore: number;
 }
+
+export type QuizErrorType = 'wasm-missing' | 'failed';
+
+export interface QuizErrorEvent {
+	quizRef: string;
+	errorType: QuizErrorType;
+	message: string;
+}

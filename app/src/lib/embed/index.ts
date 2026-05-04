@@ -3,4 +3,5 @@
 
 export { default as QuizBlock } from './QuizBlock.svelte';
 export type { QuizCompleteEvent } from './QuizBlock.svelte';
+export type { QuizErrorEvent, QuizErrorType } from '$lib/types';
 export { MANIFEST_SCHEMA_VERSION_MAJOR, isCompatible } from './schema-version';

@@ -570,43 +570,43 @@ Switch both UC-1/UC-2 and UC-3 to Vite's `?url` asset-import pattern so the WASM
   - [x] `pnpm --dir app package` produces a working npm bundle (the asset-import resolves at host build time, not at package build time, so `dist/` does not contain the WASM)
   - [x] `pnpm publint` passes
   - [x] `pnpm check` — 0 errors, 0 warnings
-  - [ ] *(pending — manual host harness)* Fresh SvelteKit scratch app, `pnpm add @pointmatic/quizazz`, no WASM copy step, `<QuizBlock>` renders and completes a quiz end-to-end
+  - [x] *(manual host harness)* Fresh SvelteKit scratch app, `pnpm add @pointmatic/quizazz`, no WASM copy step, `<QuizBlock>` renders and completes a quiz end-to-end
 
-### Story M.j: '<QuizBlock>' Error Channel; '+page.svelte' Layout Banner [Planned]
+### Story M.j: '<QuizBlock>' Error Channel; '+page.svelte' Layout Banner [Done]
 
 Surface DB-init failures programmatically (UC-3) and visually (UC-1/UC-2). `<QuizBlock>` gains an `onerror` callback prop and a `CustomEvent('error')` channel mirroring the dual-channel pattern of `complete`; `+page.svelte` gains a layout-level `<RecordingPausedBanner>` driven by a `dbInit` store with status-aware actions. Pattern E for both shapes.
 
-- [ ] Define `QuizErrorEvent` in `app/src/lib/types/index.ts`
-  - [ ] `{ quizRef: string; errorType: 'wasm-missing' | 'failed'; message: string }`
-- [ ] Create `app/src/lib/stores/db-init.ts`
-  - [ ] `export const dbInit = writable<'pending' | 'ready' | 'wasm-missing' | 'failed'>('pending')`
-  - [ ] (Optional) helper functions to set the store from observed errors
-- [ ] Create `app/src/lib/components/RecordingPausedBanner.svelte`
-  - [ ] Subscribes to `dbInit`
-  - [ ] Renders nothing on `'pending'` and `'ready'`
-  - [ ] On `'wasm-missing'`: explanatory copy + "Reload" button (`window.location.reload()`)
-  - [ ] On `'failed'`: explanatory copy + "Reset Database" button (drops the IDB entry for the active quiz via `indexedDB.deleteDatabase(getDbName(quizName))`, then reloads)
-  - [ ] Visible/dismissable styling matching the existing app design (Tailwind utilities)
-- [ ] Update `app/src/routes/+page.svelte`
-  - [ ] Wrap each `initDatabase(...)` call in `try/catch`
-  - [ ] On `WasmAssetMissingError`: `dbInit.set('wasm-missing')`
-  - [ ] On other errors: `dbInit.set('failed')`
-  - [ ] On success: `dbInit.set('ready')` after seeding scores
-  - [ ] Render `<RecordingPausedBanner />` at the top of the layout
-  - [ ] Don't render quiz UI (`viewMode === 'chooser' | 'nav' | ...`) until `$dbInit === 'ready'`
-- [ ] Update `app/src/lib/embed/QuizBlock.svelte`
-  - [ ] Add `onerror?: (event: QuizErrorEvent) => void` to `Props`
-  - [ ] Wrap `initDatabase(manifest.quizName)` in `onMount` with `try/catch`
-  - [ ] On typed failure: classify (`'wasm-missing'` for `WasmAssetMissingError`, `'failed'` otherwise), build payload, call `onerror?.(payload)`, dispatch `rootEl?.dispatchEvent(new CustomEvent('error', { detail: payload, bubbles: true }))`, set local error state
-  - [ ] When local error state is set, render `<aside data-quizazz-error>` with explanatory copy in place of the quiz UI; don't call `startQuiz` or `seedScores`
-  - [ ] Don't fire `complete` after an error
-- [ ] Tests
-  - [ ] `app/tests/embed/QuizBlock.test.ts`: mock `initDatabase` to reject with `WasmAssetMissingError` → `onerror` invoked with `errorType: 'wasm-missing'`, payload-shape assertions; `CustomEvent('error', { detail, bubbles: true })` fires on the root; fallback aside renders; `startQuiz` not called
-  - [ ] Same suite: generic `Error` rejection → `errorType: 'failed'`
-  - [ ] Regression: successful init does not call `onerror` and does not dispatch `'error'` event
-  - [ ] `app/tests/components/RecordingPausedBanner.test.ts`: each store value renders the right shape and the right action; "Reset Database" action calls `indexedDB.deleteDatabase` with the expected name and reloads
-  - [ ] `app/tests/stores/db-init.test.ts`: store transitions don't fire reactive cycles when set to the same value (sanity)
-- [ ] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` passes; manual smoke-test: temporarily break the WASM URL, observe banner in `+page.svelte` and `onerror`/fallback in `<QuizBlock>`
+- [x] Define `QuizErrorEvent` in `app/src/lib/types/index.ts`
+  - [x] `{ quizRef: string; errorType: 'wasm-missing' | 'failed'; message: string }`
+- [x] Create `app/src/lib/stores/db-init.ts`
+  - [x] `export const dbInit = writable<'pending' | 'ready' | 'wasm-missing' | 'failed'>('pending')`
+  - [x] (Optional) helper functions to set the store from observed errors
+- [x] Create `app/src/lib/components/RecordingPausedBanner.svelte`
+  - [x] Subscribes to `dbInit`
+  - [x] Renders nothing on `'pending'` and `'ready'`
+  - [x] On `'wasm-missing'`: explanatory copy + "Reload" button (`window.location.reload()`)
+  - [x] On `'failed'`: explanatory copy + "Reset Database" button (drops the IDB entry for the active quiz via `indexedDB.deleteDatabase(getDbName(quizName))`, then reloads)
+  - [x] Visible/dismissable styling matching the existing app design (Tailwind utilities)
+- [x] Update `app/src/routes/+page.svelte`
+  - [x] Wrap each `initDatabase(...)` call in `try/catch`
+  - [x] On `WasmAssetMissingError`: `dbInit.set('wasm-missing')`
+  - [x] On other errors: `dbInit.set('failed')`
+  - [x] On success: `dbInit.set('ready')` after seeding scores
+  - [x] Render `<RecordingPausedBanner />` at the top of the layout
+  - [x] Don't render quiz UI (`viewMode === 'chooser' | 'nav' | ...`) until `$dbInit === 'ready'`
+- [x] Update `app/src/lib/embed/QuizBlock.svelte`
+  - [x] Add `onerror?: (event: QuizErrorEvent) => void` to `Props`
+  - [x] Wrap `initDatabase(manifest.quizName)` in `onMount` with `try/catch`
+  - [x] On typed failure: classify (`'wasm-missing'` for `WasmAssetMissingError`, `'failed'` otherwise), build payload, call `onerror?.(payload)`, dispatch `rootEl?.dispatchEvent(new CustomEvent('error', { detail: payload, bubbles: true }))`, set local error state
+  - [x] When local error state is set, render `<aside data-quizazz-error>` with explanatory copy in place of the quiz UI; don't call `startQuiz` or `seedScores`
+  - [x] Don't fire `complete` after an error
+- [x] Tests
+  - [x] `app/tests/embed/QuizBlock.test.ts`: mock `initDatabase` to reject with `WasmAssetMissingError` → `onerror` invoked with `errorType: 'wasm-missing'`, payload-shape assertions; `CustomEvent('error', { detail, bubbles: true })` fires on the root; fallback aside renders; `startQuiz` not called
+  - [x] Same suite: generic `Error` rejection → `errorType: 'failed'`
+  - [x] Regression: successful init does not call `onerror` and does not dispatch `'error'` event
+  - [x] `app/tests/components/RecordingPausedBanner.test.ts`: each store value renders the right shape and the right action; "Reset Database" action calls `indexedDB.deleteDatabase` with the expected name and reloads
+  - [x] `app/tests/stores/db-init.test.ts`: store transitions don't fire reactive cycles when set to the same value (sanity)
+- [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 209/209 pass (was 189; +20: 7 QuizBlock + 7 banner + 6 store); `pnpm --dir app build` succeeds. Manual smoke-test deferred to v1.3.0 release prep.
 
 ### Story M.k: Repo-Boundary Swallow Rule [Planned]
 
