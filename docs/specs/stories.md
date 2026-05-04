@@ -284,6 +284,8 @@ Phase M has no learningfoundry dependency. It is pure project-internal. Phase L 
 
 **Intended release version:** `v1.2.0` — the whole phase ships together. Individual stories land unversioned; the version bump lives in the last story (M.f).
 
+**Subplan addendum (M.g – M.l):** sql.js / WASM / IndexedDB robustness, ships at `v1.3.0`. See [`phase-m-subplan-sql-js-robustness.md`](phase-m-subplan-sql-js-robustness.md) for the gap analysis, technical changes, and out-of-scope items. The subplan is a Y-bump bundle distinct from the v1.2.0 release; M.g – M.k land unversioned, the bump lives in M.l.
+
 ### Story M.a: Resolve 'ConfigView' Svelte 5 State-Reference Warning [Done]
 
 [`ConfigView.svelte:39`](../../app/src/lib/components/ConfigView.svelte#L39) triggers a Svelte 5 `state_referenced_locally` warning because `let questionCount = $state(Math.min(10, questions.length))` only captures `questions` at mount. Currently benign — the parent unmounts/remounts ConfigView when the scope changes, so `questions` doesn't actually mutate during a given ConfigView's lifetime — but it's the only warning in `pnpm check` output, and resolving it restores a zero-warning baseline that makes future regressions obvious.
@@ -494,6 +496,162 @@ The asymmetry where Python is CI-published and npm is hand-published is a real s
 3. **Run the publish step on Node 24, not Node 22.** Node 22 LTS ships npm 10.x; trusted-publishing OIDC support is robust in npm 11.5+. Trying to upgrade in place via `npm install -g npm@latest` from Node 22's bundled npm fails on certain Node 22 patch releases (`Cannot find module 'promise-retry'` from arborist). Node 24 ships npm 11.x natively — no upgrade dance needed. The project's runtime support floor is unchanged at Node 22+; only the publish runner uses 24.
 
 (2) and (3) were not in the original story plan — the story assumed the M.f setup would mirror the PyPI workflow's smoothness. They were discovered by running the workflow live and are now baked into the workflow file's comments and the RELEASE.md doc.
+
+---
+
+## Phase M Subplan: sql.js / WASM / IndexedDB Robustness
+
+Stories M.g – M.l address the four gotchas and five patterns documented in [`sql-js-wasm-robustness.md`](sql-js-wasm-robustness.md), distilled from the learningfoundry progress-recording incidents (Stories I.v – I.bb, v0.55.0 – v0.63.0). The audit found real exposures on UC-3's embed path: cache-hidden WASM 404s, two-source asset provisioning, and a silent rejection cascade with no programmatic detection channel for hosts.
+
+See [`phase-m-subplan-sql-js-robustness.md`](phase-m-subplan-sql-js-robustness.md) for the full gap analysis, technical changes, and out-of-scope items. The subplan ships at `v1.3.0`; the manifest schema is unaffected (`MANIFEST_SCHEMA_VERSION` stays at `"1.0"`).
+
+### Story M.g: 'WasmAssetMissingError' and HEAD-Fetch Precheck [Done]
+
+Replace bare `initSqlJs(...)` with a typed precheck so a WASM 404 (or any fetch failure) surfaces as a deterministic, programmatically-detectable error instead of a half-initialised `Database` instance whose queries silently fail. This is Pattern A from the source doc — the cheapest and highest-value robustness fix. Independently shippable; nothing else in the subplan depends on it landing first, but it's the foundation the failure-surface story (M.j) builds on.
+
+- [x] Create `app/src/lib/db/errors.ts`
+  - [x] `class WasmAssetMissingError extends Error` with readonly `assetUrl: string` and optional `cause: unknown`
+  - [x] Constructor sets `name = 'WasmAssetMissingError'` and a human-readable message including the asset URL
+  - [x] Export from `app/src/lib/db/index.ts` so callers can `import { WasmAssetMissingError } from '$lib/db'`
+- [x] Update `app/src/lib/db/database.ts`
+  - [x] Add module-level `WASM_ASSET_URL` constant (still `'/sql-wasm.wasm'` at this story; M.i replaces it with the Vite-imported URL)
+  - [x] Add `assertWasmAssetAvailable(url: string): Promise<void>` that does `fetch(url, { method: 'HEAD', cache: 'no-store' })`; throws `WasmAssetMissingError(url)` on network failure or non-OK response (preserve the original error as `cause` for network failures)
+  - [x] Call `assertWasmAssetAvailable(WASM_ASSET_URL)` at the top of `initDatabase` before `initSqlJs`
+- [x] Tests in `app/tests/db/database.test.ts` (create if missing)
+  - [x] Precheck succeeds → `initDatabase` proceeds normally (mock `fetch` to 200 OK; mock `sql.js`) — covered by the HEAD-OK assertion + the verified `cache: 'no-store'` request shape; full happy-path through `initDatabase` with mocked `sql.js` is impractical in jsdom (the real `initSqlJs` then loads WASM, which the existing `scores.test.ts` does using the unmocked sql.js path) and is exercised end-to-end by every other suite that mocks `initDatabase` at the module boundary (`QuizBlock.test.ts`)
+  - [x] Precheck 404 → `initDatabase` throws `WasmAssetMissingError`; `assetUrl` populated
+  - [x] Precheck network error (rejected fetch) → throws `WasmAssetMissingError`; `cause` populated with the original error
+  - [x] Asserts the HEAD request is sent with `cache: 'no-store'` (verify via `fetch` mock call args)
+- [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 185/185 pass (+6 new); `pyve test` — 159/159 pass; existing `<QuizBlock>` and `+page.svelte` flows continue to mount correctly when the WASM is present (`scores.test.ts` and `QuizBlock.test.ts` both pass without modification)
+
+### Story M.h: Init Memoization [Planned]
+
+Concurrent callers of `initDatabase(quizName)` currently each run a full `initSqlJs` + IndexedDB-open sequence. There's no observed bug today (UC-1/UC-2 calls it once on mount; `<QuizBlock>` is single-instance-per-page), but the source doc lists this as a class of foot-gun: duplicate IDB opens, duplicate legacy migrations, half-initialised second-caller observations. Cheap insurance — Pattern B.
+
+- [ ] Refactor `app/src/lib/db/database.ts` to memoize init promises
+  - [ ] Module-level `let sqlJsInitPromise: Promise<typeof SQL> | null = null` for the `initSqlJs(...)` step
+  - [ ] Module-level `Map<string, Promise<Database>>` keyed by quiz name for the full open sequence (precheck + sql.js init + IDB load + schema)
+  - [ ] On any rejection, *do not* cache the rejected state — clear the slot so a subsequent call retries (avoid "poison the cache" failure mode)
+- [ ] Tests in `app/tests/db/database.test.ts`
+  - [ ] Two parallel `initDatabase('foo')` calls → exactly one HEAD precheck, one `initSqlJs` invocation, one IDB open; both calls resolve to the same `Database` instance
+  - [ ] First call rejects with `WasmAssetMissingError`; second call (post-rejection) re-runs the precheck (cache cleared)
+  - [ ] `initDatabase('foo')` and `initDatabase('bar')` run independently — different memoization slots
+- [ ] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` passes; manual mount of `+page.svelte` and `<QuizBlock>` shows no behavior regression
+
+### Story M.i: Vite Asset-Import WASM Bundling; Eliminate 'app/static/sql-wasm.wasm' [Planned]
+
+Switch both UC-1/UC-2 and UC-3 to Vite's `?url` asset-import pattern so the WASM resolves from `node_modules/sql.js/dist/` at build time and emits into the host's build output automatically. Eliminates the entire "host forgot to copy" failure class for `<QuizBlock>` consumers, removes the checked-in `app/static/sql-wasm.wasm` (no more two sources of truth), and shrinks the README's setup story to one sentence. Pattern C alternative for the embed shape.
+
+**Breaking change for existing `<QuizBlock>` hosts** — they must remove their `cp node_modules/sql.js/...` step. Per Q4, low risk: few existing implementations.
+
+- [ ] Update `app/src/lib/db/database.ts`
+  - [ ] Add `import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';` at the top
+  - [ ] Replace `WASM_ASSET_URL` constant with `wasmUrl` (or replace `locateFile: f => '/' + f` with `locateFile: () => wasmUrl`)
+  - [ ] Update the M.g HEAD precheck to use `wasmUrl` (which Vite resolves to a hashed path under `_app/immutable/assets/` in production, or the dev URL in development)
+- [ ] Delete `app/static/sql-wasm.wasm` from git (`git rm`)
+- [ ] Audit `app/package.json` for any `postinstall` or other script that copies the WASM into `static/`; remove if present
+- [ ] Update `app/src/lib/embed/README.md`
+  - [ ] Replace the entire "sql.js WASM setup" section with a single-line note: "No WASM setup required. The `sql-wasm.wasm` asset is bundled into your build output automatically by Vite when you import `<QuizBlock>`."
+  - [ ] Remove the version-aware filename guidance (no longer host-side concern)
+  - [ ] Add a one-line "Migration note for existing hosts" mentioning the removed copy step
+- [ ] Update main repo [`README.md`](../../README.md) "Embed in your own SvelteKit app" section: remove the WASM-copy step from the host-setup checklist (drops from three steps to two: SSR-disable + styles import)
+- [ ] Update [`docs/specs/tech-spec.md`](../../docs/specs/tech-spec.md) "WASM binary handling" subsection
+  - [ ] Replace the version-aware filename guidance with the Vite asset-import approach (one paragraph)
+  - [ ] Remove the note about pinning to `sql.js@^1.13.0` for the legacy single-file copy — no longer relevant
+  - [ ] Update the "Package contents" / "Peer expectations" sections in the npm packaging block: hosts no longer copy WASM; `sql.js` runtime dep is the only requirement
+- [ ] Update [`app/src/lib/embed/README.md`](../../app/src/lib/embed/README.md)'s "SvelteKit host setup" subsection if it references WASM (the SSR-disable note from M.b stays as-is)
+- [ ] Tests
+  - [ ] Existing `app/tests/embed/QuizBlock.test.ts` continues to pass (Vite asset-import works in Vitest's default Vite environment)
+  - [ ] Add a test that asserts the resolved `wasmUrl` is a non-empty string (sanity check that the import resolves)
+- [ ] Verify
+  - [ ] `pnpm dev` starts and renders a quiz without `app/static/sql-wasm.wasm` present
+  - [ ] `pnpm --dir app build` produces a working static SPA; the WASM appears under `app/build/_app/immutable/assets/`
+  - [ ] `pnpm --dir app package` produces a working npm bundle (the asset-import resolves at host build time, not at package build time, so `dist/` does not contain the WASM)
+  - [ ] `pnpm publint` passes
+  - [ ] `pnpm check` — 0 errors, 0 warnings
+  - [ ] *(pending — manual host harness)* Fresh SvelteKit scratch app, `pnpm add @pointmatic/quizazz`, no WASM copy step, `<QuizBlock>` renders and completes a quiz end-to-end
+
+### Story M.j: '<QuizBlock>' Error Channel; '+page.svelte' Layout Banner [Planned]
+
+Surface DB-init failures programmatically (UC-3) and visually (UC-1/UC-2). `<QuizBlock>` gains an `onerror` callback prop and a `CustomEvent('error')` channel mirroring the dual-channel pattern of `complete`; `+page.svelte` gains a layout-level `<RecordingPausedBanner>` driven by a `dbInit` store with status-aware actions. Pattern E for both shapes.
+
+- [ ] Define `QuizErrorEvent` in `app/src/lib/types/index.ts`
+  - [ ] `{ quizRef: string; errorType: 'wasm-missing' | 'failed'; message: string }`
+- [ ] Create `app/src/lib/stores/db-init.ts`
+  - [ ] `export const dbInit = writable<'pending' | 'ready' | 'wasm-missing' | 'failed'>('pending')`
+  - [ ] (Optional) helper functions to set the store from observed errors
+- [ ] Create `app/src/lib/components/RecordingPausedBanner.svelte`
+  - [ ] Subscribes to `dbInit`
+  - [ ] Renders nothing on `'pending'` and `'ready'`
+  - [ ] On `'wasm-missing'`: explanatory copy + "Reload" button (`window.location.reload()`)
+  - [ ] On `'failed'`: explanatory copy + "Reset Database" button (drops the IDB entry for the active quiz via `indexedDB.deleteDatabase(getDbName(quizName))`, then reloads)
+  - [ ] Visible/dismissable styling matching the existing app design (Tailwind utilities)
+- [ ] Update `app/src/routes/+page.svelte`
+  - [ ] Wrap each `initDatabase(...)` call in `try/catch`
+  - [ ] On `WasmAssetMissingError`: `dbInit.set('wasm-missing')`
+  - [ ] On other errors: `dbInit.set('failed')`
+  - [ ] On success: `dbInit.set('ready')` after seeding scores
+  - [ ] Render `<RecordingPausedBanner />` at the top of the layout
+  - [ ] Don't render quiz UI (`viewMode === 'chooser' | 'nav' | ...`) until `$dbInit === 'ready'`
+- [ ] Update `app/src/lib/embed/QuizBlock.svelte`
+  - [ ] Add `onerror?: (event: QuizErrorEvent) => void` to `Props`
+  - [ ] Wrap `initDatabase(manifest.quizName)` in `onMount` with `try/catch`
+  - [ ] On typed failure: classify (`'wasm-missing'` for `WasmAssetMissingError`, `'failed'` otherwise), build payload, call `onerror?.(payload)`, dispatch `rootEl?.dispatchEvent(new CustomEvent('error', { detail: payload, bubbles: true }))`, set local error state
+  - [ ] When local error state is set, render `<aside data-quizazz-error>` with explanatory copy in place of the quiz UI; don't call `startQuiz` or `seedScores`
+  - [ ] Don't fire `complete` after an error
+- [ ] Tests
+  - [ ] `app/tests/embed/QuizBlock.test.ts`: mock `initDatabase` to reject with `WasmAssetMissingError` → `onerror` invoked with `errorType: 'wasm-missing'`, payload-shape assertions; `CustomEvent('error', { detail, bubbles: true })` fires on the root; fallback aside renders; `startQuiz` not called
+  - [ ] Same suite: generic `Error` rejection → `errorType: 'failed'`
+  - [ ] Regression: successful init does not call `onerror` and does not dispatch `'error'` event
+  - [ ] `app/tests/components/RecordingPausedBanner.test.ts`: each store value renders the right shape and the right action; "Reset Database" action calls `indexedDB.deleteDatabase` with the expected name and reloads
+  - [ ] `app/tests/stores/db-init.test.ts`: store transitions don't fire reactive cycles when set to the same value (sanity)
+- [ ] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` passes; manual smoke-test: temporarily break the WASM URL, observe banner in `+page.svelte` and `onerror`/fallback in `<QuizBlock>`
+
+### Story M.k: Repo-Boundary Swallow Rule [Planned]
+
+Defensive `try/catch` around runtime DB calls so a transient IDB error (quota exceeded, transaction abort, post-init corruption) doesn't crash an in-progress answer-submit or score-load. Surfaces failures to the `dbInit` store from M.j; UI continues to render rather than blank. Pattern D, adapted to quizazz's structure (where init errors land at mount time rather than per-call, so the swallow site is the *runtime* path, not the read/write boundary).
+
+- [ ] Update `app/src/lib/db/scores.ts`
+  - [ ] Wrap `getScores`, `seedScores`, `updateScore`, `recordAnswer` in `try/catch`
+  - [ ] On any caught error: log to `console.error` with `[quizazz]` prefix; flip `dbInit` store to `'failed'`; return safe sentinel:
+    - `getScores` → `[]`
+    - `seedScores` / `updateScore` / `recordAnswer` → no-op return
+  - [ ] Add a module-comment block at the top: "Runtime sql.js errors are swallowed here because they are surfaced once via the `dbInit` store (subscribed by `<RecordingPausedBanner>`) or via `<QuizBlock>`'s `onerror` channel. Do not refactor away these catches without first verifying the failure-surface contract is preserved. See [phase-m-subplan-sql-js-robustness.md](../../docs/specs/phase-m-subplan-sql-js-robustness.md)."
+- [ ] Update `app/src/lib/engine/lifecycle.ts` `persistDatabase` call site at [line 164](../../app/src/lib/engine/lifecycle.ts#L164)
+  - [ ] Wrap in `try/catch`; on caught error: log + flip `dbInit` to `'failed'`; do not throw (callers like `submitAnswer` should not abort on a persist failure — the in-memory state is correct, only persistence to IDB failed)
+- [ ] Tests
+  - [ ] `app/tests/db/scores.test.ts`: mock `db.exec` / `db.run` to throw → `getScores` returns `[]`; writes are no-ops; `dbInit` flips to `'failed'`
+  - [ ] `app/tests/engine/lifecycle.test.ts`: mock `persistDatabase` to throw → `submitAnswer` still completes (in-memory state updated); `dbInit` flips to `'failed'`
+- [ ] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` passes; the failure-surface from M.j is preserved
+
+### Story M.l: v1.3.0 Release [Planned]
+
+Lockstep version bump and CI-driven publish for the subplan bundle. Mirrors the M.f release flow (tag-driven CI for both PyPI and npm); no new infrastructure work — just confirming the M.f workflows handle a clean release end-to-end.
+
+- [ ] Bump versions
+  - [ ] [`python/pyproject.toml`](../../python/pyproject.toml) `[project].version` → `1.3.0`
+  - [ ] [`python/src/quizazz/__init__.py`](../../python/src/quizazz/__init__.py) `__version__` → `"1.3.0"`
+  - [ ] [`app/package.json`](../../app/package.json) `version` → `"1.3.0"`
+  - [ ] `MANIFEST_SCHEMA_VERSION` stays at `"1.0"` (no manifest shape changes — confirm by grep)
+- [ ] Local preflight (mirrors what CI runs)
+  - [ ] `pyve test` — full Python suite passes
+  - [ ] `pnpm --dir app exec vitest run` — full TypeScript suite passes
+  - [ ] `pnpm --dir app exec svelte-check --tsconfig ./tsconfig.json --fail-on-warnings` — 0 errors, 0 warnings
+  - [ ] `pnpm --dir app package` — emits `dist/` with `dist/styles.css` cleanly; no `app/static/sql-wasm.wasm` reference
+  - [ ] `pnpm --dir app exec publint` — "All good!"
+  - [ ] `python -m build python/` + `twine check` — both sdist and wheel PASSED
+- [ ] Update [`README.md`](../../README.md) and [`python/README.md`](../../python/README.md) version references (any `1.2.0` mentions) to `1.3.0`
+- [ ] Push tags
+  - [ ] `git tag -a npm-v1.3.0 -m "@pointmatic/quizazz 1.3.0" && git push origin npm-v1.3.0` — triggers [`publish-npm.yml`](../../.github/workflows/publish-npm.yml)
+  - [ ] `git tag -a v1.3.0 -m "quizazz 1.3.0" && git push origin v1.3.0` — triggers [`publish-pypi.yml`](../../.github/workflows/publish-pypi.yml)
+- [ ] Verify post-publish
+  - [ ] `pnpm view @pointmatic/quizazz version` returns `1.3.0`
+  - [ ] `pip install quizazz==1.3.0` in a fresh venv works; `quizazz --version` prints `1.3.0`
+  - [ ] Provenance signature visible on the npm web UI ("Built and signed on GitHub Actions")
+  - [ ] Re-run the post-publish host harness:
+    - [ ] Fresh SvelteKit scratch app, `pnpm add @pointmatic/quizazz@1.3.0`, **no WASM copy step**, import styles, `<QuizBlock>` renders end-to-end
+    - [ ] Smoke-test the failure surface: temporarily block the WASM URL via dev tools, verify `onerror` fires with `errorType: 'wasm-missing'` and the in-bounds fallback aside renders
+- [ ] Append the M.g – M.l must-know facts to [`docs/specs/project-essentials.md`](project-essentials.md) per `plan_phase` step 7 (this happens after the stories ship, not as part of M.l's pre-release work — see the Project-Essentials Impact section in the subplan plan doc for the candidate facts)
 
 ---
 

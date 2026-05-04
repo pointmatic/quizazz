@@ -22,7 +22,7 @@ For efficiency, when you change modes, start a new LLM conversation.
 ### For LLMs
 
 **Modes**
-This Project-Guide offers a human-in-the-loop workflow for you to follow that can be dynamically reconfigured based on the project `mode`. Each `mode` defines a focused cycle of steps to guide you (the LLM) to help generate artifacts for some facet in the project lifecycle. This document is customized for code_test_first.
+This Project-Guide offers a human-in-the-loop workflow for you to follow that can be dynamically reconfigured based on the project `mode`. Each `mode` defines a focused cycle of steps to guide you (the LLM) to help generate artifacts for some facet in the project lifecycle. This document is customized for code_direct.
 
 **Approval Gate**
 When you have completed the steps, pause for the developer to review, correct, redirect, or ask questions about your work.  
@@ -239,11 +239,36 @@ emitted structure, treat this as a checklist item — not an afterthought.
 ### One project version
 
 The project has a single version. Canonical source:
-`python/pyproject.toml` `[project].version`, mirrored in
-`python/src/quizazz/__init__.py.__version__`. Both published packages
-(`quizazz` on PyPI, `@pointmatic/quizazz` on npm from Phase L) bump to
-match in lockstep. `app/package.json` is a private workspace root and
-carries no `version` field.
+[`python/pyproject.toml`](../../python/pyproject.toml) `[project].version`,
+mirrored in `python/src/quizazz/__init__.py.__version__`. Both published
+packages (`quizazz` on PyPI, `@pointmatic/quizazz` on npm from Phase L)
+bump to match in lockstep.
+
+**Tags drive CI publishing for both channels** (Phase M onwards):
+
+- `vX.Y.Z` — bare version tag. Triggers
+  [`publish-pypi.yml`](../../.github/workflows/publish-pypi.yml), which
+  publishes `quizazz` to PyPI via OIDC trusted publishing.
+- `npm-vX.Y.Z` — npm-prefixed version tag. Triggers
+  [`publish-npm.yml`](../../.github/workflows/publish-npm.yml), which
+  publishes `@pointmatic/quizazz` to npm via OIDC trusted publishing
+  (with provenance).
+
+Both workflows do their own preflight (tests + lint + type-check + dry
+runs) so a broken commit can't reach a registry even if the tag is
+pushed by mistake. The two prefixes are deliberately distinct so a
+Python-only or npm-only hotfix can ship independently — though in
+practice the version-lockstep means tags are usually pushed in pairs
+right after a release commit.
+
+Since Phase L, [`app/package.json`](../../app/package.json) is **also a
+publishable npm manifest** — it carries `name = "@pointmatic/quizazz"`, a
+`version` field matched to `pyproject.toml`, `exports` / `files` / `svelte`
+fields, and `publishConfig.access = "public"`. The package is still a
+SvelteKit app at dev time (`pnpm dev` / `pnpm build` use the same
+`package.json`); `pnpm package` produces the library artifact under
+`dist/` via `@sveltejs/package`. Before Phase L it was a private workspace
+root with no `version` — lockstep bumps now include it.
 
 Loose semver `vX.Y.Z`:
 
@@ -252,6 +277,20 @@ Loose semver `vX.Y.Z`:
 - **Y** — features (typically one story) or a bundle of stories once
   production is stable.
 - **Z** — bug fixes and trivial changes.
+
+**Post-1.0.0 phase-based versioning (convention).** Once `1.0.0` shipped,
+stories that are planned as part of a multi-story phase release land
+**unversioned**. The phase's intended release version is declared in the
+phase intro, and the actual version bump (both `pyproject.toml` and
+`__init__.py`) happens in the **last story of the phase**. Rationale:
+phases ship together, and bumping the version mid-phase would publish
+partial implementations under a stable version number. One-off stories
+outside a phase still carry a version in their header and bump at
+completion. Examples:
+
+- Phase L (Embeddable Component) → `v1.1.0`; bump lands in Story L.d.
+- Phase M (Hardening, standalone build, release automation) → `v1.2.0`;
+  bump lands in Story M.f.
 
 `MANIFEST_SCHEMA_VERSION` (in `quizazz/__init__.py`) is a **separate
 protocol marker** embedded in every compiled manifest so consumers can
@@ -315,12 +354,12 @@ sure nothing in the reachable set imports it transitively.
 
 ---
 
-# code_test_first mode (cycle)
+# code_direct mode (cycle)
 
-> Generate code with a test-first approach
+> Generate code directly, test after
 
 
-Implement stories using test-driven development (TDD). Write a failing test before writing any implementation code.
+Implement stories rapidly with direct commits to main. Focus on feature completion and iteration speed over process overhead.
 
 **Next Action**
 Restart the cycle of steps. 
@@ -333,53 +372,53 @@ Restart the cycle of steps.
 For each story:
 
 1. **Read** the story's checklist from `docs/specs/stories.md`
-2. For each task in the checklist:
-   a. **Write a failing test** that describes the expected behavior
-   b. **Run the test** -- confirm it fails (red)
-   c. **Write the minimal implementation** to make the test pass
-   d. **Run the test** -- confirm it passes (green)
-   e. **Refactor** if needed -- clean up while tests still pass
-   f. **Run full test suite** -- `pyve run pytest` -- no regressions
+2. **Implement** all tasks in the checklist
 3. **Add copyright/license headers** to every new source file
-4. **Run linting** -- fix any issues immediately
-5. **Mark tasks** as `[x]` in `stories.md` and change story suffix to `[Done]`
-6. **Bump version** in package manifest and source (if the story has a version)
-7. **Update CHANGELOG.md** with the version entry
-8. **Present** the completed story concisely: what changed (files + line refs), verification results (test counts, lint status, red-green-refactor summary), and the suggested next story. Do not propose commits, pushes, or bundling options. Do not offer "want me to also…?" follow-ups.
-9. **Wait** for the developer to say "go" before starting the next story
+4. **Run tests** -- `pyve run pytest` (fix failures before continuing)
+5. **Run linting** -- fix any issues immediately
+6. **Mark tasks** as `[x]` in `stories.md` and change story suffix to `[Done]`
+7. **Bump version** in package manifest and source (if the story has a version)
+8. **Update CHANGELOG.md** with the version entry
+9. **Present** the completed story concisely: what changed (files + line refs), verification results (test counts, lint status), and the suggested next story. Do not propose commits, pushes, or bundling options. Do not offer "want me to also…?" follow-ups.
+10. **Wait** for the developer to say "go" before starting the next story
 
-## Red-Green-Refactor
+## Velocity Practices
 
-The TDD cycle:
+**LLM's role in each cycle:**
 
-1. **Red** -- Write a test that fails. The test defines the desired behavior.
-2. **Green** -- Write the simplest code that makes the test pass. No more.
-3. **Refactor** -- Clean up the code while keeping tests green. Remove duplication, improve naming, simplify logic.
+- **Version bump per story** -- v0.1.0, v0.2.0, v0.3.0, etc. — bump in package manifest and source
+- **Minimal process overhead** -- focus on making it work, not making it perfect
+- **Tests run after every story** -- not after every file, but before presenting to developer
+- **Fix linting immediately** -- small incremental fixes, not batch cleanup
+- **Update CHANGELOG.md** with the version entry before presenting
 
-## Test Writing Guidelines
+**Developer's role (do NOT prompt for, offer, or initiate):**
 
-- **Test behavior, not implementation** -- assert on outputs and side effects, not internal state
-- **One assertion per concept** -- each test should verify one thing
-- **Use descriptive names** -- `test_override_with_nonexistent_guide_errors` not `test_override_3`
-- **Prefer unit tests** -- test individual functions in isolation
-- **Use integration tests sparingly** -- for verifying component interactions
-- **Test edge cases** -- empty inputs, boundary values, error conditions
+- **Direct commits to main** -- no branches, no PRs, no code review (velocity convention)
+- **Commit messages** reference story IDs: `"Story A.a: v0.1.0 Hello World"`
+- **Decides when to commit** -- the LLM presents, the developer commits. Multiple stories may be bundled into one commit at the developer's discretion — that is not the LLM's call to make or suggest.
 
-## Test Hierarchy
+## Story Ordering
 
-| Level | Speed | Scope | Use for |
-|-------|-------|-------|---------|
-| Unit | Fast | Single function | Core logic, edge cases, error paths |
-| Integration | Medium | Multiple components | Verifying wiring, config loading |
-| End-to-end | Slow | Full system | Final validation, smoke tests |
+- Start with Story A.a (Hello World) if not yet implemented
+- If unclear which story is next, ask: "Which story should I work on next?"
+- Never skip ahead -- complete stories in order within each phase
+
+## File Header Reminder
+
+Every new source file must include the copyright and license header as the very first content (before code, docstrings, or imports).
 
 ## When to Switch Modes
 
-Switch to **code_direct** when:
-- The story is straightforward and TDD overhead isn't justified
-- The developer requests faster iteration
+Switch to **code_test_first** when:
+- Working on a story with complex logic that benefits from TDD
+- The developer requests test-first approach
 
 Switch to **debug** when:
 - A bug is discovered during implementation
-- Tests are failing unexpectedly and need root cause analysis
+- Tests are failing unexpectedly
+
+Switch to **production mode** when:
+- CI/CD phase is complete and branch protection is enabled
+- The project is ready for public users
 

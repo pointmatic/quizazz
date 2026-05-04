@@ -2,9 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import initSqlJs, { type Database } from 'sql.js';
+import { WasmAssetMissingError } from './errors';
 
 const DB_STORE = 'database';
 const DB_KEY = 'db';
+
+export const WASM_ASSET_URL = '/sql-wasm.wasm';
+
+export async function assertWasmAssetAvailable(url: string): Promise<void> {
+	let response: Response;
+	try {
+		response = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+	} catch (err) {
+		throw new WasmAssetMissingError(url, err);
+	}
+	if (!response.ok) {
+		throw new WasmAssetMissingError(url);
+	}
+}
 
 export function getDbName(quizName: string): string {
 	return `quizazz-${quizName}`;
@@ -107,6 +122,8 @@ function saveToIndexedDB(idb: IDBDatabase, data: Uint8Array): Promise<void> {
 }
 
 export async function initDatabase(quizName: string): Promise<Database> {
+	await assertWasmAssetAvailable(WASM_ASSET_URL);
+
 	const SQL = await initSqlJs({
 		locateFile: (file: string) => `/${file}`
 	});
