@@ -625,24 +625,24 @@ Defensive `try/catch` around runtime DB calls so a transient IDB error (quota ex
   - [x] `app/tests/engine/lifecycle.test.ts`: mock `persistDatabase` to throw → `submitAnswer` still completes (in-memory state updated); `dbInit` flips to `'failed'` *(landed in `tests/integration/lifecycle.test.ts` — that's where the `submitAnswer` integration suite lives)*
 - [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 215/215 pass (was 209; +6: 5 scores swallow + 1 lifecycle persist-fail); the failure-surface from M.j is preserved
 
-### Story M.l: v1.3.0 Release [Planned]
+### Story M.l: v1.3.0 Release [In Review]
 
 Lockstep version bump and CI-driven publish for the subplan bundle. Mirrors the M.f release flow (tag-driven CI for both PyPI and npm); no new infrastructure work — just confirming the M.f workflows handle a clean release end-to-end.
 
-- [ ] Bump versions
-  - [ ] [`python/pyproject.toml`](../../python/pyproject.toml) `[project].version` → `1.3.0`
-  - [ ] [`python/src/quizazz/__init__.py`](../../python/src/quizazz/__init__.py) `__version__` → `"1.3.0"`
-  - [ ] [`app/package.json`](../../app/package.json) `version` → `"1.3.0"`
-  - [ ] `MANIFEST_SCHEMA_VERSION` stays at `"1.0"` (no manifest shape changes — confirm by grep)
-- [ ] Local preflight (mirrors what CI runs)
-  - [ ] `pyve test` — full Python suite passes
-  - [ ] `pnpm --dir app exec vitest run` — full TypeScript suite passes
-  - [ ] `pnpm --dir app exec svelte-check --tsconfig ./tsconfig.json --fail-on-warnings` — 0 errors, 0 warnings
-  - [ ] `pnpm --dir app package` — emits `dist/` with `dist/styles.css` cleanly; no `app/static/sql-wasm.wasm` reference
-  - [ ] `pnpm --dir app exec publint` — "All good!"
-  - [ ] `python -m build python/` + `twine check` — both sdist and wheel PASSED
-- [ ] Update [`README.md`](../../README.md) and [`python/README.md`](../../python/README.md) version references (any `1.2.0` mentions) to `1.3.0`
-- [ ] Push tags
+- [x] Bump versions
+  - [x] [`python/pyproject.toml`](../../python/pyproject.toml) `[project].version` → `1.3.0`
+  - [x] [`python/src/quizazz/__init__.py`](../../python/src/quizazz/__init__.py) `__version__` → `"1.3.0"`
+  - [x] [`app/package.json`](../../app/package.json) `version` → `"1.3.0"`
+  - [x] `MANIFEST_SCHEMA_VERSION` stays at `"1.0"` (no manifest shape changes — confirm by grep)
+- [x] Local preflight (mirrors what CI runs)
+  - [x] `pyve test` — 159/159 pass
+  - [x] `pnpm --dir app exec vitest run` — 215/215 pass
+  - [x] `pnpm --dir app exec svelte-check --tsconfig ./tsconfig.json --fail-on-warnings` — 0 errors, 0 warnings
+  - [x] `pnpm --dir app package` — emits `dist/` with `dist/styles.css` cleanly; no `app/static/sql-wasm.wasm` reference (only the legitimate `?url` import in `dist/db/database.js`)
+  - [x] `pnpm --dir app exec publint` — "All good!"
+  - [x] `python -m build python/` + `twine check` — both `quizazz-1.3.0.tar.gz` and `quizazz-1.3.0-py3-none-any.whl` PASSED
+- [x] Update [`README.md`](../../README.md) and [`python/README.md`](../../python/README.md) version references (any `1.2.0` mentions) to `1.3.0` *(no `1.2.0` references found in either README — only historical mentions in CHANGELOG, which stay)*
+- [ ] Push tags *(developer-initiated — irreversible publish)*
   - [ ] `git tag -a npm-v1.3.0 -m "@pointmatic/quizazz 1.3.0" && git push origin npm-v1.3.0` — triggers [`publish-npm.yml`](../../.github/workflows/publish-npm.yml)
   - [ ] `git tag -a v1.3.0 -m "quizazz 1.3.0" && git push origin v1.3.0` — triggers [`publish-pypi.yml`](../../.github/workflows/publish-pypi.yml)
 - [ ] Verify post-publish
