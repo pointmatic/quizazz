@@ -608,22 +608,22 @@ Surface DB-init failures programmatically (UC-3) and visually (UC-1/UC-2). `<Qui
   - [x] `app/tests/stores/db-init.test.ts`: store transitions don't fire reactive cycles when set to the same value (sanity)
 - [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 209/209 pass (was 189; +20: 7 QuizBlock + 7 banner + 6 store); `pnpm --dir app build` succeeds. Manual smoke-test deferred to v1.3.0 release prep.
 
-### Story M.k: Repo-Boundary Swallow Rule [Planned]
+### Story M.k: Repo-Boundary Swallow Rule [Done]
 
 Defensive `try/catch` around runtime DB calls so a transient IDB error (quota exceeded, transaction abort, post-init corruption) doesn't crash an in-progress answer-submit or score-load. Surfaces failures to the `dbInit` store from M.j; UI continues to render rather than blank. Pattern D, adapted to quizazz's structure (where init errors land at mount time rather than per-call, so the swallow site is the *runtime* path, not the read/write boundary).
 
-- [ ] Update `app/src/lib/db/scores.ts`
-  - [ ] Wrap `getScores`, `seedScores`, `updateScore`, `recordAnswer` in `try/catch`
-  - [ ] On any caught error: log to `console.error` with `[quizazz]` prefix; flip `dbInit` store to `'failed'`; return safe sentinel:
+- [x] Update `app/src/lib/db/scores.ts`
+  - [x] Wrap `getScores`, `seedScores`, `updateScore`, `recordAnswer` in `try/catch`
+  - [x] On any caught error: log to `console.error` with `[quizazz]` prefix; flip `dbInit` store to `'failed'`; return safe sentinel:
     - `getScores` → `[]`
     - `seedScores` / `updateScore` / `recordAnswer` → no-op return
-  - [ ] Add a module-comment block at the top: "Runtime sql.js errors are swallowed here because they are surfaced once via the `dbInit` store (subscribed by `<RecordingPausedBanner>`) or via `<QuizBlock>`'s `onerror` channel. Do not refactor away these catches without first verifying the failure-surface contract is preserved. See [phase-m-subplan-sql-js-robustness.md](../../docs/specs/phase-m-subplan-sql-js-robustness.md)."
-- [ ] Update `app/src/lib/engine/lifecycle.ts` `persistDatabase` call site at [line 164](../../app/src/lib/engine/lifecycle.ts#L164)
-  - [ ] Wrap in `try/catch`; on caught error: log + flip `dbInit` to `'failed'`; do not throw (callers like `submitAnswer` should not abort on a persist failure — the in-memory state is correct, only persistence to IDB failed)
-- [ ] Tests
-  - [ ] `app/tests/db/scores.test.ts`: mock `db.exec` / `db.run` to throw → `getScores` returns `[]`; writes are no-ops; `dbInit` flips to `'failed'`
-  - [ ] `app/tests/engine/lifecycle.test.ts`: mock `persistDatabase` to throw → `submitAnswer` still completes (in-memory state updated); `dbInit` flips to `'failed'`
-- [ ] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` passes; the failure-surface from M.j is preserved
+  - [x] Add a module-comment block at the top: "Runtime sql.js errors are swallowed here because they are surfaced once via the `dbInit` store (subscribed by `<RecordingPausedBanner>`) or via `<QuizBlock>`'s `onerror` channel. Do not refactor away these catches without first verifying the failure-surface contract is preserved. See [phase-m-subplan-sql-js-robustness.md](../../docs/specs/phase-m-subplan-sql-js-robustness.md)."
+- [x] Update `app/src/lib/engine/lifecycle.ts` `persistDatabase` call site at [line 164](../../app/src/lib/engine/lifecycle.ts#L164)
+  - [x] Wrap in `try/catch`; on caught error: log + flip `dbInit` to `'failed'`; do not throw (callers like `submitAnswer` should not abort on a persist failure — the in-memory state is correct, only persistence to IDB failed)
+- [x] Tests
+  - [x] `app/tests/db/scores.test.ts`: mock `db.exec` / `db.run` to throw → `getScores` returns `[]`; writes are no-ops; `dbInit` flips to `'failed'`
+  - [x] `app/tests/engine/lifecycle.test.ts`: mock `persistDatabase` to throw → `submitAnswer` still completes (in-memory state updated); `dbInit` flips to `'failed'` *(landed in `tests/integration/lifecycle.test.ts` — that's where the `submitAnswer` integration suite lives)*
+- [x] Verify: `pnpm check` — 0 errors, 0 warnings; `pnpm exec vitest run` — 215/215 pass (was 209; +6: 5 scores swallow + 1 lifecycle persist-fail); the failure-surface from M.j is preserved
 
 ### Story M.l: v1.3.0 Release [Planned]
 

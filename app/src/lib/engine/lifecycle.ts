@@ -8,6 +8,7 @@ import { presentAnswers } from '$lib/engine/presentation';
 import { scoreAnswer } from '$lib/engine/scoring';
 import { updateScore, recordAnswer, persistDatabase } from '$lib/db';
 import { quizSession, viewMode, reviewIndex } from '$lib/stores/quiz';
+import { dbInit } from '$lib/stores/db-init';
 import { get } from 'svelte/store';
 
 let sessionId = crypto.randomUUID();
@@ -161,7 +162,12 @@ async function finalizeQuiz(questions: QuizQuestion[], db: Database): Promise<vo
 		updateScore(db, qq.question.id, points);
 		recordAnswer(db, sessionId, qq.question.id, answer.category, points, qq.elapsedMs);
 	}
-	await persistDatabase(db, activeQuizName);
+	try {
+		await persistDatabase(db, activeQuizName);
+	} catch (err) {
+		console.error('[quizazz] persistDatabase failed:', err);
+		dbInit.set('failed');
+	}
 }
 
 export function editAnsweredQuestion(index: number): void {

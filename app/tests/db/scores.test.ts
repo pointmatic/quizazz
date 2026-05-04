@@ -1,10 +1,12 @@
 // Copyright (c) 2026 Pointmatic
 // SPDX-License-Identifier: Apache-2.0
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { get } from 'svelte/store';
 import initSqlJs, { type Database } from 'sql.js';
 import { createSchema, getDbName } from '$lib/db/database';
 import { getScores, updateScore, seedScores, recordAnswer } from '$lib/db/scores';
+import { dbInit } from '$lib/stores/db-init';
 
 let db: Database;
 
@@ -115,5 +117,78 @@ describe('recordAnswer', () => {
 
 		const results = db.exec('SELECT * FROM session_answers');
 		expect(results[0].values).toHaveLength(2);
+	});
+});
+
+describe('repo-boundary swallow rule', () => {
+	let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+	beforeEach(() => {
+		dbInit.set('ready');
+		consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+	});
+
+	afterEach(() => {
+		consoleErrorSpy.mockRestore();
+	});
+
+	function brokenDb(): Database {
+		const fail = () => {
+			throw new Error('sql.js exploded');
+		};
+		return {
+			exec: fail,
+			run: fail,
+			prepare: fail
+		} as unknown as Database;
+	}
+
+	it('getScores returns [] and flips dbInit on db error', () => {
+		const result = getScores(brokenDb());
+		expect(result).toEqual([]);
+		expect(get(dbInit)).toBe('failed');
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[quizazz] getScores failed'),
+			expect.any(Error)
+		);
+	});
+
+	it('updateScore is a no-op and flips dbInit on db error', () => {
+		expect(() => updateScore(brokenDb(), 'q1', 1)).not.toThrow();
+		expect(get(dbInit)).toBe('failed');
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[quizazz] updateScore failed'),
+			expect.any(Error)
+		);
+	});
+
+	it('seedScores is a no-op and flips dbInit on db error', () => {
+		expect(() => seedScores(brokenDb(), ['q1'])).not.toThrow();
+		expect(get(dbInit)).toBe('failed');
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[quizazz] seedScores failed'),
+			expect.any(Error)
+		);
+	});
+
+	it('recordAnswer is a no-op and flips dbInit on db error', () => {
+		expect(() => recordAnswer(brokenDb(), 's1', 'q1', 'correct', 1)).not.toThrow();
+		expect(get(dbInit)).toBe('failed');
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[quizazz] recordAnswer failed'),
+			expect.any(Error)
+		);
+	});
+
+	it('does not flip dbInit when operations succeed', () => {
+		seedScores(db, ['q1']);
+		expect(get(dbInit)).toBe('ready');
+		updateScore(db, 'q1', 1);
+		expect(get(dbInit)).toBe('ready');
+		recordAnswer(db, 's1', 'q1', 'correct', 1);
+		expect(get(dbInit)).toBe('ready');
+		const scores = getScores(db);
+		expect(scores).toHaveLength(1);
+		expect(get(dbInit)).toBe('ready');
 	});
 });

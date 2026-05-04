@@ -24,6 +24,7 @@ import {
 	getQuestionStartTime
 } from '$lib/engine/lifecycle';
 import type { Question, QuestionScore } from '$lib/types';
+import { dbInit } from '$lib/stores/db-init';
 
 // Mock persistDatabase to avoid IndexedDB in tests
 vi.mock('$lib/db', async (importOriginal) => {
@@ -694,5 +695,42 @@ describe('schema migration', () => {
 		expect(hasElapsedMs).toBe(true);
 
 		freshDb.close();
+	});
+});
+
+describe('persistDatabase failure swallow', () => {
+	it('submitAnswer completes and flips dbInit to "failed" when persistDatabase rejects', async () => {
+		const dbModule = await import('$lib/db');
+		const persistMock = dbModule.persistDatabase as unknown as ReturnType<typeof vi.fn>;
+		persistMock.mockRejectedValueOnce(new Error('IDB write failed'));
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+		dbInit.set('ready');
+		questions = makeQuestions(1);
+		scores = setupDb(questions);
+		startQuiz(
+			{ questionCount: 1, answerCount: 5, selectedTags: [], selectedNodeIds: [] },
+			questions,
+			scores,
+			db,
+			'persist-fail-quiz'
+		);
+
+		const session = get(quizSession)!;
+		const label = session.questions[0].presentedAnswers[0].label;
+
+		await expect(submitAnswer(label, db)).resolves.toBeUndefined();
+
+		expect(get(viewMode)).toBe('summary');
+		const finalSession = get(quizSession)!;
+		expect(finalSession.questions[0].submittedLabel).toBe(label);
+		expect(get(dbInit)).toBe('failed');
+		expect(consoleErrorSpy).toHaveBeenCalledWith(
+			expect.stringContaining('[quizazz] persistDatabase failed'),
+			expect.any(Error)
+		);
+
+		persistMock.mockReset().mockResolvedValue(undefined);
+		consoleErrorSpy.mockRestore();
 	});
 });
