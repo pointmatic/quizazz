@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import initSqlJs, { type Database } from 'sql.js';
+import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { WasmAssetMissingError } from './errors';
 
 const DB_STORE = 'database';
 const DB_KEY = 'db';
 
-export const WASM_ASSET_URL = '/sql-wasm.wasm';
+// Resolved at host build time by Vite's `?url` asset-import. Vite emits the
+// WASM into the host's build output (e.g. `_app/immutable/assets/...`) and
+// rewrites this constant to the hashed URL — no host-side `cp` step needed.
+export const WASM_ASSET_URL: string = wasmUrl;
 
 export async function assertWasmAssetAvailable(url: string): Promise<void> {
 	let response: Response;
@@ -132,7 +136,7 @@ async function getSqlJs(): Promise<SqlJs> {
 		try {
 			await assertWasmAssetAvailable(WASM_ASSET_URL);
 			return await initSqlJs({
-				locateFile: (file: string) => `/${file}`
+				locateFile: () => WASM_ASSET_URL
 			});
 		} catch (err) {
 			sqlJsInitPromise = null;

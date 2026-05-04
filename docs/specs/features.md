@@ -2,9 +2,10 @@
 
 ## Overview
 
-This document defines **what** Quizazz does — its requirements, inputs, outputs, and behavior — without specifying implementation details.
+This document defines **what** the `quizazz` project does -- requirements, inputs, outputs, behavior -- without specifying **how** it is implemented. This is the source of truth for scope.
 
-For the high-level concept (why), see [`concept.md`](concept.md). For architecture and module design, see [`tech-spec.md`](tech-spec.md). For the phased implementation plan, see [`stories.md`](stories.md). For the integration contract with downstream host frameworks, see [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md).
+For a high-level concept (why), see [`concept.md`](concept.md). For implementation details (how), see [`tech-spec.md`](tech-spec.md). For a breakdown of the implementation plan (step-by-step tasks), see [`stories.md`](stories.md). For project-specific must-know facts that future LLMs need to avoid blunders, see [`project-essentials.md`](project-essentials.md). For the workflow steps tailored to the current mode (cycle steps, approval gates, conventions), see [`docs/project-guide/go.md`](../project-guide/go.md) — re-read it whenever the mode changes or after context compaction.
+
 
 ---
 
