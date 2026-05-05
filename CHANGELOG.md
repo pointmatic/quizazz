@@ -16,6 +16,14 @@ _No unreleased changes._
 
 ---
 
+## [1.3.1] — npm-only hotfix (`@pointmatic/quizazz` only)
+
+Operational fix discovered during the v1.3.0 release preflight. pnpm 11 promotes the previously-soft "ignored build scripts" condition to a hard error (`ERR_PNPM_IGNORED_BUILDS`, exit 1), refusing to silently skip postinstall scripts for native-binary builders. This broke `pnpm install` on developer machines and would have broken the `publish-npm.yml` runner the same way. Fixed by writing an explicit allow-list to [`app/pnpm-workspace.yaml`](app/pnpm-workspace.yaml) for `esbuild` and `@parcel/watcher`, generated via `pnpm approve-builds`. No code changes; npm-only release per the "Python-only or npm-only hotfix can ship independently" exemption — `quizazz` on PyPI stays at `1.3.0`. `MANIFEST_SCHEMA_VERSION` unchanged.
+
+- **M.m** — `app/pnpm-workspace.yaml` gains `allowBuilds: { esbuild: true, '@parcel/watcher': true }` (canonical pnpm-11 form, written by `pnpm approve-builds`); the pre-existing `onlyBuiltDependencies: [esbuild]` list is updated to also include `'@parcel/watcher'` for clarity. `app/package.json` `version` bumped to `1.3.1`.
+
+---
+
 ## [1.3.0] — Phase M Subplan: sql.js / WASM / IndexedDB Robustness
 
 Audit-driven robustness work addressing the four gotchas and five patterns from [`docs/specs/sql-js-wasm-robustness.md`](docs/specs/sql-js-wasm-robustness.md). Whole-subplan release per the post-1.0.0 phase-versioning convention; bump landed in M.l. See [`docs/specs/phase-m-subplan-sql-js-robustness.md`](docs/specs/phase-m-subplan-sql-js-robustness.md) for the full plan.

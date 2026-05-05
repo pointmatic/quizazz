@@ -306,3 +306,92 @@ If a feature genuinely needs window-level key handling, it must not live
 in the reachable set. Put it in `+page.svelte` or a UC-1 / UC-2-only
 component (e.g., `QuizChooser`, `NavigationTree`, `ConfigView`), and make
 sure nothing in the reachable set imports it transitively.
+
+---
+
+### sql.js WASM is bundled by Vite, not copied
+
+The sql.js WebAssembly binary is resolved at host build time via Vite's
+`?url` asset-import pattern in
+[`app/src/lib/db/database.ts`](../../app/src/lib/db/database.ts):
+
+```ts
+import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
+```
+
+Vite emits the asset into the build output (e.g.
+`_app/immutable/assets/sql-wasm-<hash>.wasm` for SvelteKit) and rewrites
+`wasmUrl` to that hashed URL. This applies uniformly to UC-1/UC-2 (the
+standalone SvelteKit build) and UC-3 (`@pointmatic/quizazz` consumers).
+
+**Invariants:**
+
+- **No checked-in `app/static/sql-wasm.wasm`.** It was deleted in M.i; do
+  not reintroduce it.
+- **No host-side WASM-copy step.** Do not add a `postinstall` script to
+  `app/package.json` that copies WASM into `static/`, and do not add such
+  a step to either README. The setup contract for `<QuizBlock>` consumers
+  is two host-side steps only: SSR-disable + styles import.
+- **`sql.js` is a runtime dependency** of `@pointmatic/quizazz`, not a
+  peer; hosts do not declare it.
+
+If sql.js's WASM packaging changes upstream (e.g. multiple browser builds
+under different `exports` conditions), update the import path in
+`database.ts` — but keep the asset-import pattern. Do not fall back to
+the legacy "host copies the file" recipe.
+
+---
+
+### Runtime DB errors are swallowed at the repo boundary
+
+[`app/src/lib/db/scores.ts`](../../app/src/lib/db/scores.ts)
+(`getScores` / `seedScores` / `updateScore` / `recordAnswer`) and the
+`persistDatabase` call site in
+[`app/src/lib/engine/lifecycle.ts`](../../app/src/lib/engine/lifecycle.ts)
+each wrap their sql.js / IndexedDB operation in `try/catch`. On failure
+they:
+
+1. Log to `console.error` with the `[quizazz]` prefix.
+2. Flip the [`dbInit`](../../app/src/lib/stores/db-init.ts) store to
+   `'failed'`.
+3. Return a safe sentinel — `[]` for reads, no-op for writes.
+
+The catches are intentional and load-bearing. They exist because the
+single user-visible failure surface is the layout-level
+[`<RecordingPausedBanner>`](../../app/src/lib/components/RecordingPausedBanner.svelte)
+(UC-1/UC-2) or the
+[`<QuizBlock>`](../../app/src/lib/embed/QuizBlock.svelte) `onerror`
+callback / `CustomEvent('error')` (UC-3). Letting a runtime DB error
+propagate would crash an in-progress answer-submit or score-load, with
+no opportunity to surface it through that channel.
+
+**Invariant:** do not refactor the catches away. If you add a new sql.js
+or IDB call site that runs after init, wrap it the same way (log +
+`dbInit.set('failed')` + safe sentinel) before merging. Init-time errors
+have a different path (they propagate to `<QuizBlock>` `onMount` /
+`+page.svelte` `selectManifest` and surface via `dbInit` from there) —
+do not conflate the two.
+
+---
+
+### `<QuizBlock>` exposes two error channels — both fire together
+
+`<QuizBlock>` surfaces DB-init failures via two channels with the same
+typed payload (`QuizErrorEvent` from
+[`app/src/lib/types/index.ts`](../../app/src/lib/types/index.ts) →
+`{ quizRef, errorType: 'wasm-missing' | 'failed', message }`):
+
+1. **Callback prop** — `onerror?: (event: QuizErrorEvent) => void`.
+2. **DOM event** — bubbling `CustomEvent('error', { detail, bubbles: true })`
+   dispatched on the component's root `<section>`. Hosts can listen
+   anywhere up the tree.
+
+This mirrors the dual-channel pattern of `complete` (callback prop +
+`CustomEvent('complete')`).
+
+**Invariant:** the two channels fire together, with the same payload, in
+the same order: `onerror?.(payload)` first, then
+`rootEl?.dispatchEvent(...)`. Future event additions on `<QuizBlock>`
+should follow the same dual-channel convention. Do not add a callback
+without the matching DOM event, or vice versa — hosts may use either
+idiom and should not have to switch based on which event they need.

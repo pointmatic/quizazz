@@ -642,17 +642,38 @@ Lockstep version bump and CI-driven publish for the subplan bundle. Mirrors the 
   - [x] `pnpm --dir app exec publint` — "All good!"
   - [x] `python -m build python/` + `twine check` — both `quizazz-1.3.0.tar.gz` and `quizazz-1.3.0-py3-none-any.whl` PASSED
 - [x] Update [`README.md`](../../README.md) and [`python/README.md`](../../python/README.md) version references (any `1.2.0` mentions) to `1.3.0` *(no `1.2.0` references found in either README — only historical mentions in CHANGELOG, which stay)*
-- [ ] Push tags *(developer-initiated — irreversible publish)*
-  - [ ] `git tag -a npm-v1.3.0 -m "@pointmatic/quizazz 1.3.0" && git push origin npm-v1.3.0` — triggers [`publish-npm.yml`](../../.github/workflows/publish-npm.yml)
-  - [ ] `git tag -a v1.3.0 -m "quizazz 1.3.0" && git push origin v1.3.0` — triggers [`publish-pypi.yml`](../../.github/workflows/publish-pypi.yml)
+- [x] Push tags *(developer-initiated — irreversible publish)*
+  - [x] `git tag -a npm-v1.3.0 -m "@pointmatic/quizazz 1.3.0" && git push origin npm-v1.3.0` — triggers [`publish-npm.yml`](../../.github/workflows/publish-npm.yml)
+  - [x] `git tag -a v1.3.0 -m "quizazz 1.3.0" && git push origin v1.3.0` — triggers [`publish-pypi.yml`](../../.github/workflows/publish-pypi.yml)
 - [ ] Verify post-publish
-  - [ ] `pnpm view @pointmatic/quizazz version` returns `1.3.0`
-  - [ ] `pip install quizazz==1.3.0` in a fresh venv works; `quizazz --version` prints `1.3.0`
-  - [ ] Provenance signature visible on the npm web UI ("Built and signed on GitHub Actions")
+  - [x] `pnpm view @pointmatic/quizazz version` returns `1.3.0`
+  - [x] `pip install quizazz==1.3.0` in a fresh venv works; `quizazz --version` prints `1.3.0`
+  - [x] Provenance signature visible on the npm web UI ("Built and signed on GitHub Actions")
   - [ ] Re-run the post-publish host harness:
-    - [ ] Fresh SvelteKit scratch app, `pnpm add @pointmatic/quizazz@1.3.0`, **no WASM copy step**, import styles, `<QuizBlock>` renders end-to-end
+    - [x] Fresh SvelteKit scratch app, `pnpm add @pointmatic/quizazz@1.3.0`, **no WASM copy step**, import styles, `<QuizBlock>` renders end-to-end
+    - FAILED due to pnpm 11.x hardening requiring an allow-list for native-binary builders
     - [ ] Smoke-test the failure surface: temporarily block the WASM URL via dev tools, verify `onerror` fires with `errorType: 'wasm-missing'` and the in-bounds fallback aside renders
-- [ ] Append the M.g – M.l must-know facts to [`docs/specs/project-essentials.md`](project-essentials.md) per `plan_phase` step 7 (this happens after the stories ship, not as part of M.l's pre-release work — see the Project-Essentials Impact section in the subplan plan doc for the candidate facts)
+- [x] Append the M.g – M.l must-know facts to [`docs/specs/project-essentials.md`](project-essentials.md) per `plan_phase` step 7. Three new sections added: "sql.js WASM is bundled by Vite, not copied" (M.i invariant), "Runtime DB errors are swallowed at the repo boundary" (M.k contract), and "`<QuizBlock>` exposes two error channels — both fire together" (M.j convention).
+
+### Story M.m: v1.3.1 npm-only hotfix — pnpm 11 'allowBuilds' allow-list [In Review]
+
+Operational bug discovered during the M.l release preflight: pnpm 11 promotes the "ignored build scripts" condition from a warning to a hard error (`ERR_PNPM_IGNORED_BUILDS`, exit 1). `pnpm install` now refuses to silently skip postinstall scripts for native-binary builders (`esbuild`, `@parcel/watcher`); it requires an explicit allow-list. This breaks `pnpm install` on developer machines and on the GitHub Actions runner used by [`publish-npm.yml`](../../.github/workflows/publish-npm.yml), so it must be fixed before the next clean release.
+
+The fix is an allow-list in [`app/pnpm-workspace.yaml`](../../app/pnpm-workspace.yaml) declaring which deps are permitted to run install scripts. The canonical pnpm-11 form is `allowBuilds: { <pkg>: true }`, written by `pnpm approve-builds`. npm-only — no Python side changes — so this ships as `npm-v1.3.1` independent of the PyPI tag, per the "Python-only or npm-only hotfix can ship independently" exemption in the lockstep-versioning rule. `MANIFEST_SCHEMA_VERSION` stays at `"1.0"`.
+
+- [x] Run `pnpm approve-builds esbuild '@parcel/watcher'` to write `allowBuilds: { esbuild: true, '@parcel/watcher': true }` into [`app/pnpm-workspace.yaml`](../../app/pnpm-workspace.yaml); also keep `onlyBuiltDependencies` synced for clarity
+- [x] Bump [`app/package.json`](../../app/package.json) `version` → `"1.3.1"` (npm-only; `python/pyproject.toml` and `python/src/quizazz/__init__.py` stay at `1.3.0`)
+- [x] Validate: `pnpm install` (in `app/`) completes without `ERR_PNPM_IGNORED_BUILDS`
+- [x] Re-run preflight (mirrors what CI runs)
+  - [x] `pnpm exec vitest run` — 215/215 pass
+  - [x] `pnpm exec svelte-check --tsconfig ./tsconfig.json --fail-on-warnings` — 0 errors, 0 warnings
+  - [x] `pnpm package` — emits `dist/` with `dist/styles.css` cleanly
+  - [x] `pnpm exec publint` — "All good!"
+- [ ] Push tag *(developer-initiated — irreversible publish)*
+  - [ ] `git tag -a npm-v1.3.1 -m "@pointmatic/quizazz 1.3.1" && git push origin npm-v1.3.1` — triggers [`publish-npm.yml`](../../.github/workflows/publish-npm.yml)
+- [ ] Verify post-publish
+  - [ ] `pnpm view @pointmatic/quizazz version` returns `1.3.1`
+  - [ ] Provenance signature visible on the npm web UI
 
 ---
 
