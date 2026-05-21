@@ -16,6 +16,14 @@ _No unreleased changes._
 
 ---
 
+## [1.3.2] — Phase N: Assessment-vs-Quiz Naming Boundary (doc-only)
+
+Doc-only release clarifying the vendor/host terminology boundary between Quizazz and LearningFoundry as LF generalizes its embed surface to `<AssessmentBlock>` to host multiple assessment providers. No source changes; lockstep bump applies to both packages (`quizazz` on PyPI and `@pointmatic/quizazz` on npm). `MANIFEST_SCHEMA_VERSION` unchanged (`1.0`).
+
+- **N.a** — Audit of the local mirror of [`learningfoundry-dependency-spec.md`](docs/specs/learningfoundry-dependency-spec.md) confirms no Quizazz-owned surface needs renaming: `<QuizBlock>`, the `quizRef` prop, the `quizName` manifest key, the `quizazz-{quizName}` IndexedDB naming, and the `source: quizazz` curriculum-YAML selector are all vendor surface and stay. New [`docs/specs/learningfoundry-pushback-recommendations.md`](docs/specs/learningfoundry-pushback-recommendations.md) enumerates the LF-side renames Quizazz recommends pushing back to LearningFoundry's canonical `dependency-spec.md` — BR-1 docstring rename of the cross-boundary noun, Data Flow Summary updates to show `<AssessmentBlock>` as the LF mount point and to drop vendor terminology from LF's own DB columns, `AssessmentCompleteEvent`'s `quizRef` → `assessmentRef` rename at the generic level, a new RR-1b establishing `<AssessmentBlock>` as the single TypeScript-side translation surface (symmetric to RR-1a's Python-side rule), and scoping the Package Distribution / Versioning sections to *"the `quizazz` provider"*. BR-1's path-escape constraint is already implemented in [`python/src/quizazz/api.py`](python/src/quizazz/api.py) (`_resolve_under_base`) and covered by [`python/tests/test_api.py`](python/tests/test_api.py) `TestPathEscapeGuard` (dotdot, absolute-outside, symlink escape, positive absolute-inside). Lockstep bump to `1.3.2` in [`python/pyproject.toml`](python/pyproject.toml), [`python/src/quizazz/__init__.py`](python/src/quizazz/__init__.py), and [`app/package.json`](app/package.json).
+
+---
+
 ## [1.3.1] — npm-only hotfix (`@pointmatic/quizazz` only)
 
 Operational fix discovered during the v1.3.0 release preflight. pnpm 11 promotes the previously-soft "ignored build scripts" condition to a hard error (`ERR_PNPM_IGNORED_BUILDS`, exit 1), refusing to silently skip postinstall scripts for native-binary builders. This broke `pnpm install` on developer machines and would have broken the `publish-npm.yml` runner the same way. Fixed by writing an explicit allow-list to [`app/pnpm-workspace.yaml`](app/pnpm-workspace.yaml) for `esbuild` and `@parcel/watcher`, generated via `pnpm approve-builds`. No code changes; npm-only release per the "Python-only or npm-only hotfix can ship independently" exemption — `quizazz` on PyPI stays at `1.3.0`. `MANIFEST_SCHEMA_VERSION` unchanged.

@@ -26,7 +26,40 @@ This is the authoritative cadence rule. **Do not extrapolate the bump magnitude 
 
 ---
 
+## Phase N: LearningFoundry Integration Improvements
 
+### Story N.a: v1.3.2 Assessment-vs-Quiz Naming Boundary [Done]
+
+LearningFoundry is generalizing its embed surface to `<AssessmentBlock>` so it can host any assessment provider (Quizazz, LLM interview, interactive game, etc.). Audit the local mirror of [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md) for places where LearningFoundry-domain artifacts still carry vendor (`quiz...`) terminology, and produce a recommendations document for LearningFoundry to apply on its side. No changes to Quizazz's vendor surface (`<QuizBlock>`, `quizRef` prop, `quizName` manifest key, `quizazz-{quizName}` IndexedDB names) — those are deliberately preserved per "vendor terminology stops at the vendor boundary."
+
+This is a doc-only patch. Per the version cadence above, doc-only stories typically omit the version from the title; v1.3.2 is included here because the developer requested it. Lockstep bump applies (npm + Python).
+
+- [x] Audit local mirror of [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md) and confirm no Quizazz-owned surface needs renaming
+  - [x] `<QuizBlock>` component name — vendor; stays
+  - [x] `quizRef` prop on `<QuizBlock>` — vendor surface; stays (LF's `<AssessmentBlock>` relabels)
+  - [x] `quizName` key in manifest emitted by quizazz — wire format; stays (RR-1a relabel by `QuizazzProvider`)
+  - [x] IndexedDB naming `quizazz-{quizName}` — vendor-internal storage; stays
+  - [x] `source: quizazz` curriculum YAML selector — vendor selector; stays
+- [x] Draft `docs/specs/learningfoundry-pushback-recommendations.md` listing the LF-side renames Quizazz recommends pushing back to LearningFoundry's canonical `dependency-spec.md`
+  - [x] BR-1 docstring (line 39–40): "compiled **quiz** manifest" → "compiled **assessment** manifest" — the noun crossing the boundary is LF-domain
+  - [x] Data Flow Summary runtime block: `LessonView renders QuizBlock component...` → show `<AssessmentBlock>` as the LF-side mount point that delegates to `<QuizBlock>` when `source: quizazz`
+  - [x] Data Flow Summary runtime block: `learningfoundry writes {quizRef, score, maxScore} to its assessment_scores table` → `{assessmentRef, score, maxScore}` (LF's own DB column shouldn't carry vendor terminology)
+  - [x] `AssessmentCompleteEvent` interface field `quizRef: string` → `assessmentRef: string` at the LF generic event level (Quizazz's vendor event still fires `quizRef`; the rewrite happens in `<AssessmentBlock>`)
+  - [x] Add **RR-1b: Prop and Event Relabel** parallel to RR-1a — `<AssessmentBlock>` is the sole translation surface on the TS side, owning both the `assessmentRef` ↔ `quizRef` prop relabel and the event-detail `quizRef` → `assessmentRef` rewrite; symmetric to `QuizazzProvider`'s manifest-key relabel on the Python side
+  - [x] Generalize package-distribution and versioning sections so they read as "for the `quizazz` provider" rather than describing the only provider
+- [ ] Sync local mirror of dep spec from LearningFoundry once those changes land upstream (`cp ../learningfoundry/docs/specs/quizazz/dependency-spec.md docs/specs/learningfoundry-dependency-spec.md`) — *deferred until LF lands the upstream changes*
+- [x] Verify Quizazz's path-escape constraint (BR-1 last bullet) is implemented and tested: `compile_assessment` raises `quizazz.ValidationError` when `yaml_path` resolves outside `base_dir`
+  - [x] If missing, add the check in `quizazz.compile_assessment` and a unit test (`tests/test_library_api.py`) — *already implemented in `python/src/quizazz/api.py` (`_resolve_under_base`) and covered by `python/tests/test_api.py` `TestPathEscapeGuard` (dotdot, absolute-outside, symlink-escape, absolute-inside); no new file needed*
+- [x] Bump version (lockstep — no public-API change, doc-only):
+  - [x] [`python/pyproject.toml`](../../python/pyproject.toml) `version` → `"1.3.2"`
+  - [x] [`python/src/quizazz/__init__.py`](../../python/src/quizazz/__init__.py) `__version__` → `"1.3.2"`
+  - [x] [`app/package.json`](../../app/package.json) `version` → `"1.3.2"`
+  - [x] `MANIFEST_SCHEMA_VERSION` unchanged (`"1.0"`)
+- [x] Update [`CHANGELOG.md`](../../CHANGELOG.md) with a `1.3.2` entry summarizing the boundary clarification and pointing at `learningfoundry-pushback-recommendations.md`
+- [x] Verify: `pnpm exec vitest run` and Python tests still pass (no source changes expected aside from the optional path-escape test)
+- [ ] Push tag(s) *(developer-initiated)*
+
+---
 
 ## Future
 
