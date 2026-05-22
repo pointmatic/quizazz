@@ -30,24 +30,24 @@ This is the authoritative cadence rule. **Do not extrapolate the bump magnitude 
 
 ### Story N.a: v1.3.2 Assessment-vs-Quiz Naming Boundary [Done]
 
-LearningFoundry is generalizing its embed surface to `<AssessmentBlock>` so it can host any assessment provider (Quizazz, LLM interview, interactive game, etc.). Audit the local mirror of [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md) for places where LearningFoundry-domain artifacts still carry vendor (`quiz...`) terminology, and produce a recommendations document for LearningFoundry to apply on its side. No changes to Quizazz's vendor surface (`<QuizBlock>`, `quizRef` prop, `quizName` manifest key, `quizazz-{quizName}` IndexedDB names) — those are deliberately preserved per "vendor terminology stops at the vendor boundary."
+LearningFoundry is generalizing its embed surface to `<AssessmentBlock>` so it can host any assessment provider (Quizazz, LLM interview, interactive game, etc.). Audit the local mirror of [`learningfoundry/consumer-dependency-spec.md`](learningfoundry/consumer-dependency-spec.md) for places where LearningFoundry-domain artifacts still carry vendor (`quiz...`) terminology, and produce a recommendations document for LearningFoundry to apply on its side. No changes to Quizazz's vendor surface (`<QuizBlock>`, `quizRef` prop, `quizName` manifest key, `quizazz-{quizName}` IndexedDB names) — those are deliberately preserved per "vendor terminology stops at the vendor boundary."
 
 This is a doc-only patch. Per the version cadence above, doc-only stories typically omit the version from the title; v1.3.2 is included here because the developer requested it. Lockstep bump applies (npm + Python).
 
-- [x] Audit local mirror of [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md) and confirm no Quizazz-owned surface needs renaming
+- [x] Audit local mirror of [`learningfoundry/consumer-dependency-spec.md`](learningfoundry/consumer-dependency-spec.md) and confirm no Quizazz-owned surface needs renaming
   - [x] `<QuizBlock>` component name — vendor; stays
   - [x] `quizRef` prop on `<QuizBlock>` — vendor surface; stays (LF's `<AssessmentBlock>` relabels)
   - [x] `quizName` key in manifest emitted by quizazz — wire format; stays (RR-1a relabel by `QuizazzProvider`)
   - [x] IndexedDB naming `quizazz-{quizName}` — vendor-internal storage; stays
   - [x] `source: quizazz` curriculum YAML selector — vendor selector; stays
-- [x] Draft `docs/specs/learningfoundry-pushback-recommendations.md` listing the LF-side renames Quizazz recommends pushing back to LearningFoundry's canonical `dependency-spec.md`
+- [x] Draft `docs/specs/learningfoundry/vendor-pushback-recommendations.md` listing the LF-side renames Quizazz recommends pushing back to LearningFoundry's canonical `dependency-spec.md`
   - [x] BR-1 docstring (line 39–40): "compiled **quiz** manifest" → "compiled **assessment** manifest" — the noun crossing the boundary is LF-domain
   - [x] Data Flow Summary runtime block: `LessonView renders QuizBlock component...` → show `<AssessmentBlock>` as the LF-side mount point that delegates to `<QuizBlock>` when `source: quizazz`
   - [x] Data Flow Summary runtime block: `learningfoundry writes {quizRef, score, maxScore} to its assessment_scores table` → `{assessmentRef, score, maxScore}` (LF's own DB column shouldn't carry vendor terminology)
   - [x] `AssessmentCompleteEvent` interface field `quizRef: string` → `assessmentRef: string` at the LF generic event level (Quizazz's vendor event still fires `quizRef`; the rewrite happens in `<AssessmentBlock>`)
   - [x] Add **RR-1b: Prop and Event Relabel** parallel to RR-1a — `<AssessmentBlock>` is the sole translation surface on the TS side, owning both the `assessmentRef` ↔ `quizRef` prop relabel and the event-detail `quizRef` → `assessmentRef` rewrite; symmetric to `QuizazzProvider`'s manifest-key relabel on the Python side
   - [x] Generalize package-distribution and versioning sections so they read as "for the `quizazz` provider" rather than describing the only provider
-- [ ] Sync local mirror of dep spec from LearningFoundry once those changes land upstream (`cp ../learningfoundry/docs/specs/quizazz/dependency-spec.md docs/specs/learningfoundry-dependency-spec.md`) — *deferred until LF lands the upstream changes*
+- [ ] Sync local mirror of dep spec from LearningFoundry once those changes land upstream (`cp ../learningfoundry/docs/specs/quizazz/dependency-spec.md docs/specs/learningfoundry/consumer-dependency-spec.md`) — *deferred until LF lands the upstream changes*
 - [x] Verify Quizazz's path-escape constraint (BR-1 last bullet) is implemented and tested: `compile_assessment` raises `quizazz.ValidationError` when `yaml_path` resolves outside `base_dir`
   - [x] If missing, add the check in `quizazz.compile_assessment` and a unit test (`tests/test_library_api.py`) — *already implemented in `python/src/quizazz/api.py` (`_resolve_under_base`) and covered by `python/tests/test_api.py` `TestPathEscapeGuard` (dotdot, absolute-outside, symlink-escape, absolute-inside); no new file needed*
 - [x] Bump version (lockstep — no public-API change, doc-only):
@@ -55,8 +55,41 @@ This is a doc-only patch. Per the version cadence above, doc-only stories typica
   - [x] [`python/src/quizazz/__init__.py`](../../python/src/quizazz/__init__.py) `__version__` → `"1.3.2"`
   - [x] [`app/package.json`](../../app/package.json) `version` → `"1.3.2"`
   - [x] `MANIFEST_SCHEMA_VERSION` unchanged (`"1.0"`)
-- [x] Update [`CHANGELOG.md`](../../CHANGELOG.md) with a `1.3.2` entry summarizing the boundary clarification and pointing at `learningfoundry-pushback-recommendations.md`
+- [x] Update [`CHANGELOG.md`](../../CHANGELOG.md) with a `1.3.2` entry summarizing the boundary clarification and pointing at `learningfoundry/vendor-pushback-recommendations.md`
 - [x] Verify: `pnpm exec vitest run` and Python tests still pass (no source changes expected aside from the optional path-escape test)
+- [ ] Push tag(s) *(developer-initiated)*
+
+### Story N.b: v1.4.0 Migrate to `@lucide/svelte@1.16.0` [Done]
+
+The old `lucide-svelte` package on npm is now formally deprecated in favor of the scoped `@lucide/svelte` package, which ships the Svelte-5-native v1.x line. Migrate the icon dependency, rewrite the 8 import sites under [`app/src/lib/components/`](../../app/src/lib/components/) to the new package name (using the per-icon import form Lucide recommends for faster cold builds), and ship the change as a lockstep `v1.4.0` minor bump.
+
+**Scope check (audit results):**
+
+- The v0 → v1 Lucide migration only removes the 14 brand icons (Chromium, Codepen, Codesandbox, Dribbble, Facebook, Figma, Framer, Github, Gitlab, Instagram, LinkedIn, Pocket, RailSymbol, Slack). None are used in this codebase, so no icon substitutions are needed.
+- `lucide-svelte` lives in `app/package.json` `dependencies` (not `devDependencies`), so it ships transitively to `@pointmatic/quizazz` consumers. However, the icons are bundled into `dist/embed/index.js` by `@sveltejs/package` — they are **not** part of `<QuizBlock>`'s public API surface, so this is internal modernization, not a consumer-breaking change.
+- `MANIFEST_SCHEMA_VERSION` stays at `"1.0"` (no manifest-shape change).
+- Lockstep bump applies — Python side moves too even though the change is npm-side only.
+
+**Out of scope:** dependency upgrades for unrelated packages (Svelte, SvelteKit, Vite, sql.js, Tailwind, etc.) — they each need their own story if/when they migrate.
+
+- [x] Update [`app/package.json`](../../app/package.json) `dependencies`: replace `"lucide-svelte": "^0.563.0"` with `"@lucide/svelte": "^1.16.0"`
+- [x] Rewrite the 8 import sites under `app/src/lib/components/` to use the per-icon import form (`@lucide/svelte/icons/<icon-name>`) — Lucide's recommended pattern for faster cold builds:
+  - [x] [`AnsweredQuestionsView.svelte`](../../app/src/lib/components/AnsweredQuestionsView.svelte): `ArrowLeft`
+  - [x] [`ConfigView.svelte`](../../app/src/lib/components/ConfigView.svelte): `BookOpen`, `ArrowLeft`
+  - [x] [`ManifestUpload.svelte`](../../app/src/lib/components/ManifestUpload.svelte): `Upload`
+  - [x] [`NavigationTree.svelte`](../../app/src/lib/components/NavigationTree.svelte): `BookOpen`, `ChevronRight`, `ChevronDown`, `FolderOpen`, `FileText`, `List`
+  - [x] [`QuizChooser.svelte`](../../app/src/lib/components/QuizChooser.svelte): `BookOpen`, `X`
+  - [x] [`QuizView.svelte`](../../app/src/lib/components/QuizView.svelte): `ArrowLeft`, `Clock`
+  - [x] [`ReviewView.svelte`](../../app/src/lib/components/ReviewView.svelte): `ArrowLeft`, `ChevronLeft`, `ChevronRight`, `Clock`
+  - [x] [`SummaryView.svelte`](../../app/src/lib/components/SummaryView.svelte): `Trophy`, `RotateCcw`, `Play`, `LogOut`, `Check`, `X`, `Clock`
+- [x] Regenerate [`app/pnpm-lock.yaml`](../../app/pnpm-lock.yaml) via `pnpm --dir app install`
+- [x] Bump version (lockstep — minor, no public-API change but a notable dependency modernization):
+  - [x] [`python/pyproject.toml`](../../python/pyproject.toml) `version` → `"1.4.0"`
+  - [x] [`python/src/quizazz/__init__.py`](../../python/src/quizazz/__init__.py) `__version__` → `"1.4.0"`
+  - [x] [`app/package.json`](../../app/package.json) `version` → `"1.4.0"`
+  - [x] `MANIFEST_SCHEMA_VERSION` unchanged (`"1.0"`)
+- [x] Update [`CHANGELOG.md`](../../CHANGELOG.md) with a `1.4.0` entry summarizing the Lucide migration
+- [x] Verify: `pnpm --dir app exec vitest run` (TS), `pnpm --dir app check` (svelte-check), `pnpm --dir app package` + `pnpm --dir app exec publint` (publishable artifact still clean), Python tests still pass
 - [ ] Push tag(s) *(developer-initiated)*
 
 ---

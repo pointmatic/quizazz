@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { ArrowLeft, Clock } from 'lucide-svelte';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import Clock from '@lucide/svelte/icons/clock';
 	import { onDestroy, onMount } from 'svelte';
 	import type { QuizQuestion } from '$lib/types';
 	import { formatTime } from '$lib/utils/format';

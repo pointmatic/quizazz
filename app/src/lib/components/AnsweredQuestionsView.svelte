@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { ArrowLeft } from 'lucide-svelte';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { onMount } from 'svelte';
 	import type { QuizQuestion } from '$lib/types';
 

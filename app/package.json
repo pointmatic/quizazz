@@ -1,6 +1,6 @@
 {
   "name": "@pointmatic/quizazz",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "Embeddable SvelteKit quiz component for Quizazz assessments.",
   "license": "Apache-2.0",
   "author": "Pointmatic",
@@ -44,7 +44,7 @@
     "svelte": "^5"
   },
   "dependencies": {
-    "lucide-svelte": "^0.563.0",
+    "@lucide/svelte": "^1.16.0",
     "sql.js": "^1.13.0"
   },
   "scripts": {

@@ -1,11 +1,11 @@
-# learningfoundry-pushback-recommendations.md
+# vendor-pushback-recommendations.md
 
 LearningFoundry is generalizing its embed surface to `<AssessmentBlock>` so it
 can host any assessment provider (Quizazz, an LLM interview, an interactive
 game, etc.). The provider-side glue for Quizazz still uses `quizazz` /
 `<QuizBlock>` / `quizRef` / `quizName` — those are **vendor surface** and stay.
 But several spots in LearningFoundry's canonical
-[`dependency-spec.md`](learningfoundry-dependency-spec.md) still describe
+[`consumer-dependency-spec.md`](consumer-dependency-spec.md) still describe
 **LearningFoundry-domain** artifacts (the cross-boundary manifest noun, LF's own
 DB columns, the generic completion-event interface, the LF-side mount point)
 using vendor (`quiz...`) terminology. Those reads as if Quizazz were the only
@@ -55,13 +55,13 @@ the vendor surface and remain spelled `quiz...` on Quizazz's side:
 
 The line numbers below refer to the version of LearningFoundry's
 `docs/specs/quizazz/dependency-spec.md` mirrored at
-[`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md) in
+[`consumer-dependency-spec.md`](consumer-dependency-spec.md) in
 this repo at the time of writing (1.3.x). LearningFoundry should adjust as
 needed when applying upstream.
 
 ### 1. BR-1 docstring — "compiled quiz manifest" → "compiled assessment manifest"
 
-[`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md)
+[`consumer-dependency-spec.md`](consumer-dependency-spec.md)
 lines 39–40 currently read:
 
 > Returns:
@@ -210,7 +210,7 @@ recommendation set:
 
 If LearningFoundry applies the recommendations above, the **only** Quizazz-side
 follow-up is a one-line `cp` to refresh the local mirror at
-[`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md);
+[`consumer-dependency-spec.md`](consumer-dependency-spec.md);
 no source or test changes.
 
 ---
@@ -219,9 +219,9 @@ no source or test changes.
 
 BR-1's last bullet states that Quizazz raises `quizazz.ValidationError` when
 `yaml_path` resolves outside `base_dir`. This is already implemented in
-[`python/src/quizazz/api.py`](../../python/src/quizazz/api.py) via
+[`python/src/quizazz/api.py`](../../../python/src/quizazz/api.py) via
 `_resolve_under_base()` and covered by
-[`python/tests/test_api.py`](../../python/tests/test_api.py)'s
+[`python/tests/test_api.py`](../../../python/tests/test_api.py)'s
 `TestPathEscapeGuard` (dotdot traversal, absolute path outside base, post-
 symlink escape, plus a positive case for absolute path inside base). No
 addition needed; the audit confirms the contract is met.

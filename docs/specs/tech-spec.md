@@ -211,7 +211,9 @@ quizazz/
         ├── features.md
         ├── tech-spec.md
         ├── stories.md
-        ├── learningfoundry-dependency-spec.md
+        ├── learningfoundry/
+        │   ├── consumer-dependency-spec.md
+        │   └── vendor-pushback-recommendations.md
         ├── d802-curriculum-idea-statement.md
         ├── llm_question_generation.md
         ├── llm_question_generation_manual.md
@@ -224,7 +226,7 @@ quizazz/
 
 | File Type | Convention | Examples |
 |-----------|------------|----------|
-| **Markdown docs** | Hyphens, lowercase | `tech-spec.md`, `learningfoundry-dependency-spec.md` |
+| **Markdown docs** | Hyphens, lowercase | `tech-spec.md`, `learningfoundry/consumer-dependency-spec.md` |
 | **YAML content** | Hyphens, lowercase | `domain1-data-engineering.yaml`, `topic-a.yaml` |
 | **Python modules / packages** | Underscores (PEP 8) | `quizazz/`, `validate_manifest.py` |
 | **Svelte components** | PascalCase | `QuizBlock.svelte`, `NavigationTree.svelte` |

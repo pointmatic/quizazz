@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { BookOpen, ArrowLeft } from 'lucide-svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
 	import { untrack } from 'svelte';
 	import type { Question } from '$lib/types';
 

@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { Upload } from 'lucide-svelte';
+	import Upload from '@lucide/svelte/icons/upload';
 	import { parseAndValidate } from '$lib/utils/validate-manifest';
 	import type { QuizManifest } from '$lib/types';
 

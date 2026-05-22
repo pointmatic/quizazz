@@ -2,7 +2,12 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { BookOpen, ChevronRight, ChevronDown, FolderOpen, FileText, List } from 'lucide-svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import FolderOpen from '@lucide/svelte/icons/folder-open';
+	import FileText from '@lucide/svelte/icons/file-text';
+	import List from '@lucide/svelte/icons/list';
 	import type { NavNode, QuestionScore } from '$lib/types';
 	import { computeMastery } from '$lib/engine/mastery';
 

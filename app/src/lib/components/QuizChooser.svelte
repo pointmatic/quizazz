@@ -2,7 +2,8 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { BookOpen, X } from 'lucide-svelte';
+	import BookOpen from '@lucide/svelte/icons/book-open';
+	import X from '@lucide/svelte/icons/x';
 	import type { QuizManifest } from '$lib/types';
 	import ManifestUpload from './ManifestUpload.svelte';
 

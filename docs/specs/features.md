@@ -19,7 +19,7 @@ Quizazz is designed to serve four distinct use cases from the same core engine, 
 |---|----------|----------|-------|
 | UC-1 | **Standalone single-quiz SPA** | Self-directed learners, authors shipping a one-off quiz | One quiz → one independent static SPA, deployable anywhere |
 | UC-2 | **Multi-quiz hub SPA** | Authors managing several quiz banks in one place | Single SPA with a quiz chooser and runtime upload of externally-compiled quizzes |
-| UC-3 | **Embeddable assessment component** | Host curriculum / learning frameworks (e.g., [`learningfoundry`](learningfoundry-dependency-spec.md), which in turn powers curricula such as the D802 deep-learning course — see [`d802-curriculum-idea-statement.md`](d802-curriculum-idea-statement.md)) | Quizazz ships a **Python library** for build-time YAML compilation and a **SvelteKit `<QuizBlock>` component** for in-page runtime delivery; the host invokes the library during its own build and embeds the component in its own pages |
+| UC-3 | **Embeddable assessment component** | Host curriculum / learning frameworks (e.g., [`learningfoundry`](learningfoundry/consumer-dependency-spec.md), which in turn powers curricula) | Quizazz ships a **Python library** for build-time YAML compilation and a **SvelteKit `<QuizBlock>` component** for in-page runtime delivery; the host invokes the library during its own build and embeds the component in its own pages |
 | UC-4 | **LLM-assisted question generation pipeline** *(future)* | Authors generating questions at scale from source material | `python/` toolchain that drives LLMs to produce validated YAML |
 
 UC-1, UC-2, and UC-3 are in scope for v1. UC-4 is deferred; the `python/` workspace exists today partly to hold this future pipeline.

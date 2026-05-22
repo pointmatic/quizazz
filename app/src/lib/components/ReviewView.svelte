@@ -2,7 +2,10 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { ArrowLeft, ChevronLeft, ChevronRight, Clock } from 'lucide-svelte';
+	import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
+	import ChevronRight from '@lucide/svelte/icons/chevron-right';
+	import Clock from '@lucide/svelte/icons/clock';
 	import { onMount } from 'svelte';
 	import type { QuizQuestion } from '$lib/types';
 	import { formatTime } from '$lib/utils/format';

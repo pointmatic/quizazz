@@ -2,7 +2,13 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <script lang="ts">
-	import { Trophy, RotateCcw, Play, LogOut, Check, X, Clock } from 'lucide-svelte';
+	import Trophy from '@lucide/svelte/icons/trophy';
+	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+	import Play from '@lucide/svelte/icons/play';
+	import LogOut from '@lucide/svelte/icons/log-out';
+	import Check from '@lucide/svelte/icons/check';
+	import X from '@lucide/svelte/icons/x';
+	import Clock from '@lucide/svelte/icons/clock';
 	import type { QuizQuestion } from '$lib/types';
 	import { formatTime } from '$lib/utils/format';
 
