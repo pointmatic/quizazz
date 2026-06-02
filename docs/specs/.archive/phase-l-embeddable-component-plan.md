@@ -65,7 +65,7 @@ From [`learningfoundry-dependency-spec.md`](learningfoundry-dependency-spec.md) 
   }
 </script>
 
-<QuizBlock {manifest} quizRef="d802.module-4.pre" oncomplete={handleComplete} />
+<QuizBlock {manifest} quizRef="foo.module-4.pre" oncomplete={handleComplete} />
 ```
 
 **Props:**

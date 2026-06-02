@@ -90,7 +90,9 @@ The old `lucide-svelte` package on npm is now formally deprecated in favor of th
   - [x] `MANIFEST_SCHEMA_VERSION` unchanged (`"1.0"`)
 - [x] Update [`CHANGELOG.md`](../../CHANGELOG.md) with a `1.4.0` entry summarizing the Lucide migration
 - [x] Verify: `pnpm --dir app exec vitest run` (TS), `pnpm --dir app check` (svelte-check), `pnpm --dir app package` + `pnpm --dir app exec publint` (publishable artifact still clean), Python tests still pass
-- [ ] Push tag(s) *(developer-initiated)*
+- [x] Push tag(s) *(developer-initiated)*
+  - [x] `v1.4.0`
+  - [x] `npm-v1.4.0`
 
 ---
 

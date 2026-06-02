@@ -214,7 +214,6 @@ quizazz/
         ├── learningfoundry/
         │   ├── consumer-dependency-spec.md
         │   └── vendor-pushback-recommendations.md
-        ├── d802-curriculum-idea-statement.md
         ├── llm_question_generation.md
         ├── llm_question_generation_manual.md
         └── .archive/                            # deprecated / historical specs (e.g., multi_quiz_features.md)
