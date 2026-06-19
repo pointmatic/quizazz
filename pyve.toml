@@ -1,0 +1,14 @@
+pyve_schema = "3.0"
+
+[project]
+name = "quizazz"
+
+[env.root]
+purpose = "utility"
+
+[env.testenv]
+purpose = "test"
+default = true
+
+[plugins.python]
+path = "python"
