@@ -3,10 +3,10 @@
 Quizazz is a study tool with multiple-choice questions. 
 
 I need you to generate questions for Quizazz that will be downloaded as a YAML file. 
-Given the list of topics below, start with the first topic and loop through all the steps, one-by-one. Pause after each step for review. 
+Given the quize you are provided, start with the first topic and loop through all the steps, one-by-one. Pause after each step for review. 
 
 ## Domain
-A quiz features a way to to test a domain of knowledge as a collection of topics organized in hierarchy.  
+A quiz features a way to to test a domain of knowledge as a collection of topics organized in a hierarchy.  
 Each topic is a collection of knowledge that consists of up to 50 questions. A topic can have subtopics, to help chunk the user understand their competence in narrower areas of a topic. 
 
 The questions are configured by topic in separateYAML files. Each question set will be presented to the user as a group. Quizazz will aggregate scores by subtopic, topic, and overall. Navigation to question groups in a quiz is via a tree view that matches the directory structure of the YAML files.
